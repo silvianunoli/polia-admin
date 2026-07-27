@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "polia-admin",
+  "compatibility_date": "2025-09-24",
+  "compatibility_flags": ["nodejs_compat"],
+  // Nitro (preset cloudflare-module) gera dist/server/wrangler.json com
+  // main, assets, no_bundle, base_dir, rules corretos — não defina aqui.
+  "observability": {
+    "enabled": true
+  },
+  // Área de gestão da Pólia — domínio próprio, deploy independente do
+  // produto (polia-app). Cutover feito em 27/07/2026: removido de
+  // wrangler.jsonc do polia-app antes de anexar aqui.
+  "routes": [{ "pattern": "silvianunoli.com.br", "custom_domain": true }],
+  "workers_dev": true
+}

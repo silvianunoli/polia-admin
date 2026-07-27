@@ -1,0 +1,249 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Pólia — Design System (cópia do polia-app, fonte da verdade é lá).
+ * Mundo visual: Pólia v3 (pedra/creme neutro, turquesa, pêssego, amarelo pontual, tinta).
+ * Tokens semânticos mapeados em @theme inline; paleta viva no bloco .polia-v3 abaixo.
+ */
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+
+  /* Semantic shadcn tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Tipografia: font-sans, font-accent, font-handwritten */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "DM Sans", "Inter", sans-serif;
+  --font-handwritten: "Caveat", cursive;
+}
+
+/* ── Paleta Pólia v3 (pedra/turquesa/pêssego/amarelo/tinta) ──────────────────
+   Regra de contraste: pêssego e turquesa-claro SÓ em fundo/borda/gráfico,
+   nunca em texto. Texto sempre --ink / --ink-soft / --muted (ou --secondary-text). */
+.polia-v3 {
+  --bg: #F2F0ED;
+  --surface: #F9EFEE;
+  --surface-pink: #F6DAD4;
+  --line: #E6E6E6;
+  --ink: #0A0A0A;
+  --ink-soft: #2C2C2C;
+  --muted: #767676;
+  --accent: #F3B9A9;
+  --accent-ink: #2C2C2C;
+  --secondary: #7CCBCD;
+  --secondary-light: #BFE9EB;
+  --secondary-ink: #0A0A0A;
+  --secondary-text: #2C7E80;
+  --highlight: #FFC629;
+  --highlight-ink: #0A0A0A;
+  --danger: #C0392B;
+  --danger-soft: #FBEAE7;
+  --cat-vendas: #E0A8C0;
+  --cat-admin: #B9B2A6;
+
+  --primary: var(--secondary);
+  --primary-foreground: var(--secondary-ink);
+  --background: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: var(--ink);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--secondary);
+  --muted-foreground: var(--muted);
+}
+
+.font-fraunces {
+  font-family: "Fraunces", ui-serif, Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+.font-cabinet {
+  font-family: "Cabinet Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: -0.02em;
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --background: #F2F0ED;
+  --foreground: #0A0A0A;
+  --card: #ffffff;
+  --card-foreground: #0A0A0A;
+  --popover: #ffffff;
+  --popover-foreground: #0A0A0A;
+  --primary: #7CCBCD;
+  --primary-foreground: #0A0A0A;
+  --secondary: #7CCBCD;
+  --secondary-foreground: #0A0A0A;
+  --muted: #F9EFEE;
+  --muted-foreground: #767676;
+  --accent: #F3B9A9;
+  --accent-foreground: #2C2C2C;
+  --destructive: #C0392B;
+  --destructive-foreground: #ffffff;
+  --border: #E6E6E6;
+  --input: #E6E6E6;
+  --ring: #7CCBCD;
+
+  --chart-1: #7CCBCD;
+  --chart-2: #F3B9A9;
+  --chart-3: #FFC629;
+  --chart-4: #C0392B;
+  --chart-5: #2C7E80;
+
+  --sidebar: #F2F0ED;
+  --sidebar-foreground: #0A0A0A;
+  --sidebar-primary: #7CCBCD;
+  --sidebar-primary-foreground: #0A0A0A;
+  --sidebar-accent: #F9EFEE;
+  --sidebar-accent-foreground: #0A0A0A;
+  --sidebar-border: #E6E6E6;
+  --sidebar-ring: #7CCBCD;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  input,
+  button,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: "Cabinet Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line, var(--border)) transparent;
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--line, var(--border));
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted, var(--muted-foreground));
+}
+
+.font-caveat,
+.font-handwritten,
+[class*="font-caveat"],
+[class*="font-handwritten"] {
+  font-family: "Caveat", cursive;
+  font-size: max(18px, var(--caveat-size, 18px));
+  opacity: 1 !important;
+}
+@media (max-width: 768px) {
+  .font-caveat,
+  .font-handwritten,
+  [class*="font-caveat"],
+  [class*="font-handwritten"] {
+    font-size: max(20px, var(--caveat-size, 20px));
+  }
+}
+
+.caveat-decorativo {
+  font-family: "Caveat", cursive;
+  font-size: 18px;
+  line-height: 1.4;
+  opacity: 1 !important;
+}
+.caveat-informacional {
+  font-family: "Caveat", cursive;
+  font-size: 20px;
+  line-height: 1.4;
+  opacity: 1 !important;
+}
+@media (max-width: 768px) {
+  .caveat-decorativo { font-size: 20px; }
+  .caveat-informacional { font-size: 22px; }
+}
+
+*:focus-visible {
+  outline: 2px solid #7CCBCD;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 100;
+}
+.skip-link:focus {
+  left: 8px;
+  top: 8px;
+  background: #7CCBCD;
+  color: #0A0A0A;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+}
