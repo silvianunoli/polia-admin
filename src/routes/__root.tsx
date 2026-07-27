@@ -78,25 +78,37 @@ function RootComponent() {
   // do beforeLoad acima redirecionar. Enquanto não confirma is_admin (ou se
   // não for admin), mostra só o shell público ComingSoon — nunca o Outlet
   // nem a Sidebar.
-  const [autorizada, setAutorizada] = useState(false);
+  //
+  // "checando" (nunca "negado" de cara) evita o pisca-pisca de quem ATUALIZA
+  // a página já logada: getSession() lê a sessão do localStorage (rápido,
+  // sem round-trip pro servidor como getUser() faria), então pra quem já
+  // tem sessão válida o "checando" dura só o tempo da consulta de is_admin.
+  // Só vira "negado" (ComingSoon) se getSession() não achar ninguém.
+  const [estado, setEstado] = useState<"checando" | "negado" | "autorizado">("checando");
   useEffect(() => {
     if (isLogin) return;
     (async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) return;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
+      if (!user) {
+        setEstado("negado");
+        return;
+      }
       const { data: profile } = await supabase
         .from("profiles")
         .select("is_admin")
-        .eq("id", userData.user.id)
+        .eq("id", user.id)
         .maybeSingle();
-      if ((profile as { is_admin?: boolean } | null)?.is_admin) setAutorizada(true);
+      setEstado((profile as { is_admin?: boolean } | null)?.is_admin ? "autorizado" : "negado");
     })();
   }, [isLogin]);
 
   let conteudo: ReactNode;
   if (isLogin) {
     conteudo = <Outlet />;
-  } else if (!autorizada) {
+  } else if (estado === "checando") {
+    conteudo = null;
+  } else if (estado === "negado") {
     conteudo = <ComingSoon />;
   } else if (isCentral) {
     conteudo = <Outlet />;
