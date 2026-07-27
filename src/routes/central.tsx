@@ -22,7 +22,7 @@ const PRODUTOS: Produto[] = [
   {
     nome: "Pólia",
     descricao: "Usuárias, conteúdo, métricas e operação do produto.",
-    href: "/",
+    href: "/painel",
     icone: PoliaIcon,
   },
 ];
