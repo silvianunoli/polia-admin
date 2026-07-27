@@ -31,7 +31,12 @@ function LoginPage() {
       toast.error("E-mail ou senha errados.");
       return;
     }
-    window.location.href = next && next.startsWith("/") ? next : "/central";
+    // "/" não conta como destino de verdade — quem chegou aqui a partir da
+    // raiz (sem estar logada) deve cair em /central, não pular direto pro
+    // admin. Só preserva "next" quando é um link interno de fato (ex.: sessão
+    // expirou em /crm e queremos voltar exatamente pra lá).
+    const temDestinoReal = next && next.startsWith("/") && next !== "/";
+    window.location.href = temDestinoReal ? next : "/central";
   }
 
   return (
