@@ -3,6 +3,7 @@ import {
   Outlet,
   createRootRoute,
   redirect,
+  useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -63,15 +64,24 @@ function RootShell({ children }: { children: ReactNode }) {
 }
 
 function RootComponent() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // /central é a página logo após o login — seletor sem chrome de admin
+  // (sem Sidebar), pensada pra crescer com outros produtos além da Pólia.
+  const semSidebar = pathname === "/central";
+
   return (
     <div className="polia-v3 min-h-screen bg-[var(--bg)]">
       <Toaster richColors position="top-center" />
-      <div className="flex min-h-screen">
-        <Nav />
-        <main className="flex-1 p-8">
-          <Outlet />
-        </main>
-      </div>
+      {semSidebar ? (
+        <Outlet />
+      ) : (
+        <div className="flex min-h-screen">
+          <Nav />
+          <main className="flex-1 p-8">
+            <Outlet />
+          </main>
+        </div>
+      )}
     </div>
   );
 }

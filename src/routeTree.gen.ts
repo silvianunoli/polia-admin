@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as CentralRouteImport } from './routes/central'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as FlagsRouteImport } from './routes/flags'
@@ -50,6 +51,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CentralRoute = CentralRouteImport.update({
+  id: '/central',
+  path: '/central',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmRoute = CrmRouteImport.update({
@@ -148,6 +154,7 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
@@ -172,6 +179,7 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
@@ -197,6 +205,7 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
@@ -223,6 +232,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/central'
     | '/crm'
     | '/design-system'
     | '/flags'
@@ -247,6 +257,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/central'
     | '/crm'
     | '/design-system'
     | '/flags'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/central'
     | '/crm'
     | '/design-system'
     | '/flags'
@@ -296,6 +308,7 @@ export interface RootRouteChildren {
   AlertasRoute: typeof AlertasRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AuditoriaRoute: typeof AuditoriaRoute
+  CentralRoute: typeof CentralRoute
   CrmRoute: typeof CrmRoute
   DesignSystemRoute: typeof DesignSystemRoute
   FlagsRoute: typeof FlagsRoute
@@ -344,6 +357,13 @@ declare module '@tanstack/react-router' {
       path: '/auditoria'
       fullPath: '/auditoria'
       preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/central': {
+      id: '/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof CentralRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm': {
@@ -480,6 +500,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlertasRoute: AlertasRoute,
   AnalyticsRoute: AnalyticsRoute,
   AuditoriaRoute: AuditoriaRoute,
+  CentralRoute: CentralRoute,
   CrmRoute: CrmRoute,
   DesignSystemRoute: DesignSystemRoute,
   FlagsRoute: FlagsRoute,

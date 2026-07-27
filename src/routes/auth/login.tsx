@@ -31,7 +31,7 @@ function LoginPage() {
       toast.error("E-mail ou senha errados.");
       return;
     }
-    window.location.href = next && next.startsWith("/") ? next : "/";
+    window.location.href = next && next.startsWith("/") ? next : "/central";
   }
 
   return (
