@@ -65,9 +65,9 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  // /central é a página logo após o login — seletor sem chrome de admin
-  // (sem Sidebar), pensada pra crescer com outros produtos além da Pólia.
-  const semSidebar = pathname === "/central";
+  // /central (seletor logo após o login) e /auth/login não têm chrome de
+  // admin — nenhuma das duas faz sentido com a Sidebar do painel ao lado.
+  const semSidebar = pathname === "/central" || pathname === "/auth/login";
 
   return (
     <div className="polia-v3 min-h-screen bg-[var(--bg)]">
