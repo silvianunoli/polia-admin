@@ -19,6 +19,8 @@ const ITENS = [
   { to: "/alertas", label: "Alertas" },
   { to: "/logs", label: "Logs do sistema" },
   { to: "/flags", label: "Feature Flags" },
+  { to: "/blog", label: "Blog" },
+  { to: "/design-system", label: "Design System" },
 ] as const;
 
 function isActive(itemTo: string, pathname: string) {

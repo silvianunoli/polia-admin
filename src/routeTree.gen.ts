@@ -14,6 +14,7 @@ import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as CrmRouteImport } from './routes/crm'
+import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as FlagsRouteImport } from './routes/flags'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as GovernancaRouteImport } from './routes/governanca'
@@ -22,6 +23,9 @@ import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as QualidadeRouteImport } from './routes/qualidade'
 import { Route as SocialRouteImport } from './routes/social'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
+import { Route as BlogIndexRouteImport } from './routes/blog.index'
+import { Route as BlogIdRouteImport } from './routes/blog.$id'
+import { Route as BlogNovoRouteImport } from './routes/blog.novo'
 import { Route as ChamadosIndexRouteImport } from './routes/chamados.index'
 import { Route as ChamadosIdRouteImport } from './routes/chamados.$id'
 import { Route as PesquisasIndexRouteImport } from './routes/pesquisas.index'
@@ -51,6 +55,11 @@ const AuditoriaRoute = AuditoriaRouteImport.update({
 const CrmRoute = CrmRouteImport.update({
   id: '/crm',
   path: '/crm',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesignSystemRoute = DesignSystemRouteImport.update({
+  id: '/design-system',
+  path: '/design-system',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FlagsRoute = FlagsRouteImport.update({
@@ -93,6 +102,21 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: '/auth/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogIndexRoute = BlogIndexRouteImport.update({
+  id: '/blog/',
+  path: '/blog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogIdRoute = BlogIdRouteImport.update({
+  id: '/blog/$id',
+  path: '/blog/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogNovoRoute = BlogNovoRouteImport.update({
+  id: '/blog/novo',
+  path: '/blog/novo',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChamadosIndexRoute = ChamadosIndexRouteImport.update({
   id: '/chamados/',
   path: '/chamados/',
@@ -125,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
   '/crm': typeof CrmRoute
+  '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
@@ -133,9 +158,12 @@ export interface FileRoutesByFullPath {
   '/qualidade': typeof QualidadeRoute
   '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
+  '/blog/$id': typeof BlogIdRoute
+  '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
+  '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
 }
@@ -145,6 +173,7 @@ export interface FileRoutesByTo {
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
   '/crm': typeof CrmRoute
+  '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
@@ -153,9 +182,12 @@ export interface FileRoutesByTo {
   '/qualidade': typeof QualidadeRoute
   '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
+  '/blog/$id': typeof BlogIdRoute
+  '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
+  '/blog': typeof BlogIndexRoute
   '/chamados': typeof ChamadosIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
 }
@@ -166,6 +198,7 @@ export interface FileRoutesById {
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
   '/crm': typeof CrmRoute
+  '/design-system': typeof DesignSystemRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
@@ -174,9 +207,12 @@ export interface FileRoutesById {
   '/qualidade': typeof QualidadeRoute
   '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
+  '/blog/$id': typeof BlogIdRoute
+  '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
+  '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
 }
@@ -188,6 +224,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auditoria'
     | '/crm'
+    | '/design-system'
     | '/flags'
     | '/funil'
     | '/governanca'
@@ -196,9 +233,12 @@ export interface FileRouteTypes {
     | '/qualidade'
     | '/social'
     | '/auth/login'
+    | '/blog/$id'
+    | '/blog/novo'
     | '/chamados/$id'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
+    | '/blog/'
     | '/chamados/'
     | '/pesquisas/'
   fileRoutesByTo: FileRoutesByTo
@@ -208,6 +248,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auditoria'
     | '/crm'
+    | '/design-system'
     | '/flags'
     | '/funil'
     | '/governanca'
@@ -216,9 +257,12 @@ export interface FileRouteTypes {
     | '/qualidade'
     | '/social'
     | '/auth/login'
+    | '/blog/$id'
+    | '/blog/novo'
     | '/chamados/$id'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
+    | '/blog'
     | '/chamados'
     | '/pesquisas'
   id:
@@ -228,6 +272,7 @@ export interface FileRouteTypes {
     | '/analytics'
     | '/auditoria'
     | '/crm'
+    | '/design-system'
     | '/flags'
     | '/funil'
     | '/governanca'
@@ -236,9 +281,12 @@ export interface FileRouteTypes {
     | '/qualidade'
     | '/social'
     | '/auth/login'
+    | '/blog/$id'
+    | '/blog/novo'
     | '/chamados/$id'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
+    | '/blog/'
     | '/chamados/'
     | '/pesquisas/'
   fileRoutesById: FileRoutesById
@@ -249,6 +297,7 @@ export interface RootRouteChildren {
   AnalyticsRoute: typeof AnalyticsRoute
   AuditoriaRoute: typeof AuditoriaRoute
   CrmRoute: typeof CrmRoute
+  DesignSystemRoute: typeof DesignSystemRoute
   FlagsRoute: typeof FlagsRoute
   FunilRoute: typeof FunilRoute
   GovernancaRoute: typeof GovernancaRoute
@@ -257,9 +306,12 @@ export interface RootRouteChildren {
   QualidadeRoute: typeof QualidadeRoute
   SocialRoute: typeof SocialRoute
   AuthLoginRoute: typeof AuthLoginRoute
+  BlogIdRoute: typeof BlogIdRoute
+  BlogNovoRoute: typeof BlogNovoRoute
   ChamadosIdRoute: typeof ChamadosIdRoute
   PesquisasSlugRoute: typeof PesquisasSlugRoute
   UsuariosIdRoute: typeof UsuariosIdRoute
+  BlogIndexRoute: typeof BlogIndexRoute
   ChamadosIndexRoute: typeof ChamadosIndexRoute
   PesquisasIndexRoute: typeof PesquisasIndexRoute
 }
@@ -299,6 +351,13 @@ declare module '@tanstack/react-router' {
       path: '/crm'
       fullPath: '/crm'
       preLoaderRoute: typeof CrmRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/design-system': {
+      id: '/design-system'
+      path: '/design-system'
+      fullPath: '/design-system'
+      preLoaderRoute: typeof DesignSystemRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/flags': {
@@ -357,6 +416,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/': {
+      id: '/blog/'
+      path: '/blog'
+      fullPath: '/blog/'
+      preLoaderRoute: typeof BlogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/$id': {
+      id: '/blog/$id'
+      path: '/blog/$id'
+      fullPath: '/blog/$id'
+      preLoaderRoute: typeof BlogIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blog/novo': {
+      id: '/blog/novo'
+      path: '/blog/novo'
+      fullPath: '/blog/novo'
+      preLoaderRoute: typeof BlogNovoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chamados/': {
       id: '/chamados/'
       path: '/chamados'
@@ -401,6 +481,7 @@ const rootRouteChildren: RootRouteChildren = {
   AnalyticsRoute: AnalyticsRoute,
   AuditoriaRoute: AuditoriaRoute,
   CrmRoute: CrmRoute,
+  DesignSystemRoute: DesignSystemRoute,
   FlagsRoute: FlagsRoute,
   FunilRoute: FunilRoute,
   GovernancaRoute: GovernancaRoute,
@@ -409,9 +490,12 @@ const rootRouteChildren: RootRouteChildren = {
   QualidadeRoute: QualidadeRoute,
   SocialRoute: SocialRoute,
   AuthLoginRoute: AuthLoginRoute,
+  BlogIdRoute: BlogIdRoute,
+  BlogNovoRoute: BlogNovoRoute,
   ChamadosIdRoute: ChamadosIdRoute,
   PesquisasSlugRoute: PesquisasSlugRoute,
   UsuariosIdRoute: UsuariosIdRoute,
+  BlogIndexRoute: BlogIndexRoute,
   ChamadosIndexRoute: ChamadosIndexRoute,
   PesquisasIndexRoute: PesquisasIndexRoute,
 }
