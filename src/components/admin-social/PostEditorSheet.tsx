@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TOKEN_BRIDGE_V3 } from "@/lib/uiTokenBridge";
 import type { SocialPost } from "@/lib/social.functions";
+import { EstudioArte } from "./arte/EstudioArte";
 import {
   editarCaptionEAlt,
   marcarRevisado,
@@ -12,6 +14,8 @@ import {
   cancelarAgendamento,
   tentarDeNovo,
   excluirPost,
+  pedirAjuste,
+  restaurarVersao,
 } from "@/lib/social.functions";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { logAcaoAdmin } from "@/lib/audit-log";
@@ -54,6 +58,9 @@ export function PostEditorSheet({ post, onClose, onChanged }: PostEditorSheetPro
   const [hora, setHora] = useState("12:00");
   const [erro, setErro] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
+  const [aba, setAba] = useState<"texto" | "arte">("texto");
+  const [pedidoDeAjuste, setPedidoDeAjuste] = useState("");
+  const [ajustando, setAjustando] = useState(false);
 
   useEffect(() => {
     if (!post) return;
@@ -62,6 +69,8 @@ export function PostEditorSheet({ post, onClose, onChanged }: PostEditorSheetPro
     setData(paraInputData(post.scheduled_at));
     setHora(paraInputHora(post.scheduled_at));
     setErro(null);
+    setAba("texto");
+    setPedidoDeAjuste("");
   }, [post]);
 
   if (!post) {
@@ -122,6 +131,37 @@ export function PostEditorSheet({ post, onClose, onChanged }: PostEditorSheetPro
     );
   }
 
+  async function handlePedirAjuste() {
+    if (!pedidoDeAjuste.trim()) return;
+    setAjustando(true);
+    const { data: resultado, error } = await pedirAjuste(post!.id, pedidoDeAjuste.trim());
+    setAjustando(false);
+
+    if (error || resultado?.error) {
+      toastErro(resultado?.error ?? "O motor não respondeu. Tenta de novo.");
+      return;
+    }
+
+    await logAcaoAdmin("pedir_ajuste_social", post!.id, {
+      veredito: resultado.veredito?.veredito,
+    });
+    if (resultado.veredito?.veredito === "REPROVADA") {
+      toastErro("A revisora reprovou o ajuste (motivos na nova versão). Confere o texto.");
+    } else {
+      toastSucesso("Ajuste aplicado e aprovado pela revisora. Nova versão salva.");
+    }
+    setPedidoDeAjuste("");
+    onChanged();
+  }
+
+  async function handleRestaurarVersao(versao: { caption?: string; slides?: unknown }) {
+    await comLoading(
+      () => restaurarVersao(post!, versao),
+      "Versão restaurada.",
+      "restaurar_versao_social",
+    );
+  }
+
   return (
     <Sheet open={!!post} onOpenChange={(o) => !o && onClose()}>
       <SheetContent
@@ -158,50 +198,140 @@ export function PostEditorSheet({ post, onClose, onChanged }: PostEditorSheetPro
           ))}
         </div>
 
-        <div className="flex flex-col gap-2">
-          <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
-            Legenda
-          </label>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            disabled={imutavel}
-            rows={5}
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[13px] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--secondary)] disabled:bg-[var(--surface)] disabled:text-[var(--ink-soft)]"
-          />
-          <p className="text-right font-sans text-[11px] text-[var(--muted)]">
-            {caption.length} / 2200
-          </p>
-        </div>
+        {post.origem_criacao === "ia" && (
+          <Tabs value={aba} onValueChange={(v) => setAba(v as "texto" | "arte")}>
+            <TabsList className="bg-[var(--surface)]">
+              <TabsTrigger
+                value="texto"
+                className="rounded-lg px-4 py-1.5 text-[var(--muted)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none"
+              >
+                Texto
+              </TabsTrigger>
+              <TabsTrigger
+                value="arte"
+                className="rounded-lg px-4 py-1.5 text-[var(--muted)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none"
+              >
+                Arte
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
 
-        <div className="flex flex-col gap-2">
-          <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
-            Texto alternativo
-          </label>
-          {(post.midias ?? []).map((_, i) => (
-            <input
-              key={i}
-              type="text"
-              value={altText[i] ?? ""}
+        {/* As duas abas ficam sempre montadas (só escondidas via CSS) — o
+            Estúdio de Arte tem estado local (imagens já geradas) que não
+            pode ser perdido ao trocar de aba e voltar. */}
+        <div className={post.origem_criacao === "ia" && aba === "arte" ? "hidden" : "flex flex-col gap-5"}>
+          <div className="flex flex-col gap-2">
+            <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+              Legenda
+            </label>
+            <textarea
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
               disabled={imutavel}
-              onChange={(e) =>
-                setAltText((atual) => atual.map((v, idx) => (idx === i ? e.target.value : v)))
-              }
-              placeholder={`Descrição da mídia ${i + 1}`}
-              className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[13px] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--secondary)] disabled:bg-[var(--surface)]"
+              rows={5}
+              className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[13px] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--secondary)] disabled:bg-[var(--surface)] disabled:text-[var(--ink-soft)]"
             />
-          ))}
+            <p className="text-right font-sans text-[11px] text-[var(--muted)]">
+              {caption.length} / 2200
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+              Texto alternativo
+            </label>
+            {(post.midias ?? []).map((_, i) => (
+              <input
+                key={i}
+                type="text"
+                value={altText[i] ?? ""}
+                disabled={imutavel}
+                onChange={(e) =>
+                  setAltText((atual) => atual.map((v, idx) => (idx === i ? e.target.value : v)))
+                }
+                placeholder={`Descrição da mídia ${i + 1}`}
+                className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[13px] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--secondary)] disabled:bg-[var(--surface)]"
+              />
+            ))}
+          </div>
+
+          {!imutavel && (
+            <button
+              type="button"
+              onClick={handleSalvarTexto}
+              disabled={ocupado}
+              className="self-start rounded-lg border border-[var(--line)] px-3 py-1.5 font-sans text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface)] disabled:opacity-50"
+            >
+              Salvar texto
+            </button>
+          )}
+
+          {!imutavel && post.origem_criacao === "ia" && (
+            <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-4">
+              <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+                Pedir ajuste
+              </label>
+              <textarea
+                value={pedidoDeAjuste}
+                onChange={(e) => setPedidoDeAjuste(e.target.value)}
+                rows={3}
+                placeholder="Ex.: menos formal, troca o exemplo pra crochê, conta com números menores"
+                className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[13px] text-[var(--ink)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--secondary)]"
+              />
+              <button
+                type="button"
+                onClick={handlePedirAjuste}
+                disabled={ajustando || !pedidoDeAjuste.trim()}
+                className="self-start rounded-lg bg-[var(--secondary)] px-3 py-1.5 font-sans text-[12px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {ajustando ? "Ajustando…" : "Aplicar ajuste"}
+              </button>
+            </div>
+          )}
+
+          {post.origem_criacao === "ia" && post.versoes && post.versoes.length > 0 && (
+            <div className="flex flex-col gap-2 border-t border-[var(--line)] pt-4">
+              <label className="font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+                Versões anteriores
+              </label>
+              <div className="flex flex-col gap-1.5">
+                {post.versoes.map((versao) => (
+                  <div
+                    key={versao.v}
+                    className="flex items-center gap-2 rounded-lg border border-[var(--line)] px-3 py-2"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-sans text-[12px] font-semibold text-[var(--ink)]">
+                        v{versao.v} · {new Date(versao.criado_em).toLocaleDateString("pt-BR")}
+                      </p>
+                      {versao.pedido_de_ajuste && (
+                        <p className="truncate font-sans text-[11px] text-[var(--muted)]">
+                          {versao.pedido_de_ajuste}
+                        </p>
+                      )}
+                    </div>
+                    {!imutavel && (
+                      <button
+                        type="button"
+                        onClick={() => handleRestaurarVersao(versao)}
+                        disabled={ocupado}
+                        className="flex-none rounded-lg border border-[var(--line)] px-3 py-1.5 font-sans text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface)] disabled:opacity-50"
+                      >
+                        Restaurar
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {!imutavel && (
-          <button
-            type="button"
-            onClick={handleSalvarTexto}
-            disabled={ocupado}
-            className="self-start rounded-lg border border-[var(--line)] px-3 py-1.5 font-sans text-[12px] font-semibold text-[var(--ink)] hover:bg-[var(--surface)] disabled:opacity-50"
-          >
-            Salvar texto
-          </button>
+        {post.origem_criacao === "ia" && (
+          <div className={aba === "arte" ? "flex flex-col gap-5" : "hidden"}>
+            <EstudioArte post={post} onMidiasAtualizadas={onChanged} />
+          </div>
         )}
 
         {(post.status === "aprovado" || post.status === "agendado") && (

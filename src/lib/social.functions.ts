@@ -20,6 +20,17 @@ export interface SocialPost {
   erro: string | null;
   permalink: string | null;
   created_at?: string;
+  slides: unknown[] | null;
+  versoes:
+    | {
+        v: number;
+        criado_em: string;
+        caption?: string;
+        slides?: unknown;
+        pedido_de_ajuste?: string;
+      }[]
+    | null;
+  midias_geradas_em: string | null;
 }
 
 export type SocialTipoManual = "feed" | "carrossel" | "story";
@@ -318,4 +329,35 @@ export async function tentarDeNovo(id: string) {
 
 export async function excluirPost(id: string) {
   return supabase.from("social_posts").delete().eq("id", id);
+}
+
+/** Chama a ação "pauta" da social-ia: gera um lote novo de itens em social_pauta (status=sugerida). */
+export async function gerarLotePauta(input: { semana_inicial: string; contexto?: string }) {
+  return supabase.functions.invoke("social-ia", {
+    body: { acao: "pauta", ...input },
+  });
+}
+
+/** Chama a ação "ajustar" da social-ia: reenvia a peça + o pedido pra IA, roda a revisora, empilha nova versão. */
+export async function pedirAjuste(postId: string, pedidoDeAjuste: string) {
+  return supabase.functions.invoke("social-ia", {
+    body: { acao: "ajustar", post_id: postId, pedido_de_ajuste: pedidoDeAjuste },
+  });
+}
+
+/**
+ * Restaura uma versão anterior (já gravada em `versoes`) de volta pros campos ativos do post.
+ * Não chama IA: só copia caption/slides que já estão salvos. Segue a mesma regra R2 de
+ * `editarCaptionEAlt` — restaurar numa peça aprovada/agendada rebaixa pra revisado.
+ */
+export async function restaurarVersao(
+  post: SocialPost,
+  versao: { caption?: string; slides?: unknown },
+) {
+  const novoStatus =
+    post.status === "aprovado" || post.status === "agendado" ? "revisado" : post.status;
+  return supabase
+    .from("social_posts")
+    .update({ caption: versao.caption, slides: versao.slides, status: novoStatus })
+    .eq("id", post.id);
 }
