@@ -71,6 +71,9 @@ function RootComponent() {
   // /central (seletor logo após o login) não tem chrome de admin — não faz
   // sentido com a Sidebar do painel ao lado.
   const isCentral = pathname === "/central";
+  // Fábrica de Posts é um produto próprio, desvinculado da Pólia — não entra
+  // na Sidebar do admin da Pólia. Tem seu próprio cabeçalho (ver social.tsx).
+  const isSocial = pathname === "/social" || pathname.startsWith("/social/");
 
   // O SSR não checa sessão (auth é só client-side, via localStorage) — sem
   // este gate, QUALQUER rota (com a Sidebar inteira revelando as seções
@@ -110,7 +113,7 @@ function RootComponent() {
     conteudo = null;
   } else if (estado === "negado") {
     conteudo = <ComingSoon />;
-  } else if (isCentral) {
+  } else if (isCentral || isSocial) {
     conteudo = <Outlet />;
   } else {
     conteudo = (

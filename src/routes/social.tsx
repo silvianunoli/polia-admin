@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   startOfMonth,
@@ -23,10 +23,15 @@ import { obterStatusTokenInstagram } from "@/lib/social-token.functions";
 
 export const Route = createFileRoute("/social")({
   head: () => ({
-    meta: [{ title: "Social · Pólia" }],
+    meta: [{ title: "Fábrica de Posts" }],
   }),
   component: AdminSocial,
 });
+
+async function sair() {
+  await supabase.auth.signOut();
+  window.location.href = "/auth/login";
+}
 
 const STATUS_LABEL: Record<string, string> = {
   rascunho: "rascunho",
@@ -145,8 +150,24 @@ function AdminSocial() {
   const vazio = !carregando && !erroCarregar && (posts ?? []).length === 0;
 
   return (
-    <div className="mx-auto max-w-5xl">
-      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Social</h1>
+    <div className="min-h-screen">
+      <header className="flex items-center justify-between border-b border-[var(--line)] px-6 py-4 md:px-10">
+        <Link
+          to="/central"
+          className="text-[14px] font-medium text-[var(--ink-soft)] no-underline hover:text-[var(--ink)] hover:underline"
+        >
+          ← Central
+        </Link>
+        <button
+          type="button"
+          onClick={sair}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-[14px] text-[var(--ink-soft)] hover:bg-[var(--surface)]"
+        >
+          Sair
+        </button>
+      </header>
+      <div className="mx-auto max-w-5xl p-8">
+      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Fábrica de Posts</h1>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Calendário e fila de aprovação do @usepolia.
       </p>
@@ -203,7 +224,19 @@ function AdminSocial() {
         </button>
       </div>
 
-      {aba === "estudio" && <EstudioPauta onPecaProduzida={carregar} />}
+      {aba === "estudio" && (
+        <EstudioPauta
+          onPecaProduzida={carregar}
+          onAbrirPost={(postId) => {
+            supabase
+              .from("social_posts")
+              .select("*")
+              .eq("id", postId)
+              .single()
+              .then(({ data }) => data && setPostSelecionado(data));
+          }}
+        />
+      )}
       {aba === "gatilhos" && <GatilhosDM />}
 
       {aba !== "estudio" && aba !== "gatilhos" && carregando && (
@@ -377,6 +410,7 @@ function AdminSocial() {
         onClose={() => setPostSelecionado(null)}
         onChanged={carregar}
       />
+      </div>
     </div>
   );
 }

@@ -8,7 +8,6 @@ import { supabase } from "@/integrations/supabase/client";
 const ITENS = [
   { to: "/painel", label: "Visão geral" },
   { to: "/crm", label: "CRM" },
-  { to: "/social", label: "Social" },
   { to: "/chamados", label: "Chamados" },
   { to: "/pesquisas", label: "Pesquisas" },
   { to: "/funil", label: "Funil de jornada" },
