@@ -23,7 +23,6 @@ import { Route as LogsRouteImport } from './routes/logs'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as QualidadeRouteImport } from './routes/qualidade'
-import { Route as SocialRouteImport } from './routes/social'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogIdRouteImport } from './routes/blog.$id'
@@ -104,11 +103,6 @@ const QualidadeRoute = QualidadeRouteImport.update({
   path: '/qualidade',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SocialRoute = SocialRouteImport.update({
-  id: '/social',
-  path: '/social',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
   id: '/auth/login',
   path: '/auth/login',
@@ -170,7 +164,6 @@ export interface FileRoutesByFullPath {
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
-  '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -196,7 +189,6 @@ export interface FileRoutesByTo {
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
-  '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -223,7 +215,6 @@ export interface FileRoutesById {
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
-  '/social': typeof SocialRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -251,7 +242,6 @@ export interface FileRouteTypes {
     | '/negocio'
     | '/painel'
     | '/qualidade'
-    | '/social'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -277,7 +267,6 @@ export interface FileRouteTypes {
     | '/negocio'
     | '/painel'
     | '/qualidade'
-    | '/social'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -303,7 +292,6 @@ export interface FileRouteTypes {
     | '/negocio'
     | '/painel'
     | '/qualidade'
-    | '/social'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -330,7 +318,6 @@ export interface RootRouteChildren {
   NegocioRoute: typeof NegocioRoute
   PainelRoute: typeof PainelRoute
   QualidadeRoute: typeof QualidadeRoute
-  SocialRoute: typeof SocialRoute
   AuthLoginRoute: typeof AuthLoginRoute
   BlogIdRoute: typeof BlogIdRoute
   BlogNovoRoute: typeof BlogNovoRoute
@@ -442,13 +429,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof QualidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/social': {
-      id: '/social'
-      path: '/social'
-      fullPath: '/social'
-      preLoaderRoute: typeof SocialRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/auth/login': {
       id: '/auth/login'
       path: '/auth/login'
@@ -530,7 +510,6 @@ const rootRouteChildren: RootRouteChildren = {
   NegocioRoute: NegocioRoute,
   PainelRoute: PainelRoute,
   QualidadeRoute: QualidadeRoute,
-  SocialRoute: SocialRoute,
   AuthLoginRoute: AuthLoginRoute,
   BlogIdRoute: BlogIdRoute,
   BlogNovoRoute: BlogNovoRoute,

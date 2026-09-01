@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, LogOut, Newspaper } from "lucide-react";
+import { ArrowRight, LogOut } from "lucide-react";
 import type { ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PoliaIcon } from "@/components/brand/PoliaLogo";
@@ -17,20 +17,13 @@ type Produto = {
 };
 
 // Ponto único de entrada das admins de todos os produtos dela — a lista
-// existe pra crescer sem mexer no layout da página. Fábrica de Posts é
-// desvinculada da Pólia de propósito: produto próprio, não uma aba do admin.
+// existe pra crescer sem mexer no layout da página.
 const PRODUTOS: Produto[] = [
   {
     nome: "Admin da Pólia",
     descricao: "Usuárias, conteúdo, métricas e operação do produto.",
     href: "/painel",
     icone: PoliaIcon,
-  },
-  {
-    nome: "Fábrica de Posts",
-    descricao: "Carrosséis e posts do Instagram: pauta, produção e agendamento.",
-    href: "/social",
-    icone: Newspaper,
   },
 ];
 
