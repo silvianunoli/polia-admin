@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, LogOut } from "lucide-react";
+import { ArrowRight, Kanban, LogOut, Target } from "lucide-react";
 import type { ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PoliaIcon } from "@/components/brand/PoliaLogo";
@@ -24,6 +24,18 @@ const PRODUTOS: Produto[] = [
     descricao: "Usuárias, conteúdo, métricas e operação do produto.",
     href: "/painel",
     icone: PoliaIcon,
+  },
+  {
+    nome: "Kanban Operacional",
+    descricao: "Tarefas do dia a dia, por pessoa e por área.",
+    href: "/kanban",
+    icone: Kanban,
+  },
+  {
+    nome: "Gerenciamento Pólia",
+    descricao: "Board estratégico: planejamento, decisões e roadmap.",
+    href: "/estrategico",
+    icone: Target,
   },
 ];
 
