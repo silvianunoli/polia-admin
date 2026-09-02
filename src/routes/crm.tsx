@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Trash2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { moduloInfo } from "@/lib/planejamento-constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
@@ -22,7 +23,6 @@ export const Route = createFileRoute("/crm")({
 interface Cliente {
   id: string;
   full_name: string | null;
-  etapa_atual: number | null;
   plano: string | null;
   onboarding_completed: boolean | null;
   updated_at: string;
@@ -73,6 +73,10 @@ const tdMuted = "px-5 py-3 font-sans text-[13px] text-[var(--muted)]";
 function AdminCRM() {
   const navigate = useNavigate();
   const [clientes, setClientes] = useState<Cliente[]>([]);
+  // Módulo mais avançado que cada usuária já concluiu (mesma leitura de
+  // funil/painel/usuarios.$id): a coluna profiles.etapa_atual morreu na
+  // migração pro Planejamento e não tem ninguém escrevendo nela.
+  const [moduloPorUsuaria, setModuloPorUsuaria] = useState<Map<string, number>>(new Map());
   const [espera, setEspera] = useState<EsperaItem[]>([]);
   const [filtroStatus, setFiltroStatus] = useState("");
   const [busca, setBusca] = useState("");
@@ -86,10 +90,10 @@ function AdminCRM() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: profs }, { data: esperaData }] = await Promise.all([
+      const [{ data: profs }, { data: esperaData }, { data: secoes }] = await Promise.all([
         supabase
           .from("profiles")
-          .select("id,full_name,etapa_atual,plano,onboarding_completed,updated_at,created_at")
+          .select("id,full_name,plano,onboarding_completed,updated_at,created_at")
           .order("updated_at", { ascending: false })
           .limit(300),
         supabase
@@ -97,9 +101,17 @@ function AdminCRM() {
           .select("id, nome, email, tipo_negocio, criado_em")
           .order("criado_em", { ascending: false })
           .limit(300),
+        supabase.from("planejamento_secoes").select("user_id,modulo").eq("concluido", true),
       ]);
       setClientes((profs ?? []) as Cliente[]);
       setEspera((esperaData ?? []) as EsperaItem[]);
+
+      const maxModuloPorUsuaria = new Map<string, number>();
+      (secoes ?? []).forEach((s) => {
+        const atual = maxModuloPorUsuaria.get(s.user_id) ?? 0;
+        if (s.modulo > atual) maxModuloPorUsuaria.set(s.user_id, s.modulo);
+      });
+      setModuloPorUsuaria(maxModuloPorUsuaria);
     })();
   }, []);
 
@@ -262,7 +274,7 @@ function AdminCRM() {
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-[var(--line)]">
-                  {["Cliente", "Status", "Plano", "Etapa", "Cadastro", "Ações"].map((h) => (
+                  {["Cliente", "Status", "Plano", "Módulo", "Cadastro", "Ações"].map((h) => (
                     <th key={h} className={thClass}>
                       {h}
                     </th>
@@ -272,6 +284,7 @@ function AdminCRM() {
               <tbody>
                 {filtrados.map((c) => {
                   const st = STATUS_META[statusKey(c)];
+                  const modulo = moduloPorUsuaria.get(c.id) ?? 0;
                   return (
                     <tr
                       key={c.id}
@@ -292,8 +305,17 @@ function AdminCRM() {
                           {c.plano ?? "beta"}
                         </span>
                       </td>
-                      <td className="px-5 py-3 font-sans text-[13px] text-[var(--ink-soft)]">
-                        E{c.etapa_atual ?? 1}
+                      <td className="px-5 py-3 font-sans text-[13px]">
+                        {modulo > 0 ? (
+                          <span
+                            className="text-[var(--ink-soft)]"
+                            title={`M${modulo} · ${moduloInfo(modulo).nome}`}
+                          >
+                            M{modulo}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--muted)]">não iniciou</span>
+                        )}
                       </td>
                       <td className={tdMuted}>
                         {new Date(c.created_at).toLocaleDateString("pt-BR")}
