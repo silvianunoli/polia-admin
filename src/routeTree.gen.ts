@@ -16,9 +16,11 @@ import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
+import { Route as EstrategicoRouteImport } from './routes/estrategico'
 import { Route as FlagsRouteImport } from './routes/flags'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as GovernancaRouteImport } from './routes/governanca'
+import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as PainelRouteImport } from './routes/painel'
@@ -68,6 +70,11 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
   path: '/design-system',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EstrategicoRoute = EstrategicoRouteImport.update({
+  id: '/estrategico',
+  path: '/estrategico',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FlagsRoute = FlagsRouteImport.update({
   id: '/flags',
   path: '/flags',
@@ -81,6 +88,11 @@ const FunilRoute = FunilRouteImport.update({
 const GovernancaRoute = GovernancaRouteImport.update({
   id: '/governanca',
   path: '/governanca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const KanbanRoute = KanbanRouteImport.update({
+  id: '/kanban',
+  path: '/kanban',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LogsRoute = LogsRouteImport.update({
@@ -157,9 +169,11 @@ export interface FileRoutesByFullPath {
   '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
+  '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
+  '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
@@ -182,9 +196,11 @@ export interface FileRoutesByTo {
   '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
+  '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
+  '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
@@ -208,9 +224,11 @@ export interface FileRoutesById {
   '/central': typeof CentralRoute
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
+  '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
+  '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
   '/painel': typeof PainelRoute
@@ -235,9 +253,11 @@ export interface FileRouteTypes {
     | '/central'
     | '/crm'
     | '/design-system'
+    | '/estrategico'
     | '/flags'
     | '/funil'
     | '/governanca'
+    | '/kanban'
     | '/logs'
     | '/negocio'
     | '/painel'
@@ -260,9 +280,11 @@ export interface FileRouteTypes {
     | '/central'
     | '/crm'
     | '/design-system'
+    | '/estrategico'
     | '/flags'
     | '/funil'
     | '/governanca'
+    | '/kanban'
     | '/logs'
     | '/negocio'
     | '/painel'
@@ -285,9 +307,11 @@ export interface FileRouteTypes {
     | '/central'
     | '/crm'
     | '/design-system'
+    | '/estrategico'
     | '/flags'
     | '/funil'
     | '/governanca'
+    | '/kanban'
     | '/logs'
     | '/negocio'
     | '/painel'
@@ -311,9 +335,11 @@ export interface RootRouteChildren {
   CentralRoute: typeof CentralRoute
   CrmRoute: typeof CrmRoute
   DesignSystemRoute: typeof DesignSystemRoute
+  EstrategicoRoute: typeof EstrategicoRoute
   FlagsRoute: typeof FlagsRoute
   FunilRoute: typeof FunilRoute
   GovernancaRoute: typeof GovernancaRoute
+  KanbanRoute: typeof KanbanRoute
   LogsRoute: typeof LogsRoute
   NegocioRoute: typeof NegocioRoute
   PainelRoute: typeof PainelRoute
@@ -380,6 +406,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DesignSystemRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/estrategico': {
+      id: '/estrategico'
+      path: '/estrategico'
+      fullPath: '/estrategico'
+      preLoaderRoute: typeof EstrategicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/flags': {
       id: '/flags'
       path: '/flags'
@@ -399,6 +432,13 @@ declare module '@tanstack/react-router' {
       path: '/governanca'
       fullPath: '/governanca'
       preLoaderRoute: typeof GovernancaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/kanban': {
+      id: '/kanban'
+      path: '/kanban'
+      fullPath: '/kanban'
+      preLoaderRoute: typeof KanbanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/logs': {
@@ -503,9 +543,11 @@ const rootRouteChildren: RootRouteChildren = {
   CentralRoute: CentralRoute,
   CrmRoute: CrmRoute,
   DesignSystemRoute: DesignSystemRoute,
+  EstrategicoRoute: EstrategicoRoute,
   FlagsRoute: FlagsRoute,
   FunilRoute: FunilRoute,
   GovernancaRoute: GovernancaRoute,
+  KanbanRoute: KanbanRoute,
   LogsRoute: LogsRoute,
   NegocioRoute: NegocioRoute,
   PainelRoute: PainelRoute,

@@ -11,6 +11,13 @@
   // Área de gestão da Pólia — domínio próprio, deploy independente do
   // produto (polia-app). Cutover feito em 27/07/2026: removido de
   // wrangler.jsonc do polia-app antes de anexar aqui.
-  "routes": [{ "pattern": "silvianunoli.com.br", "custom_domain": true }],
+  //
+  // Segundo cutover em 01/09/2026: saiu de silvianunoli.com.br, entrou em
+  // office.usepolia.com.br. Esse domínio antes servia só o Kanban Operacional
+  // e o Gerenciamento Pólia (Worker separado, polia-office, senha simples) --
+  // agora o admin é o Worker principal dele, e os dois boards viraram rotas
+  // próprias (/kanban, /estrategico) atrás do login real (ver
+  // src/lib/boards.functions.ts e src/routes/kanban.tsx, estrategico.tsx).
+  "routes": [{ "pattern": "office.usepolia.com.br", "custom_domain": true }],
   "workers_dev": true
 }
