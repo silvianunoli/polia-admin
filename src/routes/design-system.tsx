@@ -187,9 +187,7 @@ function DesignSystemPage() {
             {/* Card */}
             <Bloco titulo="Card">
               <div className="rounded-xl border border-[var(--line)] bg-white p-4 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-[3px] hover:border-[var(--secondary)] hover:shadow-[0_4px_12px_rgba(10,10,10,0.08)]">
-                <p className="text-[17px] text-[var(--ink)]">
-                  Uma etapa no seu mapa
-                </p>
+                <p className="text-[17px] text-[var(--ink)]">Uma etapa no seu mapa</p>
                 <p className="mt-1 font-sans text-[13px] text-[var(--muted)]">
                   fundo branco, cantos suaves, sobe 3px no hover.
                 </p>

@@ -98,10 +98,10 @@ function AdminChamados() {
         ? await supabase.from("profiles").select("id,full_name").in("id", userIds)
         : { data: [] as { id: string; full_name: string | null }[] };
       const map = new Map(
-        (profs ?? []).map((p: { id: string; full_name: string | null }) => [p.id, p.full_name] as [
-          string,
-          string | null,
-        ]),
+        (profs ?? []).map(
+          (p: { id: string; full_name: string | null }) =>
+            [p.id, p.full_name] as [string, string | null],
+        ),
       );
       setTickets(
         (data ?? []).map((t: Omit<TicketRow, "user_nome">) => ({
@@ -375,9 +375,7 @@ function AdminChamados() {
         {/* COMUNICAÇÃO */}
         <TabsContent value="comunicacao">
           <div className="mb-10">
-            <h2 className="mb-5 text-[24px] text-[var(--ink)]">
-              Mensagens recebidas
-            </h2>
+            <h2 className="mb-5 text-[24px] text-[var(--ink)]">Mensagens recebidas</h2>
             <div className="space-y-3">
               {contatos.length === 0 && (
                 <p className="font-sans text-[13px] text-[var(--muted)]">Nenhuma mensagem ainda.</p>

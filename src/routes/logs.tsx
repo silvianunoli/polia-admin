@@ -98,9 +98,7 @@ function AdminLogs() {
 
         {/* LOGS DE EDGE FUNCTION */}
         <TabsContent value="logs">
-          <h2 className="mb-4 text-[20px] text-[var(--ink)]">
-            Edge Functions · últimas 24h
-          </h2>
+          <h2 className="mb-4 text-[20px] text-[var(--ink)]">Edge Functions · últimas 24h</h2>
           <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white">
             <table className="w-full min-w-[640px]">
               <thead>
@@ -128,9 +126,7 @@ function AdminLogs() {
                 )}
                 {stats.map((fn) => (
                   <tr key={fn.nome} className="border-b border-[var(--line)]">
-                    <td className="px-5 py-3 font-mono text-[13px] text-[var(--ink)]">
-                      {fn.nome}
-                    </td>
+                    <td className="px-5 py-3 font-mono text-[13px] text-[var(--ink)]">{fn.nome}</td>
                     <td className="px-5 py-3 font-sans text-[13px] text-[var(--ink)]">
                       {fn.chamadas}
                     </td>
@@ -222,9 +218,7 @@ function AdminLogs() {
                         </span>
                       )}
                     </div>
-                    <p className="truncate font-sans text-[14px] text-[var(--ink)]">
-                      {e.mensagem}
-                    </p>
+                    <p className="truncate font-sans text-[14px] text-[var(--ink)]">{e.mensagem}</p>
                   </div>
                   <p className="shrink-0 font-sans text-[11px] text-[var(--muted)]">
                     {new Date(e.criado_em).toLocaleString("pt-BR")}

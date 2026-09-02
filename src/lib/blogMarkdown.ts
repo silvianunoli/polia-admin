@@ -102,9 +102,7 @@ export function serializeDocToMarkdown(doc: DocNode): string {
         return serializeInline(node.content);
       case "bulletList":
         return (node.content ?? [])
-          .map((li) =>
-            `- ${(li.content ?? []).map((p) => serializeInline(p.content)).join(" ")}`,
-          )
+          .map((li) => `- ${(li.content ?? []).map((p) => serializeInline(p.content)).join(" ")}`)
           .join("\n");
       case "blockquote":
         return (node.content ?? []).map((p) => `> ${serializeInline(p.content)}`).join("\n");

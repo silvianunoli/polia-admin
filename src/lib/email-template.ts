@@ -84,8 +84,9 @@ export function emailPolia({
     )
     .join("\n");
 
-  const botao = ctaLabel && ctaUrl
-    ? `
+  const botao =
+    ctaLabel && ctaUrl
+      ? `
       <table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 4px;">
         <tr>
           <td style="border-radius:8px;background-color:#7CCBCD;">
@@ -95,7 +96,7 @@ export function emailPolia({
           </td>
         </tr>
       </table>`
-    : "";
+      : "";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">

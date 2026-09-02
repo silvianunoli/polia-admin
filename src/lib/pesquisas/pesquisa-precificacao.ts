@@ -181,7 +181,8 @@ export const pesquisaPrecificacao: PesquisaConfig = {
       parte: 1,
       tipo: "aberta",
       opcional: true,
-      titulo: "A partir de quanto por mês ela começaria a ficar cara, mas você ainda pensaria em assinar?",
+      titulo:
+        "A partir de quanto por mês ela começaria a ficar cara, mas você ainda pensaria em assinar?",
     },
     {
       id: "preco_cara_demais",
@@ -205,7 +206,8 @@ export const pesquisaPrecificacao: PesquisaConfig = {
       parte: 1,
       tipo: "aberta",
       opcional: true,
-      titulo: "E por quanto seria barata demais, a ponto de você desconfiar que não entrega direito?",
+      titulo:
+        "E por quanto seria barata demais, a ponto de você desconfiar que não entrega direito?",
     },
     {
       id: "episodio",

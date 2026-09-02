@@ -50,8 +50,8 @@ function AdminFlags() {
     <>
       <h2 className="font-cabinet mb-2 text-[40px] text-[var(--ink)]">Feature Flags</h2>
       <p className="mb-6 max-w-[560px] font-sans text-[13px] text-[var(--muted)]">
-        Ligar/desligar aqui só muda o valor no banco. Só vale pra flags que o código
-        efetivamente lê — as marcadas abaixo ainda não estão conectadas a nada.
+        Ligar/desligar aqui só muda o valor no banco. Só vale pra flags que o código efetivamente lê
+        — as marcadas abaixo ainda não estão conectadas a nada.
       </p>
       <div className="space-y-3">
         {flags.map((flag) => {
@@ -63,9 +63,7 @@ function AdminFlags() {
             >
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="font-mono text-[14px] font-medium text-[var(--ink)]">
-                    {flag.key}
-                  </p>
+                  <p className="font-mono text-[14px] font-medium text-[var(--ink)]">{flag.key}</p>
                   {inerte && (
                     <span className="rounded-full bg-[var(--highlight)] px-2 py-0.5 font-sans text-[10px] font-medium uppercase tracking-[0.5px] text-[var(--highlight-ink)]">
                       sem efeito ainda

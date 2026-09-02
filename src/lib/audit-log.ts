@@ -3,7 +3,11 @@ import type { Json } from "@/integrations/supabase/types";
 
 // Trilha de auditoria de ações administrativas. RLS só deixa a própria admin
 // logada gravar em nome dela mesma — não precisa checar is_admin aqui.
-export async function logAcaoAdmin(acao: string, alvo?: string, detalhes?: Record<string, unknown>) {
+export async function logAcaoAdmin(
+  acao: string,
+  alvo?: string,
+  detalhes?: Record<string, unknown>,
+) {
   try {
     const { data: userData } = await supabase.auth.getUser();
     if (!userData.user) return;

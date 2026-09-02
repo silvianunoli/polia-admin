@@ -10,12 +10,36 @@ export interface Modulo {
 }
 
 export const MODULOS: Modulo[] = [
-  { n: 1, nome: "Razão de existir", subtitulo: "A base de tudo. Por que você existe, para quem, e o que te diferencia." },
-  { n: 2, nome: "Quem você serve", subtitulo: "A pessoa que compra de você. Quem ela é de verdade." },
-  { n: 3, nome: "O que você vende", subtitulo: "Produto, proposta de valor, e o que faz do seu o único." },
-  { n: 4, nome: "Quanto vale", subtitulo: "Precificar é respeitar o seu trabalho. E entender o seu negócio." },
-  { n: 5, nome: "Como te acharem", subtitulo: "Onde você aparece, como você fala, e como as pessoas chegam até a compra." },
-  { n: 6, nome: "Onde você vai", subtitulo: "Metas que fazem sentido. Ações que te movem. Foco no que importa." },
+  {
+    n: 1,
+    nome: "Razão de existir",
+    subtitulo: "A base de tudo. Por que você existe, para quem, e o que te diferencia.",
+  },
+  {
+    n: 2,
+    nome: "Quem você serve",
+    subtitulo: "A pessoa que compra de você. Quem ela é de verdade.",
+  },
+  {
+    n: 3,
+    nome: "O que você vende",
+    subtitulo: "Produto, proposta de valor, e o que faz do seu o único.",
+  },
+  {
+    n: 4,
+    nome: "Quanto vale",
+    subtitulo: "Precificar é respeitar o seu trabalho. E entender o seu negócio.",
+  },
+  {
+    n: 5,
+    nome: "Como te acharem",
+    subtitulo: "Onde você aparece, como você fala, e como as pessoas chegam até a compra.",
+  },
+  {
+    n: 6,
+    nome: "Onde você vai",
+    subtitulo: "Metas que fazem sentido. Ações que te movem. Foco no que importa.",
+  },
 ];
 
 export function moduloInfo(n: number): Modulo {

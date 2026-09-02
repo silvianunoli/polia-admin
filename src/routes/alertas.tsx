@@ -164,7 +164,9 @@ function AdminAlertas() {
             className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-white p-5"
           >
             <div>
-              <p className="font-sans text-[14px] text-[var(--ink)]">{TIPO_LABEL[r.tipo] ?? r.tipo}</p>
+              <p className="font-sans text-[14px] text-[var(--ink)]">
+                {TIPO_LABEL[r.tipo] ?? r.tipo}
+              </p>
               <p className="font-mono text-[13px] text-[var(--ink-soft)]">{r.limite}</p>
             </div>
             <button

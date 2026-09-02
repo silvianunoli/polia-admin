@@ -14,7 +14,9 @@ async function assertAdmin(userId: string) {
 
 export const buscarUsuariaPorEmail = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => z.object({ email: z.string().trim().toLowerCase() }).parse(input))
+  .inputValidator((input: unknown) =>
+    z.object({ email: z.string().trim().toLowerCase() }).parse(input),
+  )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
 

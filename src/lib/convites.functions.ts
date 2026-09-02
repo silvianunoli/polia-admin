@@ -51,9 +51,7 @@ export const criarConvite = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => emailInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin
-      .from("convites_cadastro")
-      .insert({ email: data.email });
+    const { error } = await supabaseAdmin.from("convites_cadastro").insert({ email: data.email });
     if (error) {
       if (error.code === "23505") throw new Error("Esse e-mail já tem convite.");
       throw new Error("Falha ao criar convite.");
@@ -88,7 +86,9 @@ export const enviarConvite = createServerFn({ method: "POST" })
       html: emailPolia({
         preheader: "Seu acesso à Pólia está liberado.",
         headline: "Você foi convidada pra Pólia",
-        paragrafos: ["Alguém liberou seu acesso à Pólia, sem custo. É só aceitar o convite e criar sua conta."],
+        paragrafos: [
+          "Alguém liberou seu acesso à Pólia, sem custo. É só aceitar o convite e criar sua conta.",
+        ],
         ctaLabel: "Aceitar convite",
         ctaUrl: link,
       }),

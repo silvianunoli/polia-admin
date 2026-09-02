@@ -58,7 +58,10 @@ function AdminHome() {
           .select("id,updated_at")
           .gte("created_at", dias37)
           .lt("created_at", dias30),
-        supabase.from("planejamento_secoes").select("user_id,modulo,concluido_em").eq("concluido", true),
+        supabase
+          .from("planejamento_secoes")
+          .select("user_id,modulo,concluido_em")
+          .eq("concluido", true),
       ]);
 
       const maxModuloPorUsuaria = new Map<string, number>();
@@ -368,11 +371,12 @@ function AdminHome() {
             <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
               Lista de espera
             </p>
-            <p className="font-cabinet text-[32px] text-[var(--ink)]">
-              {stats.lista_espera_total}
-            </p>
+            <p className="font-cabinet text-[32px] text-[var(--ink)]">{stats.lista_espera_total}</p>
           </div>
-          <Link to="/crm" className="font-sans text-[13px] text-[var(--secondary-text)] hover:underline">
+          <Link
+            to="/crm"
+            className="font-sans text-[13px] text-[var(--secondary-text)] hover:underline"
+          >
             Gerenciar →
           </Link>
         </div>

@@ -950,7 +950,10 @@ export function PostEditor({ post }: PostEditorProps) {
       </div>
 
       <AlertDialog open={confirmarExclusaoAberto} onOpenChange={setConfirmarExclusaoAberto}>
-        <AlertDialogContent className="polia-v3 border border-[var(--line)] bg-white" style={TOKEN_BRIDGE_V3}>
+        <AlertDialogContent
+          className="polia-v3 border border-[var(--line)] bg-white"
+          style={TOKEN_BRIDGE_V3}
+        >
           <AlertDialogHeader>
             <AlertDialogTitle className="text-[var(--ink)]">Excluir este post</AlertDialogTitle>
             <AlertDialogDescription className="text-[var(--ink-soft)]">

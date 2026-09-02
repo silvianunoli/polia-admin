@@ -98,14 +98,20 @@ function AdminAuditoria() {
           <tbody>
             {carregando && (
               <tr>
-                <td colSpan={4} className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]">
+                <td
+                  colSpan={4}
+                  className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
+                >
                   Carregando…
                 </td>
               </tr>
             )}
             {!carregando && logs.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]">
+                <td
+                  colSpan={4}
+                  className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
+                >
                   Nenhuma ação administrativa registrada ainda.
                 </td>
               </tr>

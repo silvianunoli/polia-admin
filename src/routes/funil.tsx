@@ -124,10 +124,7 @@ function AdminFunil() {
           },
         ].map((s) => (
           <div key={s.label} className="rounded-2xl border border-[var(--line)] bg-white p-6">
-            <p
-              className="font-cabinet mb-2 text-[48px] leading-none"
-              style={{ color: s.cor }}
-            >
+            <p className="font-cabinet mb-2 text-[48px] leading-none" style={{ color: s.cor }}>
               {s.count}
             </p>
             <p className="mb-1 font-sans text-[14px] font-medium text-[var(--ink)]">{s.label}</p>

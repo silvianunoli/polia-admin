@@ -200,9 +200,7 @@ function AdminAnalytics() {
           <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
             Sessões
           </p>
-          <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {sessoesUnicas}
-          </p>
+          <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">{sessoesUnicas}</p>
         </div>
         <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
           <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
@@ -228,9 +226,7 @@ function AdminAnalytics() {
                 />
               </div>
               <p className="font-sans text-[11px] text-[var(--muted)]">{d.label}</p>
-              <p className="font-sans text-[11px] font-medium text-[var(--ink-soft)]">
-                {d.total}
-              </p>
+              <p className="font-sans text-[11px] font-medium text-[var(--ink-soft)]">{d.total}</p>
             </div>
           ))}
         </div>
@@ -272,9 +268,7 @@ function AdminAnalytics() {
             Eventos recentes
           </p>
           <div className="max-h-[320px] space-y-2 overflow-y-auto">
-            {carregando && (
-              <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
-            )}
+            {carregando && <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>}
             {!carregando && eventos.length === 0 && (
               <p className="font-sans text-[13px] text-[var(--muted)]">Nenhum evento ainda.</p>
             )}

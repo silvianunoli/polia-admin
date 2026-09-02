@@ -61,9 +61,9 @@ function AdminQualidade() {
     <>
       <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Qualidade</h1>
       <p className="mb-6 max-w-[560px] font-sans text-[14px] text-[var(--muted)]">
-        Sinal real de saúde a partir do que já rastreamos (erros de client/server e chamadas de
-        edge function) — não roda suite de teste automatizada. A Pólia não tem CI hoje, e o Worker
-        não consegue disparar um test runner em runtime.
+        Sinal real de saúde a partir do que já rastreamos (erros de client/server e chamadas de edge
+        function) — não roda suite de teste automatizada. A Pólia não tem CI hoje, e o Worker não
+        consegue disparar um test runner em runtime.
       </p>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">

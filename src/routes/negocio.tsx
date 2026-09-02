@@ -37,7 +37,10 @@ function AdminNegocio() {
         supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia1),
         supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia7),
         supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia30),
-        supabase.from("profiles").select("*", { count: "exact", head: true }).gte("created_at", dia30),
+        supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", dia30),
       ]);
 
       setDau(new Set((ev1 ?? []).map((e) => e.sessao_id)).size);

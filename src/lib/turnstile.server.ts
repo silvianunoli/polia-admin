@@ -8,9 +8,7 @@
 //
 // Fail-closed: sem token, sem URL configurada, ou erro de rede → retorna false
 // (bloqueia). É um gate anti-abuso; na dúvida, barra.
-export async function verificarTurnstileServer(
-  token: string | undefined | null,
-): Promise<boolean> {
+export async function verificarTurnstileServer(token: string | undefined | null): Promise<boolean> {
   if (!token) return false;
 
   const url = import.meta.env.VITE_TURNSTILE_VERIFY_URL as string | undefined;

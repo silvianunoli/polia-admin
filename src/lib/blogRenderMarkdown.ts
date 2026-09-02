@@ -45,7 +45,10 @@ export function renderBlogMarkdown(markdown: string | null | undefined): string 
     renderer: buildSafeRenderer(),
   }) as string;
 
-  html = html.replace(/<p>%%POLIA_VIDEO_(\d+)%%<\/p>/g, (_m, idx: string) => embeds[Number(idx)] ?? "");
+  html = html.replace(
+    /<p>%%POLIA_VIDEO_(\d+)%%<\/p>/g,
+    (_m, idx: string) => embeds[Number(idx)] ?? "",
+  );
   html = html.replace(/%%POLIA_VIDEO_(\d+)%%/g, (_m, idx: string) => embeds[Number(idx)] ?? "");
 
   return html;
