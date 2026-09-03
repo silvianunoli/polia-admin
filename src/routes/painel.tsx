@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { HelpCircle } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
+import { BTN_LINK, CARD_CLASS } from "@/lib/botoes";
 import { TOTAL_MODULOS } from "@/lib/planejamento-constants";
 import { TOKEN_BRIDGE_V3 } from "@/lib/uiTokenBridge";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/painel")({
   head: () => ({ meta: [{ title: "Visão geral · Gestão Pólia" }] }),
@@ -32,150 +34,162 @@ function AdminHome() {
   const [alertasVermelhos, setAlertasVermelhos] = useState<AlertaParada[]>([]);
   const [saude, setSaude] = useState({ eventos24h: 0, erros24h: 0, latencia: 0 });
   const [censo, setCenso] = useState<{ label: string; valor: number }[]>([]);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const dias14 = new Date(Date.now() - 14 * 86400000).toISOString();
-      const dias10 = new Date(Date.now() - 10 * 86400000).toISOString();
-      const dias7 = new Date(Date.now() - 7 * 86400000).toISOString();
-      const dias30 = new Date(Date.now() - 30 * 86400000).toISOString();
-      const dias37 = new Date(Date.now() - 37 * 86400000).toISOString();
+      try {
+        const dias14 = new Date(Date.now() - 14 * 86400000).toISOString();
+        const dias10 = new Date(Date.now() - 10 * 86400000).toISOString();
+        const dias7 = new Date(Date.now() - 7 * 86400000).toISOString();
+        const dias30 = new Date(Date.now() - 30 * 86400000).toISOString();
+        const dias37 = new Date(Date.now() - 37 * 86400000).toISOString();
 
-      const [
-        { count: totalCadastros },
-        { count: listaEspera },
-        { data: profilesAtivos },
-        { data: cadastrosD30 },
-        { data: cohortD30 },
-        { data: secoesFeitas },
-      ] = await Promise.all([
-        supabase.from("profiles").select("*", { count: "exact", head: true }),
-        supabase.from("lista_espera").select("*", { count: "exact", head: true }),
-        supabase.from("profiles").select("id,full_name,updated_at").gte("updated_at", dias14),
-        supabase.from("profiles").select("id,created_at").gte("created_at", dias30),
-        supabase
-          .from("profiles")
-          .select("id,updated_at")
-          .gte("created_at", dias37)
-          .lt("created_at", dias30),
-        supabase
-          .from("planejamento_secoes")
-          .select("user_id,modulo,concluido_em")
-          .eq("concluido", true),
-      ]);
+        const respostas = await Promise.all([
+          supabase.from("profiles").select("*", { count: "exact", head: true }),
+          supabase.from("lista_espera").select("*", { count: "exact", head: true }),
+          supabase.from("profiles").select("id,full_name,updated_at").gte("updated_at", dias14),
+          supabase.from("profiles").select("id,created_at").gte("created_at", dias30),
+          supabase
+            .from("profiles")
+            .select("id,updated_at")
+            .gte("created_at", dias37)
+            .lt("created_at", dias30),
+          supabase
+            .from("planejamento_secoes")
+            .select("user_id,modulo,concluido_em")
+            .eq("concluido", true),
+        ]);
+        // O supabase-js devolve o erro no objeto, não lança: sem esta checagem a
+        // tela mostraria zero em tudo como se fosse número real.
+        if (respostas.some((r) => r.error)) setErro(true);
+        const [
+          { count: totalCadastros },
+          { count: listaEspera },
+          { data: profilesAtivos },
+          { data: cadastrosD30 },
+          { data: cohortD30 },
+          { data: secoesFeitas },
+        ] = respostas;
 
-      const maxModuloPorUsuaria = new Map<string, number>();
-      const primeiraConclusaoM1 = new Map<string, string>();
-      (secoesFeitas ?? []).forEach((s: any) => {
-        const atual = maxModuloPorUsuaria.get(s.user_id) ?? 0;
-        if (s.modulo > atual) maxModuloPorUsuaria.set(s.user_id, s.modulo);
-        if (s.modulo === 1) {
-          const existente = primeiraConclusaoM1.get(s.user_id);
-          if (!existente || s.concluido_em < existente) {
-            primeiraConclusaoM1.set(s.user_id, s.concluido_em);
+        const maxModuloPorUsuaria = new Map<string, number>();
+        const primeiraConclusaoM1 = new Map<string, string>();
+        (secoesFeitas ?? []).forEach((s: any) => {
+          const atual = maxModuloPorUsuaria.get(s.user_id) ?? 0;
+          if (s.modulo > atual) maxModuloPorUsuaria.set(s.user_id, s.modulo);
+          if (s.modulo === 1) {
+            const existente = primeiraConclusaoM1.get(s.user_id);
+            if (!existente || s.concluido_em < existente) {
+              primeiraConclusaoM1.set(s.user_id, s.concluido_em);
+            }
           }
-        }
-      });
+        });
 
-      const wau2 = profilesAtivos?.length ?? 0;
-      const modulosAtivas = (profilesAtivos ?? [])
-        .map((p: any) => maxModuloPorUsuaria.get(p.id) ?? 0)
-        .sort((a: number, b: number) => a - b);
-      const medianaModulo = modulosAtivas.length
-        ? modulosAtivas[Math.floor(modulosAtivas.length / 2)]
-        : 0;
-
-      const ativacaoNum = (cadastrosD30 ?? []).filter((p: any) => {
-        const dataM1 = primeiraConclusaoM1.get(p.id);
-        if (!dataM1) return false;
-        return new Date(dataM1).getTime() - new Date(p.created_at).getTime() <= 7 * 86400000;
-      }).length;
-      const ativacaoD7 = cadastrosD30?.length
-        ? Math.round((ativacaoNum / cadastrosD30.length) * 100)
-        : 0;
-
-      const retidas = (cohortD30 ?? []).filter((p: any) => p.updated_at >= dias7).length;
-      const retencaoD30 = cohortD30?.length ? Math.round((retidas / cohortD30.length) * 100) : 0;
-
-      const modM =
-        wau2 > 0
-          ? (profilesAtivos ?? []).reduce(
-              (s: number, p: any) => s + (maxModuloPorUsuaria.get(p.id) ?? 0),
-              0,
-            ) / wau2
+        const wau2 = profilesAtivos?.length ?? 0;
+        const modulosAtivas = (profilesAtivos ?? [])
+          .map((p: any) => maxModuloPorUsuaria.get(p.id) ?? 0)
+          .sort((a: number, b: number) => a - b);
+        const medianaModulo = modulosAtivas.length
+          ? modulosAtivas[Math.floor(modulosAtivas.length / 2)]
           : 0;
 
-      const { data: paradas } = await supabase
-        .from("profiles")
-        .select("id,full_name,updated_at")
-        .lt("updated_at", dias10)
-        .order("updated_at", { ascending: true })
-        .limit(30);
+        const ativacaoNum = (cadastrosD30 ?? []).filter((p: any) => {
+          const dataM1 = primeiraConclusaoM1.get(p.id);
+          if (!dataM1) return false;
+          return new Date(dataM1).getTime() - new Date(p.created_at).getTime() <= 7 * 86400000;
+        }).length;
+        const ativacaoD7 = cadastrosD30?.length
+          ? Math.round((ativacaoNum / cadastrosD30.length) * 100)
+          : 0;
 
-      const paradasComProgresso = (paradas ?? [])
-        .map((p: any) => ({ ...p, modulo: maxModuloPorUsuaria.get(p.id) ?? 0 }))
-        .filter((p: any) => p.modulo >= 1 && p.modulo < TOTAL_MODULOS)
-        .slice(0, 5);
+        const retidas = (cohortD30 ?? []).filter((p: any) => p.updated_at >= dias7).length;
+        const retencaoD30 = cohortD30?.length ? Math.round((retidas / cohortD30.length) * 100) : 0;
 
-      setAlertasVermelhos(
-        paradasComProgresso.map((p: any) => ({
-          id: p.id,
-          nome: p.full_name ?? "Sem nome",
-          modulo_atual: p.modulo,
-          dias_parada: Math.floor((Date.now() - new Date(p.updated_at).getTime()) / 86400000),
-          ultima_atividade: new Date(p.updated_at).toLocaleDateString("pt-BR"),
-        })),
-      );
+        const modM =
+          wau2 > 0
+            ? (profilesAtivos ?? []).reduce(
+                (s: number, p: any) => s + (maxModuloPorUsuaria.get(p.id) ?? 0),
+                0,
+              ) / wau2
+            : 0;
 
-      setStats({
-        mod_m: modM,
-        ativacao_d7: ativacaoD7,
-        mediana_modulo: medianaModulo,
-        wau2,
-        retencao_d30: retencaoD30,
-        total_cadastros: totalCadastros ?? 0,
-        lista_espera_total: listaEspera ?? 0,
-      });
+        const { data: paradas } = await supabase
+          .from("profiles")
+          .select("id,full_name,updated_at")
+          .lt("updated_at", dias10)
+          .order("updated_at", { ascending: true })
+          .limit(30);
 
-      const dias1 = new Date(Date.now() - 86400000).toISOString();
-      const [
-        { data: logs24 },
-        { count: cTickets },
-        { count: cFeedback },
-        { count: cContatos },
-        { count: cPosts },
-        { count: cLogs },
-      ] = await Promise.all([
-        supabase
-          .from("edge_function_logs")
-          .select("latency_ms, error_message")
-          .gte("created_at", dias1),
-        supabase.from("tickets").select("*", { count: "exact", head: true }),
-        supabase.from("feedback_responses").select("*", { count: "exact", head: true }),
-        supabase.from("contatos").select("*", { count: "exact", head: true }),
-        supabase.from("blog_posts").select("*", { count: "exact", head: true }),
-        supabase.from("edge_function_logs").select("*", { count: "exact", head: true }),
-      ]);
-      const eventos = (logs24 ?? []) as {
-        latency_ms: number | null;
-        error_message: string | null;
-      }[];
-      const comLat = eventos.filter((l) => typeof l.latency_ms === "number");
-      setSaude({
-        eventos24h: eventos.length,
-        erros24h: eventos.filter((l) => l.error_message).length,
-        latencia: comLat.length
-          ? Math.round(comLat.reduce((s, l) => s + (l.latency_ms ?? 0), 0) / comLat.length)
-          : 0,
-      });
-      setCenso([
-        { label: "Usuárias", valor: totalCadastros ?? 0 },
-        { label: "Chamados", valor: cTickets ?? 0 },
-        { label: "Feedbacks", valor: cFeedback ?? 0 },
-        { label: "Contatos", valor: cContatos ?? 0 },
-        { label: "Posts", valor: cPosts ?? 0 },
-        { label: "Eventos (log)", valor: cLogs ?? 0 },
-      ]);
+        const paradasComProgresso = (paradas ?? [])
+          .map((p: any) => ({ ...p, modulo: maxModuloPorUsuaria.get(p.id) ?? 0 }))
+          .filter((p: any) => p.modulo >= 1 && p.modulo < TOTAL_MODULOS)
+          .slice(0, 5);
+
+        setAlertasVermelhos(
+          paradasComProgresso.map((p: any) => ({
+            id: p.id,
+            nome: p.full_name ?? "Sem nome",
+            modulo_atual: p.modulo,
+            dias_parada: Math.floor((Date.now() - new Date(p.updated_at).getTime()) / 86400000),
+            ultima_atividade: new Date(p.updated_at).toLocaleDateString("pt-BR"),
+          })),
+        );
+
+        setStats({
+          mod_m: modM,
+          ativacao_d7: ativacaoD7,
+          mediana_modulo: medianaModulo,
+          wau2,
+          retencao_d30: retencaoD30,
+          total_cadastros: totalCadastros ?? 0,
+          lista_espera_total: listaEspera ?? 0,
+        });
+
+        const dias1 = new Date(Date.now() - 86400000).toISOString();
+        const [
+          { data: logs24 },
+          { count: cTickets },
+          { count: cFeedback },
+          { count: cContatos },
+          { count: cPosts },
+          { count: cLogs },
+        ] = await Promise.all([
+          supabase
+            .from("edge_function_logs")
+            .select("latency_ms, error_message")
+            .gte("created_at", dias1),
+          supabase.from("tickets").select("*", { count: "exact", head: true }),
+          supabase.from("feedback_responses").select("*", { count: "exact", head: true }),
+          supabase.from("contatos").select("*", { count: "exact", head: true }),
+          supabase.from("blog_posts").select("*", { count: "exact", head: true }),
+          supabase.from("edge_function_logs").select("*", { count: "exact", head: true }),
+        ]);
+        const eventos = (logs24 ?? []) as {
+          latency_ms: number | null;
+          error_message: string | null;
+        }[];
+        const comLat = eventos.filter((l) => typeof l.latency_ms === "number");
+        setSaude({
+          eventos24h: eventos.length,
+          erros24h: eventos.filter((l) => l.error_message).length,
+          latencia: comLat.length
+            ? Math.round(comLat.reduce((s, l) => s + (l.latency_ms ?? 0), 0) / comLat.length)
+            : 0,
+        });
+        setCenso([
+          { label: "Usuárias", valor: totalCadastros ?? 0 },
+          { label: "Chamados", valor: cTickets ?? 0 },
+          { label: "Feedbacks", valor: cFeedback ?? 0 },
+          { label: "Contatos", valor: cContatos ?? 0 },
+          { label: "Posts", valor: cPosts ?? 0 },
+          { label: "Eventos (log)", valor: cLogs ?? 0 },
+        ]);
+      } catch {
+        setErro(true);
+      } finally {
+        setCarregando(false);
+      }
     })();
   }, []);
 
@@ -223,8 +237,21 @@ function AdminHome() {
 
   return (
     <TooltipProvider delayDuration={150}>
+      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Visão geral</h1>
+      <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
+        O retrato do produto hoje: ativação, uso, saúde do sistema e o que precisa de olho.
+      </p>
+
+      {erro && (
+        <div className="mb-6 rounded-2xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-5">
+          <p className="font-sans text-[13px] text-[var(--danger)]">
+            Não conseguimos carregar parte dos números agora. Atualiza a página pra tentar de novo.
+          </p>
+        </div>
+      )}
+
       <div className="mb-6 rounded-2xl bg-[var(--ink)] p-8">
-        <p className="mb-2 flex items-center gap-1.5 font-sans text-[10px] font-semibold uppercase tracking-[2px] text-[var(--secondary)]">
+        <p className="mb-2 flex items-center gap-1.5 font-accent text-[10px] font-bold uppercase tracking-[2px] text-[var(--secondary)]">
           <span>NORTH STAR · MÓD-M</span>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -242,7 +269,7 @@ function AdminHome() {
           </Tooltip>
         </p>
         <p className="font-cabinet mb-1 text-[56px] leading-none text-white">
-          {stats.mod_m.toFixed(1)}
+          {carregando ? "…" : stats.mod_m.toFixed(1)}
         </p>
         <p className="font-sans text-[14px] text-white/60">
           módulos concluídos por usuária ativa (14 dias) · meta: acima de 1
@@ -257,8 +284,8 @@ function AdminHome() {
 
       <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
         {metricas.map((item) => (
-          <div key={item.label} className="rounded-2xl border border-[var(--line)] bg-white p-5">
-            <p className="mb-2 flex items-center gap-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+          <div key={item.label} className={`${CARD_CLASS} p-5`}>
+            <p className="mb-2 flex items-center gap-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
               <span>
                 {item.label}
                 {item.sigla ? ` ${item.sigla}` : ""}
@@ -282,9 +309,15 @@ function AdminHome() {
             </p>
             <p
               className="font-cabinet mb-1 text-[32px] leading-none"
-              style={{ color: item.ok ? "var(--secondary-text)" : "var(--danger)" }}
+              style={{
+                color: carregando
+                  ? "var(--muted)"
+                  : item.ok
+                    ? "var(--secondary-text)"
+                    : "var(--danger)",
+              }}
             >
-              {item.valor}
+              {carregando ? "…" : item.valor}
             </p>
             <p className="font-sans text-[11px] text-[var(--muted)]">{item.desc}</p>
           </div>
@@ -292,10 +325,14 @@ function AdminHome() {
       </div>
 
       <div className="mb-6 space-y-3">
-        <p className="font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <h2 className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Atenção imediata
-        </p>
-        {alertasVermelhos.length === 0 ? (
+        </h2>
+        {carregando ? (
+          <div className="rounded-xl border border-[var(--line)] bg-white p-4">
+            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          </div>
+        ) : alertasVermelhos.length === 0 ? (
           <div className="rounded-xl border border-[var(--secondary)]/30 bg-[var(--secondary-light)]/30 p-4">
             <p className="font-sans text-[13px] text-[var(--secondary-text)]">
               Nenhum alerta crítico no momento.
@@ -318,7 +355,7 @@ function AdminHome() {
               <Link
                 to="/usuarios/$id"
                 params={{ id: u.id }}
-                className="font-sans text-[12px] text-[var(--secondary-text)] hover:underline"
+                className={cn(BTN_LINK, "text-[12px]")}
               >
                 Ver perfil →
               </Link>
@@ -327,9 +364,9 @@ function AdminHome() {
         )}
       </div>
 
-      <p className="mb-3 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <h2 className="mb-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
         Saúde do sistema · 24h
-      </p>
+      </h2>
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
           { label: "Eventos", valor: String(saude.eventos24h), cor: "var(--ink)" },
@@ -340,43 +377,51 @@ function AdminHome() {
           },
           { label: "Latência média", valor: `${saude.latencia} ms`, cor: "var(--ink)" },
         ].map((m) => (
-          <div key={m.label} className="rounded-2xl border border-[var(--line)] bg-white p-5">
-            <p className="mb-2 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+          <div key={m.label} className={`${CARD_CLASS} p-5`}>
+            <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
               {m.label}
             </p>
-            <p className="font-cabinet text-[32px] leading-none" style={{ color: m.cor }}>
-              {m.valor}
+            <p
+              className="font-cabinet text-[32px] leading-none"
+              style={{ color: carregando ? "var(--muted)" : m.cor }}
+            >
+              {carregando ? "…" : m.valor}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-6">
-        <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <div className={`mb-6 ${CARD_CLASS} p-6`}>
+        <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Censo de dados
-        </p>
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {censo.map((c) => (
-            <div key={c.label}>
-              <p className="font-cabinet text-[28px] leading-none text-[var(--ink)]">{c.valor}</p>
-              <p className="mt-1 font-sans text-[12px] text-[var(--muted)]">{c.label}</p>
-            </div>
-          ))}
-        </div>
+        </h2>
+        {carregando ? (
+          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+        ) : censo.length === 0 ? (
+          <p className="font-sans text-[13px] text-[var(--muted)]">Nenhum dado contado ainda.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {censo.map((c) => (
+              <div key={c.label}>
+                <p className="font-cabinet text-[28px] leading-none text-[var(--ink)]">{c.valor}</p>
+                <p className="mt-1 font-sans text-[12px] text-[var(--muted)]">{c.label}</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
+      <div className={`${CARD_CLASS} p-6`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+            <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
               Lista de espera
             </p>
-            <p className="font-cabinet text-[32px] text-[var(--ink)]">{stats.lista_espera_total}</p>
+            <p className="font-cabinet text-[32px] text-[var(--ink)]">
+              {carregando ? "…" : stats.lista_espera_total}
+            </p>
           </div>
-          <Link
-            to="/crm"
-            className="font-sans text-[13px] text-[var(--secondary-text)] hover:underline"
-          >
+          <Link to="/crm" className={cn(BTN_LINK, "text-[13px]")}>
             Gerenciar →
           </Link>
         </div>

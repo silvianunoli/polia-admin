@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { BTN_PRIMARIO, BTN_SECUNDARIO, CARD_CLASS, INPUT_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/analytics")({
   head: () => ({
@@ -32,12 +33,14 @@ function dataParaInputISO(d: Date) {
 function AdminAnalytics() {
   const [eventos, setEventos] = useState<Evento[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(false);
   const [de, setDe] = useState(() => dataParaInputISO(new Date(Date.now() - 7 * 86400000)));
   const [ate, setAte] = useState(() => dataParaInputISO(new Date()));
   const [buscaEvento, setBuscaEvento] = useState("");
 
   const buscar = async () => {
     setCarregando(true);
+    setErro(false);
     const fimDia = new Date(`${ate}T23:59:59.999`).toISOString();
     let query = supabase
       .from("eventos_analytics")
@@ -47,9 +50,18 @@ function AdminAnalytics() {
       .order("criado_em", { ascending: false })
       .limit(5000);
     if (buscaEvento.trim()) query = query.ilike("evento", `%${buscaEvento.trim()}%`);
-    const { data } = await query;
-    setEventos(data ?? []);
-    setCarregando(false);
+    try {
+      // O supabase-js devolve o erro no objeto, não lança: sem esta checagem a
+      // falha vira "nenhum evento" na tela, que é mentira diferente.
+      const { data, error } = await query;
+      if (error) setErro(true);
+      setEventos(data ?? []);
+    } catch {
+      setErro(true);
+      setEventos([]);
+    } finally {
+      setCarregando(false);
+    }
   };
 
   useEffect(() => {
@@ -142,14 +154,14 @@ function AdminAnalytics() {
         conta.
       </p>
 
-      <div className="mb-6 flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--line)] bg-white p-4">
+      <div className={`mb-6 flex flex-wrap items-end gap-3 ${CARD_CLASS} p-4`}>
         <label className="flex flex-col gap-1">
           <span className="font-sans text-[11px] font-medium text-[var(--muted)]">De</span>
           <input
             type="date"
             value={de}
             onChange={(e) => setDe(e.target.value)}
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 font-sans text-[13px] text-[var(--ink)]"
+            className={INPUT_CLASS}
           />
         </label>
         <label className="flex flex-col gap-1">
@@ -158,7 +170,7 @@ function AdminAnalytics() {
             type="date"
             value={ate}
             onChange={(e) => setAte(e.target.value)}
-            className="rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 font-sans text-[13px] text-[var(--ink)]"
+            className={INPUT_CLASS}
           />
         </label>
         <label className="flex flex-1 flex-col gap-1">
@@ -168,55 +180,61 @@ function AdminAnalytics() {
             placeholder="ex: pageview"
             value={buscaEvento}
             onChange={(e) => setBuscaEvento(e.target.value)}
-            className="min-w-[160px] rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 font-sans text-[13px] text-[var(--ink)] placeholder:text-[var(--muted)]"
+            className={`${INPUT_CLASS} min-w-[160px]`}
           />
         </label>
-        <button
-          onClick={buscar}
-          className="rounded-lg bg-[var(--secondary)] px-4 py-1.5 font-sans text-[13px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90"
-        >
-          Aplicar
+        <button onClick={buscar} disabled={carregando} className={BTN_PRIMARIO}>
+          {carregando ? "Buscando…" : "Aplicar"}
         </button>
-        <button
-          onClick={exportarCsv}
-          disabled={eventos.length === 0}
-          className="rounded-lg border border-[var(--line)] bg-white px-4 py-1.5 font-sans text-[13px] text-[var(--ink-soft)] transition-colors hover:border-[var(--secondary)] disabled:opacity-40"
-        >
+        <button onClick={exportarCsv} disabled={eventos.length === 0} className={BTN_SECUNDARIO}>
           Exportar CSV
         </button>
         <span className="font-sans text-[12px] text-[var(--muted)]">{eventos.length} eventos</span>
       </div>
 
+      {erro && (
+        <div className="mb-6 rounded-2xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-5">
+          <p className="font-sans text-[13px] text-[var(--danger)]">
+            Não conseguimos carregar os eventos agora. Tenta aplicar o filtro de novo.
+          </p>
+        </div>
+      )}
+
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
-          <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
             Pageviews
           </p>
           <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {pageviews.length}
+            {carregando ? "…" : pageviews.length}
           </p>
         </div>
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
-          <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
             Sessões
           </p>
-          <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">{sessoesUnicas}</p>
+          <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
+            {carregando ? "…" : sessoesUnicas}
+          </p>
         </div>
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-5">
-          <p className="mb-1 font-sans text-[10px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
             Páginas/sessão
           </p>
           <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {sessoesUnicas ? (pageviews.length / sessoesUnicas).toFixed(1) : "0"}
+            {carregando ? "…" : sessoesUnicas ? (pageviews.length / sessoesUnicas).toFixed(1) : "0"}
           </p>
         </div>
       </div>
 
-      <div className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-6">
-        <p className="mb-5 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <div className={`mb-6 ${CARD_CLASS} p-6`}>
+        <h2 className="mb-5 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Pageviews por dia
-        </p>
-        <div className="flex h-[140px] items-end gap-3">
+        </h2>
+        {carregando && (
+          <p className="mb-3 font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+        )}
+        <div className="flex h-32 items-end gap-3">
           {porDia.map((d) => (
             <div key={d.data} className="flex flex-1 flex-col items-center gap-2">
               <div className="flex h-full w-full items-end">
@@ -233,14 +251,14 @@ function AdminAnalytics() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Top páginas
-          </p>
-          {topPaginas.length === 0 ? (
-            <p className="font-sans text-[13px] text-[var(--muted)]">
-              Sem dados ainda nos últimos 7 dias.
-            </p>
+          </h2>
+          {carregando ? (
+            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          ) : topPaginas.length === 0 ? (
+            <p className="font-sans text-[13px] text-[var(--muted)]">Sem dados no período.</p>
           ) : (
             <div className="space-y-3">
               {topPaginas.map((p) => (
@@ -263,10 +281,10 @@ function AdminAnalytics() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Eventos recentes
-          </p>
+          </h2>
           <div className="max-h-[320px] space-y-2 overflow-y-auto">
             {carregando && <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>}
             {!carregando && eventos.length === 0 && (
@@ -294,14 +312,16 @@ function AdminAnalytics() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-1 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <h2 className="mb-1 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Uso por feature
-          </p>
+          </h2>
           <p className="mb-4 font-sans text-[12px] text-[var(--muted)]">
             Quais ações ela mais faz no período, e em quantas sessões diferentes.
           </p>
-          {usoPorFeature.length === 0 ? (
+          {carregando ? (
+            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          ) : usoPorFeature.length === 0 ? (
             <p className="font-sans text-[13px] text-[var(--muted)]">Sem dados no período.</p>
           ) : (
             <div className="space-y-3">
@@ -325,15 +345,17 @@ function AdminAnalytics() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-1 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <h2 className="mb-1 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Erros de negócio
-          </p>
+          </h2>
           <p className="mb-4 font-sans text-[12px] text-[var(--muted)]">
-            Fricção esperada (checkout recusado, formulário inválido) — não é crash. Crash fica em{" "}
+            Fricção esperada (checkout recusado, formulário inválido), não é crash. Crash fica em{" "}
             <span className="font-mono">/logs</span>.
           </p>
-          {errosNegocio.length === 0 ? (
+          {carregando ? (
+            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          ) : errosNegocio.length === 0 ? (
             <p className="font-sans text-[13px] text-[var(--muted)]">
               Nenhum erro de negócio no período.
             </p>
