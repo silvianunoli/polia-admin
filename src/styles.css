@@ -70,13 +70,13 @@
   --line: #E6E6E6;
   --ink: #0A0A0A;
   --ink-soft: #2C2C2C;
-  --muted: #767676;
+  --muted: #6B6B6B;             /* AA sobre --bg, mesmo valor do polia-app (era #767676, desatualizado) */
   --accent: #F3B9A9;
   --accent-ink: #2C2C2C;
   --secondary: #7CCBCD;
   --secondary-light: #BFE9EB;
   --secondary-ink: #0A0A0A;
-  --secondary-text: #2C7E80;
+  --secondary-text: #24696B;    /* turquesa escuro AA, mesmo valor do polia-app (era #2C7E80, desatualizado) */
   --highlight: #FFC629;
   --highlight-ink: #0A0A0A;
   --danger: #C0392B;
@@ -119,7 +119,7 @@
   --secondary: #7CCBCD;
   --secondary-foreground: #0A0A0A;
   --muted: #F9EFEE;
-  --muted-foreground: #767676;
+  --muted-foreground: #6B6B6B;
   --accent: #F3B9A9;
   --accent-foreground: #2C2C2C;
   --destructive: #C0392B;

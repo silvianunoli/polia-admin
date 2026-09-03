@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BTN_LINK, BTN_PRIMARIO, BTN_SECUNDARIO, CARD_CLASS, INPUT_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/design-system")({
   head: () => ({
@@ -21,10 +22,10 @@ const CORES_V3 = [
   { nome: "Superfície", hex: "#F9EFEE", uso: "bg-[var(--surface)]", borda: true },
   { nome: "Tinta", hex: "#0A0A0A", uso: "text-[var(--ink)] · texto principal" },
   { nome: "Tinta suave", hex: "#2C2C2C", uso: "text-[var(--ink-soft)] · texto secundário" },
-  { nome: "Apagado", hex: "#9E9E9E", uso: "text-[var(--muted)] · metadado" },
+  { nome: "Apagado", hex: "#6B6B6B", uso: "text-[var(--muted)] · metadado" },
   { nome: "Pêssego", hex: "#F3B9A9", uso: "bg-[var(--accent)] · só fundo/borda" },
   { nome: "Turquesa", hex: "#7CCBCD", uso: "bg-[var(--secondary)] · botão, progresso" },
-  { nome: "Turquesa texto", hex: "#2C7E80", uso: "text-[var(--secondary-text)] · link, CTA (AA)" },
+  { nome: "Turquesa texto", hex: "#24696B", uso: "text-[var(--secondary-text)] · link, CTA (AA)" },
   { nome: "Amarelo", hex: "#FFC629", uso: "bg-[var(--highlight)] · 1 destaque por tela" },
   { nome: "Vermelho-tijolo", hex: "#C0392B", uso: "text-[var(--danger)] · erro, ação destrutiva" },
   { nome: "Linha", hex: "#E6E6E6", uso: "border-[var(--line)]", borda: true },
@@ -32,28 +33,28 @@ const CORES_V3 = [
 
 const TIPOS = [
   {
-    fam: "Fraunces",
-    classe: "font-fraunces",
-    amostra: "O dia a dia da sua marca, num lugar só.",
-    uso: "títulos · v3 (Painel, Sidebar, CRM)",
-  },
-  {
     fam: "Cabinet Grotesk",
     classe: "font-cabinet",
-    amostra: "A sua marca inteira, uma etapa por vez.",
-    uso: "títulos de destaque · hero, números/preços, logo",
+    amostra: "O dia a dia da sua marca, num lugar só.",
+    uso: "títulos (h1-h6) · todas as telas",
   },
   {
     fam: "Inter",
     classe: "font-sans",
     amostra: "sem jargão, sem ruído.",
-    uso: "texto corrido",
+    uso: "texto corrido, UI",
   },
   {
     fam: "DM Sans",
     classe: "font-accent",
     amostra: "RÓTULOS E ETIQUETAS",
     uso: "labels (caixa alta)",
+  },
+  {
+    fam: "Fraunces",
+    classe: "font-fraunces italic",
+    amostra: "o retorno de quem toca a marca dela.",
+    uso: "SÓ itálico de acento pontual (pull-quote, saudação) — nunca título",
   },
   {
     fam: "Caveat",
@@ -145,16 +146,13 @@ function DesignSystemPage() {
             {/* Botões */}
             <Bloco titulo="Botões">
               <div className="flex flex-wrap items-center gap-3">
-                <button className="rounded-xl bg-[var(--secondary)] px-5 py-2.5 font-sans text-[14px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90">
-                  Primário
-                </button>
-                <button className="rounded-xl border border-[var(--line)] bg-white px-5 py-2.5 font-sans text-[14px] text-[var(--ink-soft)] transition-colors hover:border-[var(--secondary)] hover:text-[var(--ink)]">
-                  Secundário
-                </button>
-                <button className="font-sans text-[14px] text-[var(--secondary-text)] hover:underline">
-                  Link
-                </button>
+                <button className={BTN_PRIMARIO}>Primário</button>
+                <button className={BTN_SECUNDARIO}>Secundário</button>
+                <button className={BTN_LINK}>Link</button>
               </div>
+              <p className="mt-3 font-mono text-[11px] text-[var(--muted)]">
+                import {"{ BTN_PRIMARIO, BTN_SECUNDARIO, BTN_LINK }"} from "@/lib/botoes"
+              </p>
             </Bloco>
 
             {/* Pills/badges */}
@@ -177,19 +175,15 @@ function DesignSystemPage() {
 
             {/* Input */}
             <Bloco titulo="Campo de texto">
-              <input
-                type="text"
-                placeholder="digite aqui…"
-                className="h-[46px] w-full rounded-xl border border-[var(--line)] px-4 font-sans text-[15px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--secondary)] focus:outline-none"
-              />
+              <input type="text" placeholder="digite aqui…" className={INPUT_CLASS} />
             </Bloco>
 
             {/* Card */}
             <Bloco titulo="Card">
-              <div className="rounded-xl border border-[var(--line)] bg-white p-4 transition-[transform,border-color,box-shadow] duration-200 hover:-translate-y-[3px] hover:border-[var(--secondary)] hover:shadow-[0_4px_12px_rgba(10,10,10,0.08)]">
-                <p className="text-[17px] text-[var(--ink)]">Uma etapa no seu mapa</p>
+              <div className={`${CARD_CLASS} p-4`}>
+                <p className="text-[17px] text-[var(--ink)]">Quanto sobra este mês</p>
                 <p className="mt-1 font-sans text-[13px] text-[var(--muted)]">
-                  fundo branco, cantos suaves, sobe 3px no hover.
+                  fundo branco, cantos suaves.
                 </p>
               </div>
             </Bloco>
