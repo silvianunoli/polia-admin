@@ -577,6 +577,18 @@ function gravarLocalConcluidos(lista) {
 }
 
 async function carregarEstado() {
+  // Modo "embutido": o host injetou o catálogo do Supabase direto no HTML antes
+  // deste script rodar (ver window.__CATALOGO_SUPABASE__) -- é o caso do board
+  // dentro do admin (iframe srcDoc, onde location.hostname vem vazio e o MODO
+  // "api" abaixo nunca dispararia). Local (tarefas soltas/concluídos) continua
+  // no localStorage, só o catálogo principal vem pronto.
+  if (typeof window !== "undefined" && Array.isArray(window.__CATALOGO_SUPABASE__) && window.__CATALOGO_SUPABASE__.length) {
+    catalogoEfetivo = window.__CATALOGO_SUPABASE__;
+    cacheTarefasLocais = lerLocalTarefas();
+    cacheConcluidosLocais = lerLocalConcluidos();
+    renderTudo();
+    return;
+  }
   if (MODO === "api") {
     try {
       var resp = await fetch("/api/estado");
