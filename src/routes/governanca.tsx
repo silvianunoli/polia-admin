@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { logAcaoAdmin } from "@/lib/audit-log";
+import { BTN_PRIMARIO, CARD_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/governanca")({
   head: () => ({
@@ -23,12 +24,12 @@ const RETENCAO = [
   {
     tabela: "eventos_analytics",
     politica: "sem limpeza ainda",
-    motivo: "dado de negócio — decisão de reter fica pra depois",
+    motivo: "dado de negócio, decisão de reter fica pra depois",
   },
   {
     tabela: "admin_audit_log",
     politica: "permanente",
-    motivo: "trilha de compliance, nunca apaga",
+    motivo: "registro de compliance, nunca apaga",
   },
 ];
 
@@ -57,11 +58,15 @@ const DOCS = [
 
 function AdminGovernanca() {
   const [tamanhos, setTamanhos] = useState<TamanhoTabela[]>([]);
+  const [carregandoTamanhos, setCarregandoTamanhos] = useState(true);
+  const [erroTamanhos, setErroTamanhos] = useState(false);
   const [limpando, setLimpando] = useState(false);
 
   const carregar = async () => {
-    const { data } = await supabase.rpc("admin_tamanhos_tabelas");
+    const { data, error } = await supabase.rpc("admin_tamanhos_tabelas");
+    setErroTamanhos(Boolean(error));
     setTamanhos((data ?? []) as TamanhoTabela[]);
+    setCarregandoTamanhos(false);
   };
 
   useEffect(() => {
@@ -101,8 +106,8 @@ function AdminGovernanca() {
         Retenção de dado, tamanho de tabela e limpeza de log antigo.
       </p>
 
-      <div className="mb-6 rounded-2xl border border-[var(--line)] bg-white p-6">
-        <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <div className={`${CARD_CLASS} mb-6 p-6`}>
+        <p className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Política de retenção
         </p>
         <div className="space-y-3">
@@ -124,8 +129,8 @@ function AdminGovernanca() {
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <p className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Tamanho das tabelas
           </p>
           <div className="space-y-2">
@@ -135,14 +140,24 @@ function AdminGovernanca() {
                 <p className="font-sans text-[12px] text-[var(--ink)]">{t.tamanho_legivel}</p>
               </div>
             ))}
-            {tamanhos.length === 0 && (
+            {carregandoTamanhos && (
               <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+            )}
+            {!carregandoTamanhos && erroTamanhos && (
+              <p className="font-sans text-[13px] text-[var(--danger)]">
+                Não consegui ler o tamanho das tabelas agora. Tenta recarregar a página.
+              </p>
+            )}
+            {!carregandoTamanhos && !erroTamanhos && tamanhos.length === 0 && (
+              <p className="font-sans text-[13px] text-[var(--muted)]">
+                Nenhuma tabela retornada pela consulta.
+              </p>
             )}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-          <p className="mb-2 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+        <div className={`${CARD_CLASS} p-6`}>
+          <p className="mb-2 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Limpeza de logs
           </p>
           <p className="mb-4 font-sans text-[13px] text-[var(--muted)]">
@@ -150,18 +165,14 @@ function AdminGovernanca() {
             dias e <code className="font-mono text-[12px]">erros_app</code> com mais de 90 dias.
             Eventos de negócio e auditoria não são afetados.
           </p>
-          <button
-            onClick={limpar}
-            disabled={limpando}
-            className="rounded-xl bg-[var(--secondary)] px-5 py-2.5 font-sans text-[14px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
+          <button onClick={limpar} disabled={limpando} className={`${BTN_PRIMARIO} cursor-pointer`}>
             {limpando ? "Limpando…" : "Executar limpeza"}
           </button>
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[var(--line)] bg-white p-6">
-        <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <div className={`${CARD_CLASS} p-6`}>
+        <p className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Documentação técnica
         </p>
         <div className="grid gap-3 sm:grid-cols-2">

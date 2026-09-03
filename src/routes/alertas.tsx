@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { logAcaoAdmin } from "@/lib/audit-log";
+import { BTN_PRIMARIO, CARD_CLASS } from "@/lib/botoes";
+import { Toggle } from "@/components/Toggle";
 
 export const Route = createFileRoute("/alertas")({
   head: () => ({
@@ -16,13 +18,31 @@ const TIPO_LABEL: Record<string, string> = {
   eventos_parados_por_horas: "Sem nenhum evento registrado há mais de (horas)",
 };
 
+type RegraAlerta = {
+  id: string;
+  tipo: string;
+  nome: string;
+  limite: number;
+  ativo: boolean;
+};
+
+type AlertaAberto = {
+  id: string;
+  regra_id: string;
+  titulo: string;
+  detalhes: Record<string, unknown> | null;
+  criado_em: string;
+};
+
 function AdminAlertas() {
-  const [regras, setRegras] = useState<any[]>([]);
-  const [alertas, setAlertas] = useState<any[]>([]);
+  const [regras, setRegras] = useState<RegraAlerta[]>([]);
+  const [alertas, setAlertas] = useState<AlertaAberto[]>([]);
   const [verificando, setVerificando] = useState(false);
+  const [carregando, setCarregando] = useState(true);
+  const [erroCarga, setErroCarga] = useState(false);
 
   const carregar = async () => {
-    const [{ data: r }, { data: a }] = await Promise.all([
+    const [{ data: r, error: erroRegras }, { data: a, error: erroAlertas }] = await Promise.all([
       supabase.from("alerta_regras").select("*").order("tipo"),
       supabase
         .from("alertas_abertos")
@@ -30,8 +50,10 @@ function AdminAlertas() {
         .eq("status", "aberto")
         .order("criado_em", { ascending: false }),
     ]);
+    setErroCarga(Boolean(erroRegras || erroAlertas));
     setRegras(r ?? []);
     setAlertas(a ?? []);
+    setCarregando(false);
   };
 
   useEffect(() => {
@@ -39,7 +61,11 @@ function AdminAlertas() {
   }, []);
 
   const toggleRegra = async (id: string, ativo: boolean) => {
-    await supabase.from("alerta_regras").update({ ativo }).eq("id", id);
+    const { error } = await supabase.from("alerta_regras").update({ ativo }).eq("id", id);
+    if (error) {
+      toastErro("Não consegui mudar essa regra. Tenta de novo.");
+      return;
+    }
     carregar();
   };
 
@@ -97,36 +123,48 @@ function AdminAlertas() {
   };
 
   const resolverAlerta = async (id: string) => {
-    await supabase
+    const { error } = await supabase
       .from("alertas_abertos")
       .update({ status: "resolvido", resolvido_em: new Date().toISOString() })
       .eq("id", id);
+    if (error) {
+      toastErro("Não consegui marcar como resolvido. Tenta de novo.");
+      return;
+    }
     await logAcaoAdmin("resolver_alerta", id);
     carregar();
   };
 
   return (
     <>
-      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Motor de Alertas</h1>
+      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Motor de alertas</h1>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
-        Regras avaliadas sob demanda — ainda sem verificação automática em background.
+        Regras avaliadas sob demanda, ainda sem verificação automática em background.
       </p>
 
+      {erroCarga && (
+        <div className="mb-6 rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4">
+          <p className="font-sans text-[13px] text-[var(--danger)]">
+            Não consegui carregar as regras e os alertas. Tenta recarregar a página.
+          </p>
+        </div>
+      )}
+
       <div className="mb-6 flex items-center justify-between">
-        <p className="font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
-          {alertas.length} alerta(s) aberto(s)
+        <p className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+          {carregando ? "Carregando…" : `${alertas.length} alerta(s) aberto(s)`}
         </p>
         <button
           onClick={verificarAgora}
-          disabled={verificando}
-          className="rounded-xl bg-[var(--secondary)] px-5 py-2 font-sans text-[14px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90 disabled:opacity-50"
+          disabled={verificando || carregando}
+          className={`${BTN_PRIMARIO} cursor-pointer`}
         >
-          {verificando ? "Verificando…" : "Verificar Alertas Agora"}
+          {verificando ? "Verificando…" : "Verificar alertas agora"}
         </button>
       </div>
 
       <div className="mb-6 space-y-3">
-        {alertas.length === 0 && (
+        {!carregando && !erroCarga && alertas.length === 0 && (
           <div className="rounded-xl border border-[var(--secondary)]/30 bg-[var(--secondary-light)]/30 p-4">
             <p className="font-sans text-[13px] text-[var(--secondary-text)]">
               Nenhum alerta aberto no momento.
@@ -146,7 +184,7 @@ function AdminAlertas() {
             </div>
             <button
               onClick={() => resolverAlerta(a.id)}
-              className="shrink-0 font-sans text-[12px] text-[var(--danger)] hover:underline"
+              className="shrink-0 cursor-pointer font-sans text-[12px] text-[var(--danger)] hover:underline"
             >
               Marcar como resolvido
             </button>
@@ -154,31 +192,33 @@ function AdminAlertas() {
         ))}
       </div>
 
-      <p className="mb-4 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
+      <p className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
         Regras
       </p>
       <div className="space-y-3">
+        {carregando && (
+          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando as regras…</p>
+        )}
+        {!carregando && !erroCarga && regras.length === 0 && (
+          <div className={`${CARD_CLASS} p-5`}>
+            <p className="font-sans text-[13px] text-[var(--muted)]">
+              Nenhuma regra cadastrada ainda.
+            </p>
+          </div>
+        )}
         {regras.map((r) => (
-          <div
-            key={r.id}
-            className="flex items-center justify-between rounded-2xl border border-[var(--line)] bg-white p-5"
-          >
+          <div key={r.id} className={`${CARD_CLASS} flex items-center justify-between p-5`}>
             <div>
               <p className="font-sans text-[14px] text-[var(--ink)]">
                 {TIPO_LABEL[r.tipo] ?? r.tipo}
               </p>
               <p className="font-mono text-[13px] text-[var(--ink-soft)]">{r.limite}</p>
             </div>
-            <button
-              onClick={() => toggleRegra(r.id, !r.ativo)}
-              className="relative h-6 w-12 rounded-full transition-colors"
-              style={{ backgroundColor: r.ativo ? "var(--secondary)" : "var(--line)" }}
-              aria-label={`Toggle ${r.nome}`}
-            >
-              <span
-                className={`absolute top-1 h-4 w-4 rounded-full bg-white shadow transition-transform ${r.ativo ? "translate-x-7" : "translate-x-1"}`}
-              />
-            </button>
+            <Toggle
+              ligado={r.ativo}
+              onChange={() => toggleRegra(r.id, !r.ativo)}
+              label={`a regra ${r.nome}`}
+            />
           </div>
         ))}
       </div>

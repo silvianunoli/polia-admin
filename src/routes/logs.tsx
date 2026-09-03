@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { TH_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/logs")({
   head: () => ({
@@ -11,20 +12,40 @@ export const Route = createFileRoute("/logs")({
 });
 
 const tabTriggerClass =
-  "rounded-lg px-4 py-1.5 text-[var(--muted)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none";
+  "cursor-pointer rounded-lg px-4 py-2 text-[var(--muted)] transition-colors hover:text-[var(--ink)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none";
+
+type LogEdgeFunction = {
+  function_name: string;
+  status: string;
+  latency_ms: number | null;
+  created_at: string;
+};
+
+type ErroApp = {
+  id: string;
+  origem: string;
+  pagina: string | null;
+  mensagem: string;
+  stack: string | null;
+  criado_em: string;
+};
 
 function AdminLogs() {
-  const [logs, setLogs] = useState<any[]>([]);
+  const [logs, setLogs] = useState<LogEdgeFunction[]>([]);
+  const [carregandoLogs, setCarregandoLogs] = useState(true);
+  const [erroLogs, setErroLogs] = useState(false);
 
   useEffect(() => {
     (async () => {
       const dia = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("edge_function_logs")
         .select("*")
         .gte("created_at", dia)
         .order("created_at", { ascending: false });
+      setErroLogs(Boolean(error));
       setLogs(data ?? []);
+      setCarregandoLogs(false);
     })();
   }, []);
 
@@ -51,19 +72,21 @@ function AdminLogs() {
     }));
   }, [logs]);
 
-  const [erros, setErros] = useState<any[]>([]);
+  const [erros, setErros] = useState<ErroApp[]>([]);
   const [carregandoErros, setCarregandoErros] = useState(true);
+  const [erroCargaErros, setErroCargaErros] = useState(false);
   const [filtroOrigem, setFiltroOrigem] = useState<"" | "client" | "server">("");
 
   useEffect(() => {
     (async () => {
       const dias7 = new Date(Date.now() - 7 * 86400000).toISOString();
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("erros_app")
         .select("*")
         .gte("criado_em", dias7)
         .order("criado_em", { ascending: false })
         .limit(300);
+      setErroCargaErros(Boolean(error));
       setErros(data ?? []);
       setCarregandoErros(false);
     })();
@@ -98,23 +121,41 @@ function AdminLogs() {
 
         {/* LOGS DE EDGE FUNCTION */}
         <TabsContent value="logs">
-          <h2 className="mb-4 text-[20px] text-[var(--ink)]">Edge Functions · últimas 24h</h2>
+          <h2 className="font-cabinet mb-4 text-[20px] text-[var(--ink)]">
+            Edge functions · últimas 24h
+          </h2>
+
+          {erroLogs && (
+            <div className="mb-4 rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4">
+              <p className="font-sans text-[13px] text-[var(--danger)]">
+                Não consegui carregar os logs de edge function. Tenta recarregar a página.
+              </p>
+            </div>
+          )}
+
           <div className="overflow-x-auto rounded-2xl border border-[var(--line)] bg-white">
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-[var(--line)]">
                   {["Função", "Chamadas", "Erros", "Latência média", "Status"].map((h) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3 text-left font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]"
-                    >
+                    <th key={h} className={TH_CLASS}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {stats.length === 0 && (
+                {carregandoLogs && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
+                    >
+                      Carregando…
+                    </td>
+                  </tr>
+                )}
+                {!carregandoLogs && !erroLogs && stats.length === 0 && (
                   <tr>
                     <td
                       colSpan={5}
@@ -141,7 +182,7 @@ function AdminLogs() {
                     </td>
                     <td className="px-5 py-3">
                       <span
-                        className={`rounded-full px-2 py-0.5 font-sans text-[10px] font-medium uppercase tracking-[1px] ${
+                        className={`rounded-full px-2.5 py-1 font-accent text-[10px] font-bold uppercase tracking-[1px] ${
                           fn.erros === 0
                             ? "bg-[var(--secondary-light)] text-[var(--secondary-text)]"
                             : "bg-[var(--danger-soft)] text-[var(--danger)]"
@@ -188,7 +229,14 @@ function AdminLogs() {
             {carregandoErros && (
               <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
             )}
-            {!carregandoErros && errosFiltrados.length === 0 && (
+            {!carregandoErros && erroCargaErros && (
+              <div className="rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4">
+                <p className="font-sans text-[13px] text-[var(--danger)]">
+                  Não consegui carregar os erros internos. Tenta recarregar a página.
+                </p>
+              </div>
+            )}
+            {!carregandoErros && !erroCargaErros && errosFiltrados.length === 0 && (
               <div className="rounded-xl border border-[var(--secondary)]/30 bg-[var(--secondary-light)]/30 p-4">
                 <p className="font-sans text-[13px] text-[var(--secondary-text)]">
                   Nenhum erro registrado nos últimos 7 dias.
@@ -198,13 +246,13 @@ function AdminLogs() {
             {errosFiltrados.map((e) => (
               <details
                 key={e.id}
-                className="rounded-2xl border border-[var(--line)] bg-white p-5 [&_summary::-webkit-details-marker]:hidden"
+                className="rounded-2xl border border-[var(--line)] bg-white p-5 transition-colors hover:border-[var(--secondary)] [&_summary::-webkit-details-marker]:hidden"
               >
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
                   <div className="min-w-0">
                     <div className="mb-1 flex items-center gap-2">
                       <span
-                        className={`rounded-full px-2 py-0.5 font-sans text-[10px] font-medium uppercase tracking-[1px] ${
+                        className={`rounded-full px-2.5 py-1 font-accent text-[10px] font-bold uppercase tracking-[1px] ${
                           e.origem === "server"
                             ? "bg-[var(--danger-soft)] text-[var(--danger)]"
                             : "bg-[var(--highlight)] text-[var(--highlight-ink)]"
@@ -253,7 +301,8 @@ function FiltroPill({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 transition-colors ${
+      aria-pressed={ativo}
+      className={`flex cursor-pointer items-center gap-2 rounded-xl border px-4 py-2 transition-colors ${
         ativo
           ? "border-[var(--secondary)] bg-[var(--secondary-light)]"
           : "border-[var(--line)] bg-white hover:border-[var(--secondary)]"

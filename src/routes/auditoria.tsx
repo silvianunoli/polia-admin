@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { TH_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/auditoria")({
   head: () => ({
@@ -28,14 +29,16 @@ const ACAO_LABEL: Record<string, string> = {
 function AdminAuditoria() {
   const [logs, setLogs] = useState<LogRow[]>([]);
   const [carregando, setCarregando] = useState(true);
+  const [erroCarga, setErroCarga] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("admin_audit_log")
         .select("*")
         .order("criado_em", { ascending: false })
         .limit(300);
+      setErroCarga(Boolean(error));
       const rows = (data ?? []) as LogRow[];
       const adminIds = Array.from(new Set(rows.map((r) => r.admin_id)));
       if (adminIds.length) {
@@ -61,16 +64,24 @@ function AdminAuditoria() {
     <>
       <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Auditoria</h1>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
-        Trilha imutável de ações administrativas — quem fez o quê e quando. {logs.length} registros
+        Registro imutável de ações administrativas: quem fez o quê e quando. {logs.length} registros
         (últimos 300).
       </p>
+
+      {erroCarga && (
+        <div className="mb-6 rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4">
+          <p className="font-sans text-[13px] text-[var(--danger)]">
+            Não consegui carregar o registro de auditoria. Tenta recarregar a página.
+          </p>
+        </div>
+      )}
 
       {porAdmin.length > 0 && (
         <div className="mb-6 flex flex-wrap gap-2">
           {porAdmin.map(([nome, total]) => (
             <div
               key={nome}
-              className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-3.5 py-2"
+              className="flex items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 py-2"
             >
               <span className="font-cabinet text-[18px] leading-none text-[var(--ink)]">
                 {total}
@@ -86,10 +97,7 @@ function AdminAuditoria() {
           <thead>
             <tr className="border-b border-[var(--line)]">
               {["Quando", "Quem", "Ação", "Alvo"].map((h) => (
-                <th
-                  key={h}
-                  className="px-5 py-3 text-left font-sans text-[11px] font-semibold uppercase tracking-[1.5px] text-[var(--muted)]"
-                >
+                <th key={h} className={TH_CLASS}>
                   {h}
                 </th>
               ))}
@@ -106,7 +114,7 @@ function AdminAuditoria() {
                 </td>
               </tr>
             )}
-            {!carregando && logs.length === 0 && (
+            {!carregando && !erroCarga && logs.length === 0 && (
               <tr>
                 <td
                   colSpan={4}
