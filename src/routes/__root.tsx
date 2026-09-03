@@ -12,6 +12,7 @@ import { Toaster } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Nav } from "@/components/Nav";
 import { ComingSoon } from "@/components/ComingSoon";
+import { VoltarCentral } from "@/components/VoltarCentral";
 
 import appCss from "../styles.css?url";
 
@@ -77,6 +78,15 @@ function RootComponent() {
     pathname === "/estrategico" ||
     pathname === "/conteudo";
 
+  // Páginas que ganharam entrada direta na Central (não passam mais pela
+  // Sidebar pra serem alcançadas) -- mantêm o padding do layout padrão, só
+  // trocam a Sidebar inteira por um link simples de volta.
+  const semSidebar =
+    pathname === "/crm" ||
+    pathname.startsWith("/chamados") ||
+    pathname.startsWith("/pesquisas") ||
+    pathname.startsWith("/blog");
+
   // O SSR não checa sessão (auth é só client-side, via localStorage) — sem
   // este gate, QUALQUER rota (com a Sidebar inteira revelando as seções
   // internas) seria enviada no HTML inicial pra visitante deslogada, antes
@@ -117,6 +127,13 @@ function RootComponent() {
     conteudo = <ComingSoon />;
   } else if (semChrome) {
     conteudo = <Outlet />;
+  } else if (semSidebar) {
+    conteudo = (
+      <main className="p-8">
+        <VoltarCentral />
+        <Outlet />
+      </main>
+    );
   } else {
     conteudo = (
       <div className="flex min-h-screen">
