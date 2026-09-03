@@ -69,7 +69,7 @@ function CentralAdmin() {
         <h1 className="text-[28px] font-medium text-[var(--ink)]">Central de administração</h1>
         <p className="mt-2 text-[15px] text-[var(--ink-soft)]">Escolha o produto pra gerenciar.</p>
 
-        <div className="mt-8 grid max-w-3xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-8 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {PRODUTOS.map((produto) => {
             const Icone = produto.icone;
             return (
