@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import kanbanHtml from "./boards/kanban-operacional.html?raw";
 import estrategicoHtml from "./boards/gerenciamento-estrategico.html?raw";
+import conteudoHtml from "./boards/conteudo-criacao.html?raw";
 
 // O conteúdo dos dois boards só existe dentro do bundle do servidor (import
 // ?raw num arquivo consumido só por server functions, nunca por componente
@@ -66,6 +67,118 @@ export const buscarHtmlEstrategico = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     return estrategicoHtml;
+  });
+
+interface ConteudoRow {
+  id: string;
+  titulo: string;
+  canal: string;
+  formato: string | null;
+  etapa: string;
+  data_planejada: string | null;
+  nota: string | null;
+}
+
+function linhaConteudoParaFrontend(row: ConteudoRow) {
+  return {
+    id: row.id,
+    titulo: row.titulo,
+    canal: row.canal,
+    formato: row.formato,
+    etapa: row.etapa,
+    data_planejada: row.data_planejada,
+    nota: row.nota,
+  };
+}
+
+export const buscarHtmlConteudo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { data } = await supabaseAdmin
+      .from("office_conteudo_catalogo")
+      .select("*")
+      .order("criado_em", { ascending: true });
+    const catalogo = Array.isArray(data) ? data.map(linhaConteudoParaFrontend) : [];
+    const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
+    const script = `<script>window.__CATALOGO_CONTEUDO__=${json};</script>`;
+    return conteudoHtml.replace("<body>", `<body>${script}`);
+  });
+
+// Escrita do board de conteúdo, mesmo padrão de ponte por postMessage do
+// Kanban Operacional (ver ACOES em conteudo.tsx) -- o board é HTML estático
+// puro, não tem como anexar o Bearer token sozinho.
+const novaIdeiaInput = z.object({
+  titulo: z.string().trim().min(1).max(500),
+  canal: z.enum(["instagram", "blog"]).default("instagram"),
+  formato: z.enum(["feed", "stories", "reels", "carrossel"]).nullable().default(null),
+  data_planejada: z.string().date().nullable().default(null),
+  nota: z.string().max(2000).nullable().default(null),
+});
+
+export const criarConteudo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => novaIdeiaInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { data: criada, error } = await supabaseAdmin
+      .from("office_conteudo_catalogo")
+      .insert(data)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return linhaConteudoParaFrontend(criada as ConteudoRow);
+  });
+
+const moverConteudoInput = z.object({
+  id: z.string().uuid(),
+  etapa: z.enum(["ideia", "roteiro", "producao", "agendado", "publicado"]),
+});
+
+export const moverConteudo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => moverConteudoInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("office_conteudo_catalogo")
+      .update({ etapa: data.etapa, atualizado_em: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// Só nota e data planejada são editáveis pelo drawer -- allowlist explícita
+// de coluna, nunca o nome do campo vindo cru do cliente.
+const atualizarConteudoInput = z.object({
+  id: z.string().uuid(),
+  campo: z.enum(["nota", "data_planejada"]),
+  valor: z.string().nullable(),
+});
+
+export const atualizarConteudo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => atualizarConteudoInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("office_conteudo_catalogo")
+      .update({ [data.campo]: data.valor, atualizado_em: new Date().toISOString() })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const removerConteudoInput = z.object({ id: z.string().uuid() });
+
+export const removerConteudo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => removerConteudoInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("office_conteudo_catalogo").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });
 
 // Escrita do Kanban embutido (tarefas soltas que a Sil cria direto no board, e

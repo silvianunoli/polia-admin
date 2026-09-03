@@ -108,7 +108,6 @@ button { font-family:inherit; }
 .chip-pessoa .ini { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-accent); font-weight:700; font-size:10px; flex-shrink:0; }
 .ini.silvia { background:var(--secondary-light); color:var(--secondary-text); }
 .ini.claudinho { background:var(--accent); color:var(--accent-ink); }
-.ini.aimer { background:var(--cat-vendas); color:var(--ink-soft); }
 .chip-pessoa.ativo { border-color:var(--ink); background:var(--ink); color:#fff; }
 .chip-pessoa .cont { color:var(--muted); font-size:11px; }
 .chip-pessoa.ativo .cont { color:var(--line); }
@@ -301,8 +300,7 @@ select, .busca {
 
 var PESSOAS = {
   silvia: { nome: "Sil", cor: "silvia" },
-  claudinho: { nome: "Claudinho", cor: "claudinho" },
-  aimer: { nome: "Aimer", cor: "aimer" }
+  claudinho: { nome: "Claudinho", cor: "claudinho" }
 };
 
 var AREAS = {
@@ -383,8 +381,6 @@ var TAREFAS = [
   { id:"GRW-03", titulo:"Revisar o blog logada como admin", area:"growth", pessoa:"silvia", sprint:null, status:"backlog", prioridade:"baixa" },
   { id:"GRW-04", titulo:"Bot de DM em standby, webhook da Meta não recebe evento", area:"growth", pessoa:"claudinho", sprint:null, status:"backlog", prioridade:"baixa" },
   { id:"DEC-04", titulo:"Decidir: pergunta de idade volta pra pesquisa?", area:"growth", pessoa:"silvia", sprint:null, status:"backlog", prioridade:"baixa" },
-  { id:"CONT-02", titulo:"Retomar posts do Instagram (3 por semana)", area:"growth", pessoa:"aimer", sprint:"S3", status:"backlog", prioridade:"media", nota:"Depende da linha editorial (CONT-01) estar decidida antes." },
-  { id:"CONT-03", titulo:"Publicar o 1º post do blog", area:"growth", pessoa:"aimer", sprint:"S3", status:"backlog", prioridade:"media" },
 
   { id:"CFG-03", titulo:"CLOUDFLARE_API_TOKEN no GitHub pra deploy automático", area:"infra", pessoa:"silvia", sprint:"S1", status:"travado", prioridade:"media" },
 
@@ -721,8 +717,7 @@ function renderTabsVer() {
   var tabs = [
     { id: "todos", rot: "Todas" },
     { id: "silvia", rot: "Minhas tarefas" },
-    { id: "claudinho", rot: "Tarefas do Claude" },
-    { id: "aimer", rot: "Tarefas da Aimer" }
+    { id: "claudinho", rot: "Tarefas do Claude" }
   ];
   var html = tabs.map(function (t) {
     var n = t.id === "todos" ? pendentes.length : pendentes.filter(function (x) { return x.pessoa === t.id; }).length;

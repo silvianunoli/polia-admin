@@ -68,10 +68,14 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const isLogin = pathname === "/auth/login";
-  // /central (seletor logo após o login) e os dois boards embutidos (iframe
+  // /central (seletor logo após o login) e os três boards embutidos (iframe
   // de página inteira, com o próprio header) não têm chrome de admin — não
   // faz sentido com a Sidebar do painel ao lado.
-  const semChrome = pathname === "/central" || pathname === "/kanban" || pathname === "/estrategico";
+  const semChrome =
+    pathname === "/central" ||
+    pathname === "/kanban" ||
+    pathname === "/estrategico" ||
+    pathname === "/conteudo";
 
   // O SSR não checa sessão (auth é só client-side, via localStorage) — sem
   // este gate, QUALQUER rota (com a Sidebar inteira revelando as seções
