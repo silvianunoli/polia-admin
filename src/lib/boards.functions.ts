@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import kanbanHtml from "./boards/kanban-operacional.html?raw";
@@ -65,4 +66,79 @@ export const buscarHtmlEstrategico = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
     return estrategicoHtml;
+  });
+
+// Escrita do Kanban embutido (tarefas soltas que a Sil cria direto no board, e
+// marcações de concluído) -- espelha as rotas /api/tarefas-locais e
+// /api/concluidos que existiam no polia-office. Chamadas via postMessage
+// pela ponte em kanban.tsx, nunca por fetch direto do iframe (ele não tem
+// como anexar o Bearer token).
+const novaTarefaLocalInput = z.object({
+  titulo: z.string().trim().min(1).max(500),
+  area: z.string().max(100).default("produto"),
+  pessoa: z.string().max(100).default("silvia"),
+  sprint: z.string().max(100).nullable().default(null),
+  status: z.string().max(50).default("backlog"),
+  prioridade: z.string().max(50).default("media"),
+  nota: z.string().max(2000).nullable().default(null),
+});
+
+export const criarTarefaLocalKanban = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => novaTarefaLocalInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { data: criada, error } = await supabaseAdmin
+      .from("office_tarefas_locais")
+      .insert(data)
+      .select()
+      .single();
+    if (error) throw new Error(error.message);
+    return criada;
+  });
+
+const moverTarefaLocalInput = z.object({
+  id: z.string().uuid(),
+  status: z.string().max(50),
+});
+
+export const moverTarefaLocalKanban = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => moverTarefaLocalInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("office_tarefas_locais")
+      .update({ status: data.status })
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const removerTarefaLocalInput = z.object({ id: z.string().uuid() });
+
+export const removerTarefaLocalKanban = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => removerTarefaLocalInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin.from("office_tarefas_locais").delete().eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+// tarefaId aceita tanto um UUID de tarefa local quanto um id de catálogo tipo
+// "COPY-02" -- sem formato fixo, por isso só limite de tamanho.
+const marcarConcluidoInput = z.object({ tarefaId: z.string().min(1).max(200) });
+
+export const marcarConcluidoKanban = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => marcarConcluidoInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("office_concluidos_locais")
+      .upsert({ tarefa_id: data.tarefaId }, { onConflict: "tarefa_id" });
+    if (error) throw new Error(error.message);
+    return { ok: true };
   });

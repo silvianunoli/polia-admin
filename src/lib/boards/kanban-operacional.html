@@ -547,6 +547,35 @@ function diaSemana() { return new Date(hojeISO() + "T12:00:00").getDay(); }
 // fora, então cai pro localStorage de sempre (efêmero, só neste navegador).
 var MODO = (typeof location !== "undefined" && /usepolia\.com\.br$|\.workers\.dev$/.test(location.hostname)) ? "api" : "local";
 
+// EMBUTIDO: board rodando dentro do iframe srcDoc do admin (polia-admin). Aqui
+// dentro não existe fetch autenticado nem detecção de domínio (location.hostname
+// vem vazio nesse tipo de iframe), então toda escrita passa por postMessage pro
+// pai, que chama a server function autenticada de verdade e responde de volta.
+var EMBUTIDO = (typeof window !== "undefined" && window.parent !== window && Array.isArray(window.__CATALOGO_SUPABASE__));
+var pmSeq = 0;
+var pmPendentes = {};
+if (EMBUTIDO) {
+  window.addEventListener("message", function (ev) {
+    var msg = ev.data;
+    if (!msg || msg.tipo !== "kanban:resposta" || !msg.reqId) return;
+    var pend = pmPendentes[msg.reqId];
+    if (!pend) return;
+    delete pmPendentes[msg.reqId];
+    if (msg.ok) pend.resolve(msg.dados);
+    else pend.reject(new Error(msg.erro || "falha"));
+  });
+}
+function chamarPai(acao, payload) {
+  return new Promise(function (resolve, reject) {
+    var reqId = "k" + (++pmSeq) + "_" + Date.now();
+    pmPendentes[reqId] = { resolve: resolve, reject: reject };
+    window.parent.postMessage({ tipo: "kanban:acao", reqId: reqId, acao: acao, payload: payload }, "*");
+    setTimeout(function () {
+      if (pmPendentes[reqId]) { delete pmPendentes[reqId]; reject(new Error("timeout")); }
+    }, 8000);
+  });
+}
+
 var cacheTarefasLocais = [];
 var cacheConcluidosLocais = [];
 // Catalogo principal: TAREFAS (o array estatico, 169 itens embutidos neste HTML) é o
@@ -823,7 +852,10 @@ function fecharDrawer() {
 }
 
 async function marcarConcluidoLocal(id) {
-  if (MODO === "api") {
+  if (EMBUTIDO) {
+    try { await chamarPai("concluir", { id: id }); }
+    catch (e) { alert("Não consegui salvar no banco agora. Tenta de novo em instantes."); return; }
+  } else if (MODO === "api") {
     try { await fetch("/api/concluidos/" + encodeURIComponent(id), { method: "POST" }); }
     catch (e) { alert("Não consegui salvar no Supabase agora. Tenta de novo em instantes."); return; }
   }
@@ -834,7 +866,10 @@ async function marcarConcluidoLocal(id) {
 }
 
 async function removerTarefaLocal(id) {
-  if (MODO === "api") {
+  if (EMBUTIDO) {
+    try { await chamarPai("remover", { id: id }); }
+    catch (e) { alert("Não consegui remover no banco agora. Tenta de novo em instantes."); return; }
+  } else if (MODO === "api") {
     try { await fetch("/api/tarefas-locais/" + encodeURIComponent(id), { method: "DELETE" }); }
     catch (e) { alert("Não consegui remover no Supabase agora. Tenta de novo em instantes."); return; }
   }
@@ -848,7 +883,10 @@ async function moverTarefaLocal(id, novoStatus) {
   var achou = false;
   cacheTarefasLocais.forEach(function (t) { if (t.id === id) { t.status = novoStatus; achou = true; } });
   if (!achou) return;
-  if (MODO === "api") {
+  if (EMBUTIDO) {
+    try { await chamarPai("mover", { id: id, status: novoStatus }); }
+    catch (e) { alert("Não consegui salvar no banco agora. Tenta de novo em instantes."); }
+  } else if (MODO === "api") {
     try {
       await fetch("/api/tarefas-locais/" + encodeURIComponent(id), {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: novoStatus })
@@ -883,7 +921,16 @@ async function salvarNovaTarefa() {
     prioridade: document.getElementById("nt-prioridade").value,
     nota: document.getElementById("nt-nota").value.trim() || ("Adicionada por você em " + dataCriacao)
   };
-  if (MODO === "api") {
+  if (EMBUTIDO) {
+    try {
+      var criadaEmb = await chamarPai("criar", nova);
+      if (!criadaEmb || !criadaEmb.id) throw new Error("resposta sem id");
+      cacheTarefasLocais.push(normalizarLinhaSupabase(criadaEmb));
+    } catch (e) {
+      alert("Não consegui salvar no banco agora. Tenta de novo em instantes.");
+      return;
+    }
+  } else if (MODO === "api") {
     try {
       var resp = await fetch("/api/tarefas-locais", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nova)
