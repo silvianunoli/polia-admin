@@ -78,6 +78,12 @@ button { font-family:inherit; }
 .btn:hover { background:var(--bg); }
 .btn-primario { background:var(--secondary); color:var(--secondary-ink); border-color:var(--secondary); }
 .btn-primario:hover { background:var(--secondary-light); }
+.btn-voltar {
+  width:34px; height:34px; border-radius:50%; border:1px solid var(--line); background:#fff;
+  display:flex; align-items:center; justify-content:center; color:var(--ink); text-decoration:none;
+  flex-shrink:0; transition:background-color .12s;
+}
+.btn-voltar:hover { background:var(--bg); }
 
 /* ===== kpis ===== */
 .kpis { display:grid; grid-template-columns:repeat(4,1fr) 1.7fr; gap:14px; margin-bottom:20px; }
@@ -223,6 +229,9 @@ select, .busca {
 
 <header class="topo">
   <div class="marca">
+    <a class="btn-voltar" href="/central" target="_top" rel="noopener" aria-label="Voltar pra central">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+    </a>
     <div class="logo-wordmark">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -70 569 220" role="img" aria-label="Pólia">
         <g transform="translate(0,0)"><rect x="0" y="0" width="26" height="140" rx="13.0" fill="#0A0A0A"/><circle cx="58" cy="50" r="37" fill="none" stroke="#0A0A0A" stroke-width="26"/></g>
@@ -240,8 +249,6 @@ select, .busca {
   </div>
   <div class="topo-acoes">
     <span class="pill-status" id="pill-sync"><i></i>sincronizado</span>
-    <a class="btn" href="https://office.usepolia.com.br/estrategico" target="_blank" rel="noopener">Board estratégico</a>
-    <a class="btn" href="https://silvianunoli.com.br" target="_blank" rel="noopener">Admin</a>
     <button class="btn btn-primario" id="btn-nova">+ Nova tarefa</button>
   </div>
 </header>
