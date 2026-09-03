@@ -1,5 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowRight, Kanban, LogOut, Sparkles, Target } from "lucide-react";
+import {
+  ArrowRight,
+  ClipboardList,
+  Inbox,
+  Kanban,
+  LogOut,
+  Newspaper,
+  Sparkles,
+  Target,
+  Users,
+} from "lucide-react";
 import type { ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PoliaIcon } from "@/components/brand/PoliaLogo";
@@ -42,6 +52,30 @@ const PRODUTOS: Produto[] = [
     descricao: "Instagram e blog, da ideia até o post no ar.",
     href: "/conteudo",
     icone: Sparkles,
+  },
+  {
+    nome: "CMS do Blog",
+    descricao: "Escrever, editar e publicar os posts do blog.",
+    href: "/blog",
+    icone: Newspaper,
+  },
+  {
+    nome: "CRM",
+    descricao: "Usuárias e clientes, do primeiro contato ao pós-venda.",
+    href: "/crm",
+    icone: Users,
+  },
+  {
+    nome: "Chamados",
+    descricao: "Suporte e dúvidas abertas pelas usuárias.",
+    href: "/chamados",
+    icone: Inbox,
+  },
+  {
+    nome: "Pesquisas",
+    descricao: "Respostas e resultados das pesquisas com usuárias.",
+    href: "/pesquisas",
+    icone: ClipboardList,
   },
 ];
 

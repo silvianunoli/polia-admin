@@ -7,9 +7,6 @@ import { supabase } from "@/integrations/supabase/client";
 // (fora do escopo desta extração — ver polia_admin_extracao memória).
 const ITENS = [
   { to: "/painel", label: "Visão geral" },
-  { to: "/crm", label: "CRM" },
-  { to: "/chamados", label: "Chamados" },
-  { to: "/pesquisas", label: "Pesquisas" },
   { to: "/funil", label: "Funil de jornada" },
   { to: "/negocio", label: "Negócio" },
   { to: "/analytics", label: "Analytics" },
@@ -19,7 +16,6 @@ const ITENS = [
   { to: "/alertas", label: "Alertas" },
   { to: "/logs", label: "Logs do sistema" },
   { to: "/flags", label: "Feature Flags" },
-  { to: "/blog", label: "Blog" },
   { to: "/design-system", label: "Design System" },
 ] as const;
 
