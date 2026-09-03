@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { TH_CLASS } from "@/lib/botoes";
+import { SkeletonBloco } from "@/components/Skeleton";
 
 export const Route = createFileRoute("/logs")({
   head: () => ({
@@ -147,11 +148,12 @@ function AdminLogs() {
               <tbody>
                 {carregandoLogs && (
                   <tr>
-                    <td
-                      colSpan={5}
-                      className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
-                    >
-                      Carregando…
+                    <td colSpan={5} className="px-5 py-4">
+                      <div className="space-y-3">
+                        <SkeletonBloco className="h-5" />
+                        <SkeletonBloco className="h-5" />
+                        <SkeletonBloco className="h-5" />
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -227,7 +229,11 @@ function AdminLogs() {
 
           <div className="space-y-3">
             {carregandoErros && (
-              <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+              <>
+                <SkeletonBloco className="h-[88px]" />
+                <SkeletonBloco className="h-[88px]" />
+                <SkeletonBloco className="h-[88px]" />
+              </>
             )}
             {!carregandoErros && erroCargaErros && (
               <div className="rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4">

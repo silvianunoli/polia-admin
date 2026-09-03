@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { BTN_PRIMARIO, BTN_SECUNDARIO, CARD_CLASS, INPUT_CLASS } from "@/lib/botoes";
@@ -206,7 +207,7 @@ function AdminAnalytics() {
             Pageviews
           </p>
           <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {carregando ? "…" : pageviews.length}
+            {carregando ? <SkeletonNumero /> : pageviews.length}
           </p>
         </div>
         <div className={`${CARD_CLASS} p-5`}>
@@ -214,7 +215,7 @@ function AdminAnalytics() {
             Sessões
           </p>
           <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {carregando ? "…" : sessoesUnicas}
+            {carregando ? <SkeletonNumero /> : sessoesUnicas}
           </p>
         </div>
         <div className={`${CARD_CLASS} p-5`}>
@@ -222,7 +223,13 @@ function AdminAnalytics() {
             Páginas/sessão
           </p>
           <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-            {carregando ? "…" : sessoesUnicas ? (pageviews.length / sessoesUnicas).toFixed(1) : "0"}
+            {carregando ? (
+              <SkeletonNumero className="h-8 w-12" />
+            ) : sessoesUnicas ? (
+              (pageviews.length / sessoesUnicas).toFixed(1)
+            ) : (
+              "0"
+            )}
           </p>
         </div>
       </div>
@@ -231,23 +238,26 @@ function AdminAnalytics() {
         <h2 className="mb-5 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
           Pageviews por dia
         </h2>
-        {carregando && (
-          <p className="mb-3 font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
-        )}
-        <div className="flex h-32 items-end gap-3">
-          {porDia.map((d) => (
-            <div key={d.data} className="flex flex-1 flex-col items-center gap-2">
-              <div className="flex h-full w-full items-end">
-                <div
-                  className="w-full rounded-t-md bg-[var(--secondary)] transition-all"
-                  style={{ height: `${(d.total / maxDia) * 100}%`, minHeight: d.total ? 4 : 0 }}
-                />
+        {carregando ? (
+          <SkeletonBloco className="h-32" />
+        ) : (
+          <div className="flex h-32 items-end gap-3">
+            {porDia.map((d) => (
+              <div key={d.data} className="flex flex-1 flex-col items-center gap-2">
+                <div className="flex h-full w-full items-end">
+                  <div
+                    className="w-full rounded-t-md bg-[var(--secondary)] transition-all"
+                    style={{ height: `${(d.total / maxDia) * 100}%`, minHeight: d.total ? 4 : 0 }}
+                  />
+                </div>
+                <p className="font-sans text-[11px] text-[var(--muted)]">{d.label}</p>
+                <p className="font-sans text-[11px] font-medium text-[var(--ink-soft)]">
+                  {d.total}
+                </p>
               </div>
-              <p className="font-sans text-[11px] text-[var(--muted)]">{d.label}</p>
-              <p className="font-sans text-[11px] font-medium text-[var(--ink-soft)]">{d.total}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -256,7 +266,11 @@ function AdminAnalytics() {
             Top páginas
           </h2>
           {carregando ? (
-            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonBloco key={i} className="h-6" />
+              ))}
+            </div>
           ) : topPaginas.length === 0 ? (
             <p className="font-sans text-[13px] text-[var(--muted)]">Sem dados no período.</p>
           ) : (
@@ -286,7 +300,8 @@ function AdminAnalytics() {
             Eventos recentes
           </h2>
           <div className="max-h-[320px] space-y-2 overflow-y-auto">
-            {carregando && <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>}
+            {carregando &&
+              Array.from({ length: 5 }).map((_, i) => <SkeletonBloco key={i} className="h-10" />)}
             {!carregando && eventos.length === 0 && (
               <p className="font-sans text-[13px] text-[var(--muted)]">Nenhum evento ainda.</p>
             )}
@@ -320,7 +335,11 @@ function AdminAnalytics() {
             Quais ações ela mais faz no período, e em quantas sessões diferentes.
           </p>
           {carregando ? (
-            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <SkeletonBloco key={i} className="h-6" />
+              ))}
+            </div>
           ) : usoPorFeature.length === 0 ? (
             <p className="font-sans text-[13px] text-[var(--muted)]">Sem dados no período.</p>
           ) : (
@@ -354,7 +373,11 @@ function AdminAnalytics() {
             <span className="font-mono">/logs</span>.
           </p>
           {carregando ? (
-            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonBloco key={i} className="h-6" />
+              ))}
+            </div>
           ) : errosNegocio.length === 0 ? (
             <p className="font-sans text-[13px] text-[var(--muted)]">
               Nenhum erro de negócio no período.

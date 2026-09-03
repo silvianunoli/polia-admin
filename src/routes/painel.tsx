@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { HelpCircle } from "lucide-react";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { BTN_LINK, CARD_CLASS } from "@/lib/botoes";
@@ -269,7 +270,7 @@ function AdminHome() {
           </Tooltip>
         </p>
         <p className="font-cabinet mb-1 text-[56px] leading-none text-white">
-          {carregando ? "…" : stats.mod_m.toFixed(1)}
+          {carregando ? <SkeletonNumero className="h-14 w-28" /> : stats.mod_m.toFixed(1)}
         </p>
         <p className="font-sans text-[14px] text-white/60">
           módulos concluídos por usuária ativa (14 dias) · meta: acima de 1
@@ -309,15 +310,9 @@ function AdminHome() {
             </p>
             <p
               className="font-cabinet mb-1 text-[32px] leading-none"
-              style={{
-                color: carregando
-                  ? "var(--muted)"
-                  : item.ok
-                    ? "var(--secondary-text)"
-                    : "var(--danger)",
-              }}
+              style={{ color: item.ok ? "var(--secondary-text)" : "var(--danger)" }}
             >
-              {carregando ? "…" : item.valor}
+              {carregando ? <SkeletonNumero /> : item.valor}
             </p>
             <p className="font-sans text-[11px] text-[var(--muted)]">{item.desc}</p>
           </div>
@@ -329,9 +324,7 @@ function AdminHome() {
           Atenção imediata
         </h2>
         {carregando ? (
-          <div className="rounded-xl border border-[var(--line)] bg-white p-4">
-            <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
-          </div>
+          <SkeletonBloco className="h-[68px]" />
         ) : alertasVermelhos.length === 0 ? (
           <div className="rounded-xl border border-[var(--secondary)]/30 bg-[var(--secondary-light)]/30 p-4">
             <p className="font-sans text-[13px] text-[var(--secondary-text)]">
@@ -381,11 +374,8 @@ function AdminHome() {
             <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
               {m.label}
             </p>
-            <p
-              className="font-cabinet text-[32px] leading-none"
-              style={{ color: carregando ? "var(--muted)" : m.cor }}
-            >
-              {carregando ? "…" : m.valor}
+            <p className="font-cabinet text-[32px] leading-none" style={{ color: m.cor }}>
+              {carregando ? <SkeletonNumero className="h-8 w-20" /> : m.valor}
             </p>
           </div>
         ))}
@@ -396,7 +386,11 @@ function AdminHome() {
           Censo de dados
         </h2>
         {carregando ? (
-          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonBloco key={i} className="h-12" />
+            ))}
+          </div>
         ) : censo.length === 0 ? (
           <p className="font-sans text-[13px] text-[var(--muted)]">Nenhum dado contado ainda.</p>
         ) : (
@@ -418,7 +412,7 @@ function AdminHome() {
               Lista de espera
             </p>
             <p className="font-cabinet text-[32px] text-[var(--ink)]">
-              {carregando ? "…" : stats.lista_espera_total}
+              {carregando ? <SkeletonNumero /> : stats.lista_espera_total}
             </p>
           </div>
           <Link to="/crm" className={cn(BTN_LINK, "text-[13px]")}>

@@ -5,6 +5,7 @@ import { toastErro, toastSucesso } from "@/lib/toast";
 import { logAcaoAdmin } from "@/lib/audit-log";
 import { BTN_PRIMARIO, CARD_CLASS } from "@/lib/botoes";
 import { Toggle } from "@/components/Toggle";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 
 export const Route = createFileRoute("/alertas")({
   head: () => ({
@@ -137,7 +138,7 @@ function AdminAlertas() {
 
   return (
     <>
-      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Motor de alertas</h1>
+      <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Alertas</h1>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Regras avaliadas sob demanda, ainda sem verificação automática em background.
       </p>
@@ -152,7 +153,11 @@ function AdminAlertas() {
 
       <div className="mb-6 flex items-center justify-between">
         <p className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-          {carregando ? "Carregando…" : `${alertas.length} alerta(s) aberto(s)`}
+          {carregando ? (
+            <SkeletonNumero className="h-3 w-40" />
+          ) : (
+            `${alertas.length} alerta(s) aberto(s)`
+          )}
         </p>
         <button
           onClick={verificarAgora}
@@ -197,7 +202,10 @@ function AdminAlertas() {
       </p>
       <div className="space-y-3">
         {carregando && (
-          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando as regras…</p>
+          <>
+            <SkeletonBloco className="h-20" />
+            <SkeletonBloco className="h-20" />
+          </>
         )}
         {!carregando && !erroCarga && regras.length === 0 && (
           <div className={`${CARD_CLASS} p-5`}>

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { CARD_CLASS } from "@/lib/botoes";
 import { MODULOS, TOTAL_MODULOS } from "@/lib/planejamento-constants";
@@ -93,7 +94,11 @@ function AdminFunil() {
           Progresso por módulo
         </h2>
         {carregando ? (
-          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          <div className="space-y-4">
+            {Array.from({ length: TOTAL_MODULOS }).map((_, i) => (
+              <SkeletonBloco key={i} className="h-10" />
+            ))}
+          </div>
         ) : linhas.length === 0 ? (
           <p className="font-sans text-[13px] text-[var(--muted)]">
             Nenhum módulo concluído ainda.
@@ -152,11 +157,8 @@ function AdminFunil() {
           },
         ].map((s) => (
           <div key={s.label} className={`${CARD_CLASS} p-6`}>
-            <p
-              className="font-cabinet mb-2 text-[48px] leading-none"
-              style={{ color: carregando ? "var(--muted)" : s.cor }}
-            >
-              {carregando ? "…" : s.count}
+            <p className="font-cabinet mb-2 text-[48px] leading-none" style={{ color: s.cor }}>
+              {carregando ? <SkeletonNumero className="h-12 w-20" /> : s.count}
             </p>
             <p className="mb-1 font-sans text-[14px] font-medium text-[var(--ink)]">{s.label}</p>
             <p className="font-sans text-[12px] text-[var(--muted)]">{s.desc}</p>

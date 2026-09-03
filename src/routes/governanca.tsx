@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { logAcaoAdmin } from "@/lib/audit-log";
 import { BTN_PRIMARIO, CARD_CLASS } from "@/lib/botoes";
+import { SkeletonBloco } from "@/components/Skeleton";
 
 export const Route = createFileRoute("/governanca")({
   head: () => ({
@@ -141,7 +142,12 @@ function AdminGovernanca() {
               </div>
             ))}
             {carregandoTamanhos && (
-              <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+              <>
+                <SkeletonBloco className="h-4" />
+                <SkeletonBloco className="h-4" />
+                <SkeletonBloco className="h-4" />
+                <SkeletonBloco className="h-4" />
+              </>
             )}
             {!carregandoTamanhos && erroTamanhos && (
               <p className="font-sans text-[13px] text-[var(--danger)]">

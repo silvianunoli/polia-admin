@@ -5,6 +5,7 @@ import { logAcaoAdmin } from "@/lib/audit-log";
 import { toastErro } from "@/lib/toast";
 import { CARD_CLASS } from "@/lib/botoes";
 import { Toggle } from "@/components/Toggle";
+import { SkeletonBloco } from "@/components/Skeleton";
 
 interface FeatureFlag {
   key: string;
@@ -74,7 +75,13 @@ function AdminFlags() {
       )}
 
       <div className="space-y-3">
-        {carregando && <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>}
+        {carregando && (
+          <>
+            <SkeletonBloco className="h-20" />
+            <SkeletonBloco className="h-20" />
+            <SkeletonBloco className="h-20" />
+          </>
+        )}
         {!carregando && !erroCarga && flags.length === 0 && (
           <div className={`${CARD_CLASS} p-5`}>
             <p className="font-sans text-[13px] text-[var(--muted)]">

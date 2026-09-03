@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { getResumoMonetizacao, type PlanoResumo } from "@/lib/admin-negocio.functions";
 import { CARD_CLASS } from "@/lib/botoes";
@@ -104,7 +105,7 @@ function AdminNegocio() {
               {m.label}
             </p>
             <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoUso ? "…" : m.valor}
+              {carregandoUso ? <SkeletonNumero /> : m.valor}
             </p>
             <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">{m.desc}</p>
           </div>
@@ -131,7 +132,11 @@ function AdminNegocio() {
               MRR
             </p>
             <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoMonetizacao ? "…" : formatarBRL(mrrCentavos)}
+              {carregandoMonetizacao ? (
+                <SkeletonNumero className="h-8 w-32" />
+              ) : (
+                formatarBRL(mrrCentavos)
+              )}
             </p>
             <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">valor real via Stripe</p>
           </div>
@@ -140,7 +145,7 @@ function AdminNegocio() {
               Assinantes ativas
             </p>
             <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoMonetizacao ? "…" : assinantesAtivas}
+              {carregandoMonetizacao ? <SkeletonNumero /> : assinantesAtivas}
             </p>
             <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">
               active + trialing + past_due
@@ -151,7 +156,10 @@ function AdminNegocio() {
               Por plano
             </p>
             {carregandoMonetizacao && (
-              <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+              <div className="space-y-2">
+                <SkeletonBloco className="h-5" />
+                <SkeletonBloco className="h-5" />
+              </div>
             )}
             {porPlano.length === 0 && !carregandoMonetizacao && (
               <p className="font-sans text-[13px] text-[var(--muted)]">Nenhuma assinatura ativa.</p>

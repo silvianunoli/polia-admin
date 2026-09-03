@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CARD_CLASS } from "@/lib/botoes";
+import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 
 export const Route = createFileRoute("/qualidade")({
   head: () => ({
@@ -87,7 +88,7 @@ function AdminQualidade() {
             className="font-cabinet text-[32px] leading-none"
             style={{ color: errosApp24h.length > 0 ? "var(--danger)" : "var(--secondary-text)" }}
           >
-            {carregando ? "…" : errosApp24h.length}
+            {carregando ? <SkeletonNumero className="h-8 w-12" /> : errosApp24h.length}
           </p>
         </div>
         <div className={`${CARD_CLASS} p-5`}>
@@ -98,7 +99,7 @@ function AdminQualidade() {
             className="font-cabinet text-[32px] leading-none"
             style={{ color: logsComErro24h.length > 0 ? "var(--danger)" : "var(--secondary-text)" }}
           >
-            {carregando ? "…" : logsComErro24h.length}
+            {carregando ? <SkeletonNumero className="h-8 w-12" /> : logsComErro24h.length}
           </p>
         </div>
         <div className={`${CARD_CLASS} p-5`}>
@@ -109,7 +110,7 @@ function AdminQualidade() {
             className="font-cabinet text-[32px] leading-none"
             style={{ color: taxaSucesso24h >= 95 ? "var(--secondary-text)" : "var(--danger)" }}
           >
-            {carregando ? "…" : `${taxaSucesso24h}%`}
+            {carregando ? <SkeletonNumero className="h-8 w-20" /> : `${taxaSucesso24h}%`}
           </p>
         </div>
       </div>
@@ -119,7 +120,7 @@ function AdminQualidade() {
           Erros de app por dia · 7 dias
         </p>
         {carregando ? (
-          <p className="font-sans text-[13px] text-[var(--muted)]">Carregando…</p>
+          <SkeletonBloco className="h-[120px]" />
         ) : (
           <div className="flex h-[120px] items-end gap-3">
             {tendencia.map((d) => (

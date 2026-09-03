@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { TH_CLASS } from "@/lib/botoes";
+import { SkeletonBloco } from "@/components/Skeleton";
 
 export const Route = createFileRoute("/auditoria")({
   head: () => ({
@@ -106,11 +107,12 @@ function AdminAuditoria() {
           <tbody>
             {carregando && (
               <tr>
-                <td
-                  colSpan={4}
-                  className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
-                >
-                  Carregando…
+                <td colSpan={4} className="px-5 py-4">
+                  <div className="space-y-3">
+                    <SkeletonBloco className="h-5" />
+                    <SkeletonBloco className="h-5" />
+                    <SkeletonBloco className="h-5" />
+                  </div>
                 </td>
               </tr>
             )}
