@@ -110,7 +110,7 @@ export const buscarHtmlConteudo = createServerFn({ method: "GET" })
 // puro, não tem como anexar o Bearer token sozinho.
 const novaIdeiaInput = z.object({
   titulo: z.string().trim().min(1).max(500),
-  canal: z.enum(["instagram", "blog"]).default("instagram"),
+  canal: z.enum(["instagram", "blog", "newsletter"]).default("instagram"),
   formato: z.enum(["feed", "stories", "reels", "carrossel"]).nullable().default(null),
   data_planejada: z.string().date().nullable().default(null),
   nota: z.string().max(2000).nullable().default(null),

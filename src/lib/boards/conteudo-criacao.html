@@ -22,6 +22,7 @@
   --highlight:      #FFC629;
   --danger:         #C0392B;
   --danger-soft:    #FBEAE7;
+  --cat-admin:      #B9B2A6;
   --font-display: "Cabinet Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-body:    "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-accent:  "Inter", ui-sans-serif, sans-serif;
@@ -41,14 +42,40 @@ h1 {
   font-size: 22px; margin: 0;
 }
 .sub { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+
+.nota-ia {
+  margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+.nota-ia summary {
+  cursor: pointer; list-style: none; padding: 9px 14px; display: flex; align-items: center; gap: 7px;
+  font-family: var(--font-accent); font-size: 12px; font-weight: 600; color: var(--secondary-text);
+}
+.nota-ia summary::-webkit-details-marker { display: none; }
+.nota-ia summary::before { content: "▸"; font-size: 10px; transition: transform 120ms; }
+.nota-ia[open] summary::before { transform: rotate(90deg); }
+.nota-ia-corpo { padding: 4px 16px 16px; font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+.nota-ia-corpo p { margin: 8px 0; }
+.nota-ia-corpo code {
+  background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px;
+  font-size: 12px; font-family: ui-monospace, monospace;
+}
+.nota-ia-corpo ul { margin: 6px 0; padding-left: 18px; }
+.nota-ia-corpo li { margin: 3px 0; }
+
 .filtros { display:flex; align-items:center; gap:10px; margin-top:16px; flex-wrap:wrap; }
-.filtro-canal { display:flex; gap:6px; }
+.filtro-canal { display:flex; gap:6px; flex-wrap:wrap; }
 .chip-canal {
   font-family: var(--font-accent); font-size: 12.5px; font-weight:600; padding: 6px 13px;
   border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--ink-soft);
   cursor: pointer; user-select: none;
 }
 .chip-canal.ativo { background: var(--ink); border-color: var(--ink); color: #fff; }
+.filtro-data { display:flex; align-items:center; gap:6px; font-family: var(--font-accent); font-size: 11.5px; color: var(--muted); }
+.filtro-data input[type="date"] {
+  font-family: var(--font-body); font-size: 12.5px; padding: 6px 9px; border-radius: 999px;
+  border: 1px solid var(--line); background: #fff; color: var(--ink);
+}
+.filtro-data input[type="date"]:focus { outline: 2px solid var(--secondary); outline-offset: 1px; }
 .busca {
   font-family: var(--font-body); font-size: 13px; padding: 7px 12px; border-radius: 999px;
   border: 1px solid var(--line); background: #fff; color: var(--ink); min-width: 220px;
@@ -61,11 +88,23 @@ h1 {
 }
 .btn-nova:hover { opacity: .9; }
 
+/* ===== kpis ===== */
+.kpis { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; padding:18px 28px 0; }
+.kpi { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; }
+.kpi .rot { font-family:var(--font-accent); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+.kpi .num { font-size:28px; margin-top:5px; }
+.kpi .sub { font-size:11px; color:var(--muted); margin-top:4px; }
+@media (max-width: 860px){ .kpis{ grid-template-columns:repeat(2,1fr);} }
+@media (max-width: 520px){ .kpis{ grid-template-columns:1fr;} }
+
 main { padding: 22px 28px 60px; }
 .board { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 14px; align-items: start; overflow-x: auto; }
 .coluna { display:flex; flex-direction:column; gap:10px; min-width: 0; }
 .coluna-head { display:flex; align-items:center; justify-content:space-between; padding: 0 2px; }
-.coluna-titulo { font-family: var(--font-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); }
+.coluna-titulo { font-family: var(--font-accent); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-soft); border-radius: 4px; padding: 1px 3px; margin: -1px -3px; }
+.coluna-titulo[contenteditable] { cursor: text; }
+.coluna-titulo[contenteditable]:hover { background: var(--surface); }
+.coluna-titulo[contenteditable]:focus { outline: 2px solid var(--secondary); outline-offset: 1px; background: #fff; }
 .coluna-cont { font-size: 11px; color: var(--muted); background: var(--line); border-radius: 999px; padding: 1px 7px; }
 .lista-cards {
   display:flex; flex-direction:column; gap:8px; min-height: 60px; padding: 4px;
@@ -80,13 +119,13 @@ main { padding: 22px 28px 60px; }
 .card-c.arrastando { opacity: .4; }
 .card-c:hover { border-color: var(--secondary); }
 .card-topo { display:flex; align-items:center; gap:6px; flex-wrap: wrap; }
-.tag-canal {
+.tag-tipo {
   font-family: var(--font-accent); font-size: 10.5px; font-weight: 700; text-transform: uppercase;
   letter-spacing: .04em; padding: 2px 7px; border-radius: 6px;
 }
-.tag-canal.instagram { background: var(--accent); color: var(--accent-ink); }
-.tag-canal.blog { background: var(--secondary-light); color: var(--secondary-text); }
-.tag-formato { font-size: 11px; color: var(--muted); }
+.tag-tipo.reels, .tag-tipo.stories, .tag-tipo.carrossel, .tag-tipo.feed { background: var(--accent); color: var(--accent-ink); }
+.tag-tipo.blog { background: var(--secondary-light); color: var(--secondary-text); }
+.tag-tipo.newsletter { background: var(--cat-admin); color: var(--accent-ink); }
 .card-titulo { font-size: 13.5px; color: var(--ink); line-height: 1.4; }
 .card-data { font-size: 11px; color: var(--muted); }
 .card-data.atrasado { color: var(--danger); font-weight: 600; }
@@ -139,11 +178,47 @@ main { padding: 22px 28px 60px; }
     </div>
     <button type="button" class="btn-nova" id="btn-nova">+ Nova ideia</button>
   </div>
+  <details class="nota-ia">
+    <summary>Instruções pra gerar conteúdo por código (Cowork / IA)</summary>
+    <div class="nota-ia-corpo">
+      <p>
+        Pra inserir ideia direto no banco (sem passar pela tela): projeto Supabase
+        <strong>"Pólia"</strong> (id <code>egzwkyqpkexgrhbxwcvb</code>), tabela
+        <code>office_conteudo_catalogo</code>. Precisa de acesso <strong>service role</strong>
+        (não anon) -- RLS bloqueia qualquer outra credencial de propósito.
+      </p>
+      <ul>
+        <li><code>titulo</code> (texto, obrigatório)</li>
+        <li><code>canal</code> -- <code>'instagram'</code>, <code>'blog'</code> ou <code>'newsletter'</code></li>
+        <li><code>formato</code> -- só se canal=instagram: <code>'feed'</code>, <code>'stories'</code>, <code>'reels'</code> ou <code>'carrossel'</code>. Deixa nulo se for blog.</li>
+        <li><code>etapa</code> -- sempre <code>'ideia'</code> pra conteúdo recém-gerado.</li>
+        <li><code>data_planejada</code> -- opcional, <code>YYYY-MM-DD</code>.</li>
+        <li><code>nota</code> -- opcional, rascunho/ângulo/referência da ideia.</li>
+      </ul>
+      <p>
+        Tom da marca: eixo número-primeiro (o dinheiro/resultado vem na frente, a marca é o
+        porquê). Nunca "transforme", "revolucione", hype, exclamação, emoji, travessão, "no seu
+        ritmo/tempo/jeito", "etapa" (fora do campo acima), "trilha", "jornada". Voz direta, de
+        conversa de café, sem infantilizar.
+      </p>
+    </div>
+  </details>
+
   <div class="filtros">
-    <div class="filtro-canal" id="filtro-canal"></div>
+    <div class="filtro-canal" id="filtro-tipo"></div>
+    <label class="filtro-data">
+      <span>De</span>
+      <input type="date" id="filtro-data-de">
+    </label>
+    <label class="filtro-data">
+      <span>até</span>
+      <input type="date" id="filtro-data-ate">
+    </label>
     <input type="text" class="busca" id="busca" placeholder="Buscar por título ou nota">
   </div>
 </header>
+
+<section class="kpis" id="kpis"></section>
 
 <main>
   <div class="board" id="board"></div>
@@ -166,6 +241,7 @@ main { padding: 22px 28px 60px; }
       <select id="nc-canal">
         <option value="instagram">Instagram</option>
         <option value="blog">Blog</option>
+        <option value="newsletter">Newsletter</option>
       </select>
     </div>
     <div class="campo" id="campo-formato">
@@ -224,6 +300,26 @@ var ETAPAS = [
 
 var FORMATO_LABEL = { feed: "Feed", stories: "Stories", reels: "Reels", carrossel: "Carrossel" };
 
+var TIPOS = [
+  { id: "reels", rot: "Reels" },
+  { id: "stories", rot: "Stories" },
+  { id: "carrossel", rot: "Carrossel" },
+  { id: "feed", rot: "Feed" },
+  { id: "blog", rot: "Blog" },
+  { id: "newsletter", rot: "Newsletter" }
+];
+function tipoDoItem(item) {
+  if (item.canal === "blog") return "blog";
+  if (item.canal === "newsletter") return "newsletter";
+  return item.formato || "feed";
+}
+
+var colunasCustom = {};
+try { colunasCustom = JSON.parse(localStorage.getItem("polia-conteudo-colunas") || "{}"); } catch (e) { colunasCustom = {}; }
+function nomeColuna(etapa) {
+  return colunasCustom[etapa.id] || etapa.rot;
+}
+
 // EMBUTIDO: board rodando dentro do iframe srcDoc do admin (polia-admin). Toda
 // escrita passa por postMessage pro pai, que chama a server function
 // autenticada de verdade e responde de volta -- mesmo padrão do Kanban
@@ -256,7 +352,7 @@ function chamarPai(acao, payload) {
   });
 }
 
-var estado = { canal: "todos", busca: "" };
+var estado = { tipo: "todos", busca: "", dataDe: "", dataAte: "" };
 var drawerAtualId = null;
 
 function fmtData(iso) {
@@ -266,7 +362,9 @@ function fmtData(iso) {
 }
 
 function passaFiltro(item) {
-  if (estado.canal !== "todos" && item.canal !== estado.canal) return false;
+  if (estado.tipo !== "todos" && tipoDoItem(item) !== estado.tipo) return false;
+  if (estado.dataDe && (!item.data_planejada || item.data_planejada < estado.dataDe)) return false;
+  if (estado.dataAte && (!item.data_planejada || item.data_planejada > estado.dataAte)) return false;
   if (estado.busca) {
     var alvo = (item.titulo + " " + (item.nota || "")).toLowerCase();
     if (alvo.indexOf(estado.busca.toLowerCase()) === -1) return false;
@@ -274,27 +372,24 @@ function passaFiltro(item) {
   return true;
 }
 
-function renderFiltroCanal() {
-  var opcoes = [
-    { id: "todos", rot: "Todos" },
-    { id: "instagram", rot: "Instagram" },
-    { id: "blog", rot: "Blog" }
-  ];
-  document.getElementById("filtro-canal").innerHTML = opcoes.map(function (o) {
-    return '<div class="chip-canal' + (estado.canal === o.id ? ' ativo' : '') + '" data-canal="' + o.id + '">' + o.rot + '</div>';
+function renderFiltroTipo() {
+  var opcoes = [{ id: "todos", rot: "Todos" }].concat(TIPOS);
+  document.getElementById("filtro-tipo").innerHTML = opcoes.map(function (o) {
+    return '<div class="chip-canal' + (estado.tipo === o.id ? ' ativo' : '') + '" data-tipo="' + o.id + '">' + o.rot + '</div>';
   }).join("");
 }
 
 function cardHtml(item) {
   var atrasado = item.etapa !== "publicado" && item.data_planejada && item.data_planejada < hojeISO();
+  var tipo = tipoDoItem(item);
+  var tipoInfo = TIPOS.filter(function (t) { return t.id === tipo; })[0];
   return (
     '<div class="card-c" draggable="true" data-id="' + item.id + '">' +
       '<div class="card-topo">' +
-        '<span class="tag-canal ' + item.canal + '">' + (item.canal === "instagram" ? "Instagram" : "Blog") + '</span>' +
-        (item.formato ? '<span class="tag-formato">' + (FORMATO_LABEL[item.formato] || item.formato) + '</span>' : '') +
+        '<span class="tag-tipo ' + tipo + '">' + (tipoInfo ? tipoInfo.rot : tipo) + '</span>' +
       '</div>' +
       '<div class="card-titulo">' + escapeHtml(item.titulo) + '</div>' +
-      (item.data_planejada ? '<div class="card-data' + (atrasado ? ' atrasado' : '') + '">' + fmtData(item.data_planejada) + '</div>' : '') +
+      (item.data_planejada ? '<div class="card-data' + (atrasado ? ' atrasado' : '') + '">Publicar ' + fmtData(item.data_planejada) + '</div>' : '') +
     '</div>'
   );
 }
@@ -319,7 +414,7 @@ function renderBoard() {
     return (
       '<div class="coluna">' +
         '<div class="coluna-head">' +
-          '<span class="coluna-titulo">' + etapa.rot + '</span>' +
+          '<span class="coluna-titulo" contenteditable="true" spellcheck="false" data-etapa="' + etapa.id + '" title="Clique pra renomear a coluna">' + escapeHtml(nomeColuna(etapa)) + '</span>' +
           '<span class="coluna-cont">' + itens.length + '</span>' +
         '</div>' +
         '<div class="lista-cards" data-etapa="' + etapa.id + '">' + corpo + '</div>' +
@@ -330,8 +425,25 @@ function renderBoard() {
   document.getElementById("contagem-total").textContent = filtrados.length + " no total";
 }
 
+function renderKPIs() {
+  var todas = catalogo;
+  var visiveis = todas.filter(passaFiltro);
+  var abertas = todas.filter(function (i) { return i.etapa === "ideia"; });
+  var fazendo = todas.filter(function (i) { return i.etapa === "roteiro" || i.etapa === "producao" || i.etapa === "agendado"; });
+  var concluidas = todas.filter(function (i) { return i.etapa === "publicado"; });
+  var pct = todas.length ? Math.round((concluidas.length / todas.length) * 100) : 0;
+
+  var html = "";
+  html += '<div class="kpi"><div class="rot">Tarefas no quadro</div><div class="num">' + todas.length + '</div><div class="sub">' + visiveis.length + ' no filtro atual</div></div>';
+  html += '<div class="kpi"><div class="rot">Em aberto</div><div class="num">' + abertas.length + '</div><div class="sub">ainda como ideia</div></div>';
+  html += '<div class="kpi"><div class="rot">Fazendo agora</div><div class="num">' + fazendo.length + '</div><div class="sub">roteiro, produção ou agendado</div></div>';
+  html += '<div class="kpi"><div class="rot">Concluídas</div><div class="num">' + concluidas.length + ' / ' + todas.length + '</div><div class="sub">' + pct + '% do total</div></div>';
+  document.getElementById("kpis").innerHTML = html;
+}
+
 function renderTudo() {
-  renderFiltroCanal();
+  renderFiltroTipo();
+  renderKPIs();
   renderBoard();
 }
 
@@ -378,6 +490,7 @@ async function salvarNovaIdeia() {
   }
   campoTitulo.style.borderColor = "";
   fecharFormNovaIdeia();
+  renderKPIs();
   renderBoard();
 }
 
@@ -386,7 +499,7 @@ function abrirDrawer(id) {
   if (!item) return;
   drawerAtualId = id;
   document.getElementById("drawer-titulo").textContent = item.titulo;
-  var canalTxt = item.canal === "instagram" ? "Instagram" : "Blog";
+  var canalTxt = item.canal === "instagram" ? "Instagram" : (item.canal === "blog" ? "Blog" : "Newsletter");
   if (item.formato) canalTxt += " · " + (FORMATO_LABEL[item.formato] || item.formato);
   document.getElementById("dr-canal-formato").textContent = canalTxt;
   document.getElementById("dr-data").value = item.data_planejada || "";
@@ -410,6 +523,7 @@ async function salvarCampoDrawer(campo, valor) {
   } catch (e) {
     alert("Não conseguimos salvar agora. Tenta de novo em instantes.");
   }
+  renderKPIs();
   renderBoard();
 }
 
@@ -424,6 +538,7 @@ async function removerIdeiaAtual() {
   }
   catalogo = catalogo.filter(function (i) { return i.id !== id; });
   fecharDrawer();
+  renderKPIs();
   renderBoard();
 }
 
@@ -432,11 +547,13 @@ async function moverIdeia(id, novaEtapa) {
   if (!item || item.etapa === novaEtapa) return;
   var etapaAnterior = item.etapa;
   item.etapa = novaEtapa;
+  renderKPIs();
   renderBoard();
   try {
     await chamarPai("mover", { id: id, etapa: novaEtapa });
   } catch (e) {
     item.etapa = etapaAnterior;
+    renderKPIs();
     renderBoard();
     alert("Não conseguimos salvar agora. Tenta de novo em instantes.");
   }
@@ -451,7 +568,7 @@ document.addEventListener("click", function (ev) {
   if (ev.target.id === "drawer-remover") { void removerIdeiaAtual(); return; }
 
   var chip = ev.target.closest(".chip-canal");
-  if (chip) { estado.canal = chip.getAttribute("data-canal"); renderTudo(); return; }
+  if (chip) { estado.tipo = chip.getAttribute("data-tipo"); renderKPIs(); renderBoard(); renderFiltroTipo(); return; }
 
   var card = ev.target.closest(".card-c");
   if (card) { abrirDrawer(card.getAttribute("data-id")); return; }
@@ -459,8 +576,39 @@ document.addEventListener("click", function (ev) {
 
 document.getElementById("busca").addEventListener("input", function (e) {
   estado.busca = e.target.value;
+  renderKPIs();
   renderBoard();
 });
+document.getElementById("filtro-data-de").addEventListener("change", function (e) {
+  estado.dataDe = e.target.value;
+  renderKPIs();
+  renderBoard();
+});
+document.getElementById("filtro-data-ate").addEventListener("change", function (e) {
+  estado.dataAte = e.target.value;
+  renderKPIs();
+  renderBoard();
+});
+
+document.addEventListener("blur", function (ev) {
+  var el = ev.target;
+  if (!el.classList || !el.classList.contains("coluna-titulo") || !el.hasAttribute("contenteditable")) return;
+  var etapaId = el.getAttribute("data-etapa");
+  var texto = el.textContent.replace(/\s+/g, " ").trim();
+  if (!texto) { renderBoard(); return; }
+  if (colunasCustom[etapaId] !== texto) {
+    colunasCustom[etapaId] = texto;
+    try { localStorage.setItem("polia-conteudo-colunas", JSON.stringify(colunasCustom)); } catch (e) {}
+  }
+}, true);
+document.addEventListener("keydown", function (ev) {
+  var el = ev.target;
+  if (el.classList && el.classList.contains("coluna-titulo") && ev.key === "Enter") {
+    ev.preventDefault();
+    el.blur();
+  }
+});
+
 document.getElementById("nc-canal").addEventListener("change", function (e) {
   document.getElementById("campo-formato").style.display = e.target.value === "instagram" ? "" : "none";
 });
