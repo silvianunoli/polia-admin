@@ -51,9 +51,7 @@ export const buscarHtmlKanban = createServerFn({ method: "GET" })
     // /api/estado do polia-office nunca existiu aqui, e location.hostname
     // dentro de um iframe srcDoc vem vazio, então nem a detecção de modo
     // "api" do board disparava).
-    const { data } = await supabaseAdmin
-      .from("office_tarefas_catalogo")
-      .select("*");
+    const { data } = await supabaseAdmin.from("office_tarefas_catalogo").select("*");
     const catalogo = Array.isArray(data) ? data.map(linhaCatalogoParaFrontend) : [];
     // Nota de tarefa é texto livre digitado em sessões passadas -- se algum dia
     // tiver a sequência "</script" dentro, isso fecharia a tag cedo demais.
@@ -95,13 +93,22 @@ export const buscarHtmlConteudo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    const { data } = await supabaseAdmin
-      .from("office_conteudo_catalogo")
-      .select("*")
-      .order("criado_em", { ascending: true });
+    const [{ data }, { data: colunasData }] = await Promise.all([
+      supabaseAdmin
+        .from("office_conteudo_catalogo")
+        .select("*")
+        .order("criado_em", { ascending: true }),
+      supabaseAdmin.from("office_conteudo_colunas").select("etapa, nome"),
+    ]);
     const catalogo = Array.isArray(data) ? data.map(linhaConteudoParaFrontend) : [];
+    const colunas: Record<string, string> = {};
+    if (Array.isArray(colunasData)) {
+      for (const row of colunasData as { etapa: string; nome: string }[])
+        colunas[row.etapa] = row.nome;
+    }
     const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
-    const script = `<script>window.__CATALOGO_CONTEUDO__=${json};</script>`;
+    const jsonColunas = JSON.stringify(colunas).replace(/<\/script/gi, "<\\/script");
+    const script = `<script>window.__CATALOGO_CONTEUDO__=${json};window.__COLUNAS_CONTEUDO__=${jsonColunas};</script>`;
     return conteudoHtml.replace("<body>", `<body>${script}`);
   });
 
@@ -176,7 +183,30 @@ export const removerConteudo = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => removerConteudoInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("office_conteudo_catalogo").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("office_conteudo_catalogo")
+      .delete()
+      .eq("id", data.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+const renomearColunaConteudoInput = z.object({
+  etapa: z.enum(["ideia", "roteiro", "producao", "agendado", "publicado"]),
+  nome: z.string().trim().min(1).max(60),
+});
+
+export const renomearColunaConteudo = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => renomearColunaConteudoInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { error } = await supabaseAdmin
+      .from("office_conteudo_colunas")
+      .upsert(
+        { etapa: data.etapa, nome: data.nome, atualizado_em: new Date().toISOString() },
+        { onConflict: "etapa" },
+      );
     if (error) throw new Error(error.message);
     return { ok: true };
   });

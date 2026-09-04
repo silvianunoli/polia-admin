@@ -314,8 +314,7 @@ function tipoDoItem(item) {
   return item.formato || "feed";
 }
 
-var colunasCustom = {};
-try { colunasCustom = JSON.parse(localStorage.getItem("polia-conteudo-colunas") || "{}"); } catch (e) { colunasCustom = {}; }
+var colunasCustom = (EMBUTIDO && window.__COLUNAS_CONTEUDO__) || {};
 function nomeColuna(etapa) {
   return colunasCustom[etapa.id] || etapa.rot;
 }
@@ -595,11 +594,14 @@ document.addEventListener("blur", function (ev) {
   if (!el.classList || !el.classList.contains("coluna-titulo") || !el.hasAttribute("contenteditable")) return;
   var etapaId = el.getAttribute("data-etapa");
   var texto = el.textContent.replace(/\s+/g, " ").trim();
-  if (!texto) { renderBoard(); return; }
-  if (colunasCustom[etapaId] !== texto) {
-    colunasCustom[etapaId] = texto;
-    try { localStorage.setItem("polia-conteudo-colunas", JSON.stringify(colunasCustom)); } catch (e) {}
-  }
+  if (!texto || colunasCustom[etapaId] === texto) { renderBoard(); return; }
+  var anterior = colunasCustom[etapaId];
+  colunasCustom[etapaId] = texto;
+  chamarPai("renomearColuna", { etapa: etapaId, nome: texto }).catch(function () {
+    colunasCustom[etapaId] = anterior;
+    renderBoard();
+    alert("Não conseguimos salvar o nome da coluna agora. Tenta de novo em instantes.");
+  });
 }, true);
 document.addEventListener("keydown", function (ev) {
   var el = ev.target;

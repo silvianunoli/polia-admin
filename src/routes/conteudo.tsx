@@ -6,6 +6,7 @@ import {
   atualizarConteudo,
   moverConteudo,
   removerConteudo,
+  renomearColunaConteudo,
 } from "@/lib/boards.functions";
 
 export const Route = createFileRoute("/conteudo")({
@@ -24,6 +25,7 @@ const ACOES: Record<string, (payload: unknown) => Promise<unknown>> = {
   mover: (payload) => moverConteudo({ data: payload as never }),
   atualizar: (payload) => atualizarConteudo({ data: payload as never }),
   remover: (payload) => removerConteudo({ data: payload as never }),
+  renomearColuna: (payload) => renomearColunaConteudo({ data: payload as never }),
 };
 
 function ConteudoPage() {
