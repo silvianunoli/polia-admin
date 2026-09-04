@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, Pencil, Plus, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,13 +101,13 @@ function BlogAdminIndex() {
               Gerencie os posts do blog da Pólia.
             </p>
           </div>
-          <a
-            href="/blog/novo"
+          <Link
+            to="/blog/novo"
             className="inline-flex items-center gap-2 rounded-lg bg-[var(--secondary)] px-5 py-3 text-[15px] font-semibold text-[var(--secondary-ink)] no-underline transition-[filter] hover:brightness-95"
           >
             <Plus size={18} aria-hidden="true" />
             Novo post
-          </a>
+          </Link>
         </div>
 
         {erro ? (
@@ -131,12 +131,12 @@ function BlogAdminIndex() {
           <div className="mt-10 rounded-xl border border-dashed border-[var(--line)] bg-white p-10 text-center">
             <p className="text-[20px] text-[var(--ink)]">Nenhum post ainda.</p>
             <p className="mt-2 text-[var(--ink-soft)]">Escreva o primeiro.</p>
-            <a
-              href="/blog/novo"
+            <Link
+              to="/blog/novo"
               className="mt-5 inline-flex rounded-lg bg-[var(--secondary)] px-6 py-3 text-[15px] font-semibold text-[var(--secondary-ink)] no-underline transition-[filter] hover:brightness-95"
             >
               Novo post
-            </a>
+            </Link>
           </div>
         ) : (
           <>
@@ -223,12 +223,13 @@ function BlogAdminIndex() {
                       className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] px-5 py-4 last:border-b-0 hover:bg-[var(--bg)]"
                     >
                       <div className="min-w-0">
-                        <a
-                          href={`/blog/${post.id}`}
+                        <Link
+                          to="/blog/$id"
+                          params={{ id: post.id }}
                           className="font-semibold text-[var(--ink)] no-underline hover:underline hover:decoration-[var(--secondary)] hover:decoration-2 hover:underline-offset-[3px]"
                         >
                           {post.titulo}
-                        </a>
+                        </Link>
                         <div className="mt-1 flex flex-wrap gap-2 text-[13px] text-[var(--muted)]">
                           {post.categoria && <span>{post.categoria}</span>}
                           {post.categoria && post.tempo_leitura ? <span>·</span> : null}
@@ -259,13 +260,14 @@ function BlogAdminIndex() {
                               : editadoHa(post.updated_at)}
                         </span>
                         <div className="flex gap-2">
-                          <a
-                            href={`/blog/${post.id}`}
+                          <Link
+                            to="/blog/$id"
+                            params={{ id: post.id }}
                             title="Editar"
                             className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink-soft)] no-underline hover:border-[var(--secondary)] hover:text-[var(--ink)]"
                           >
                             <Pencil size={16} aria-hidden="true" />
-                          </a>
+                          </Link>
                           {status === "publicado" && (
                             <a
                               href={`https://usepolia.com.br/blog/${post.slug}`}

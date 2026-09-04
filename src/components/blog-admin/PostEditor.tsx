@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost, BlogPostInsert, BlogPostUpdate } from "@/lib/blog-types";
@@ -114,6 +114,16 @@ export function PostEditor({ post }: PostEditorProps) {
   // no insert explícito (não deixa o banco gerar).
   const postIdRef = useRef<string>(post?.id ?? crypto.randomUUID());
   const postId = postIdRef.current;
+
+  // Diferente de isEditMode (a prop `post`, fixa pro resto da vida do
+  // componente): este reflete se a LINHA já existe no banco agora. Um post
+  // novo nasce com `existeNoBanco=false`, e vira `true` depois do primeiro
+  // INSERT bem-sucedido (autosave ou clique manual). Sem essa distinção, o
+  // autosave (que roda várias vezes, a cada pausa de digitação) continuava
+  // tentando INSERT com o mesmo id pra sempre, batendo na PK e sendo
+  // confundido com slug duplicado -- bug real: depois do 1º autosave, TODO
+  // salvamento seguinte falhava, não importa o que mudasse no slug.
+  const [existeNoBanco, setExisteNoBanco] = useState(isEditMode);
 
   const [titulo, setTitulo] = useState(post?.titulo ?? "");
   const [slug, setSlug] = useState(post?.slug ?? "");
@@ -323,7 +333,7 @@ export function PostEditor({ post }: PostEditorProps) {
     setErroSalvar(null);
     setErroSlug(null);
 
-    const query = isEditMode
+    const query = existeNoBanco
       ? supabase.from("blog_posts").update(resultado.payload).eq("id", postId)
       : supabase.from("blog_posts").insert({
           id: postId,
@@ -358,6 +368,7 @@ export function PostEditor({ post }: PostEditorProps) {
     }
 
     limparRedeDeSeguranca();
+    if (!existeNoBanco) setExisteNoBanco(true);
 
     if (modo !== null) {
       publicacaoDecididaRef.current = true;
@@ -396,9 +407,17 @@ export function PostEditor({ post }: PostEditorProps) {
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
+      const eraNovo = !existeNoBanco;
       setAutosaveTexto("Salvando...");
       const ok = await salvar(null);
       setAutosaveTexto(ok ? "Salvo automaticamente" : null);
+      // Autosave criou a linha agora (1ª vez): troca a URL de /blog/novo pra
+      // /blog/$id, senão a URL fica desencontrada da linha real (mesmo bug
+      // que fazia o autosave seguinte tentar INSERT de novo, corrigido acima
+      // com existeNoBanco -- aqui é só manter a URL coerente com o estado).
+      if (ok && eraNovo && !isEditMode) {
+        navigate({ to: "/blog/$id", params: { id: postId }, replace: true });
+      }
     }, AUTOSAVE_DEBOUNCE_MS);
 
     return () => {
@@ -564,9 +583,9 @@ export function PostEditor({ post }: PostEditorProps) {
     <div className="polia-v3 min-h-screen bg-[var(--bg)]">
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-[var(--line)] bg-white px-6 py-4">
         <div className="flex items-center gap-3">
-          <a href="/blog" className="text-[14px] text-[var(--muted)] no-underline hover:underline">
+          <Link to="/blog" className="text-[14px] text-[var(--muted)] no-underline hover:underline">
             Blog
-          </a>
+          </Link>
           <span className="text-[var(--muted)]">/</span>
           <strong className="text-[15px] text-[var(--ink)]">
             {isEditMode ? "Editar post" : "Novo post"}

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { BTN_LINK, BTN_PRIMARIO, BTN_SECUNDARIO, CARD_CLASS, INPUT_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/design-system")({
@@ -69,9 +69,9 @@ function DesignSystemPage() {
     <div className="polia-v3 min-h-screen bg-[var(--bg)]">
       <header className="border-b border-[var(--line)] bg-white px-6 py-5 md:px-12">
         <div className="mx-auto flex max-w-[1100px] items-center justify-between">
-          <a href="/" className="font-cabinet text-[20px] text-[var(--ink)] no-underline">
+          <Link to="/central" className="font-cabinet text-[20px] text-[var(--ink)] no-underline">
             Pólia
-          </a>
+          </Link>
           <span className="font-accent text-[10px] font-bold uppercase tracking-[2px] text-[var(--secondary-text)]">
             Design System
           </span>
