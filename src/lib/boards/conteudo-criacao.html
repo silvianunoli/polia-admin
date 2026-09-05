@@ -179,7 +179,7 @@ main { padding: 22px 28px 60px; }
     <button type="button" class="btn-nova" id="btn-nova">+ Nova ideia</button>
   </div>
   <details class="nota-ia">
-    <summary>Instruções pra gerar conteúdo por código (Cowork / IA)</summary>
+    <summary>Instruções para gerar conteúdo</summary>
     <div class="nota-ia-corpo">
       <p>
         Pra inserir ideia direto no banco (sem passar pela tela): projeto Supabase
@@ -190,17 +190,11 @@ main { padding: 22px 28px 60px; }
       <ul>
         <li><code>titulo</code> (texto, obrigatório)</li>
         <li><code>canal</code> -- <code>'instagram'</code>, <code>'blog'</code> ou <code>'newsletter'</code></li>
-        <li><code>formato</code> -- só se canal=instagram: <code>'feed'</code>, <code>'stories'</code>, <code>'reels'</code> ou <code>'carrossel'</code>. Deixa nulo se for blog.</li>
-        <li><code>etapa</code> -- sempre <code>'ideia'</code> pra conteúdo recém-gerado.</li>
+        <li><code>formato</code> -- só se canal=instagram: <code>'feed'</code>, <code>'stories'</code>, <code>'reels'</code> ou <code>'carrossel'</code>. Deixa nulo se for blog ou newsletter.</li>
+        <li><code>etapa</code> -- sempre <code>'ideia'</code> pra conteúdo recém-gerado. O nome que aparece na coluna do board pode estar diferente (é só um rótulo customizado guardado em <code>office_conteudo_colunas</code>) -- o valor real da coluna continua <code>'ideia'</code>.</li>
         <li><code>data_planejada</code> -- opcional, <code>YYYY-MM-DD</code>.</li>
         <li><code>nota</code> -- opcional, rascunho/ângulo/referência da ideia.</li>
       </ul>
-      <p>
-        Tom da marca: eixo número-primeiro (o dinheiro/resultado vem na frente, a marca é o
-        porquê). Nunca "transforme", "revolucione", hype, exclamação, emoji, travessão, "no seu
-        ritmo/tempo/jeito", "etapa" (fora do campo acima), "trilha", "jornada". Voz direta, de
-        conversa de café, sem infantilizar.
-      </p>
     </div>
   </details>
 
