@@ -1,8 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Pencil, Plus, Search } from "lucide-react";
+import { Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost } from "@/lib/blog-types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { TOKEN_BRIDGE_V3 } from "@/lib/uiTokenBridge";
 
 export const Route = createFileRoute("/blog/")({
   head: () => ({ meta: [{ title: "Blog · Gestão Pólia" }] }),
@@ -55,6 +66,29 @@ function BlogAdminIndex() {
   const [erro, setErro] = useState(false);
   const [busca, setBusca] = useState("");
   const [filtro, setFiltro] = useState<StatusFiltro>("todos");
+  const [postParaExcluir, setPostParaExcluir] = useState<BlogPost | null>(null);
+  const [excluindo, setExcluindo] = useState(false);
+  const [erroExcluir, setErroExcluir] = useState(false);
+
+  async function handleExcluir() {
+    if (!postParaExcluir) return;
+    setExcluindo(true);
+    setErroExcluir(false);
+    const { error } = await supabase.from("blog_posts").delete().eq("id", postParaExcluir.id);
+    setExcluindo(false);
+    if (error) {
+      setErroExcluir(true);
+      return;
+    }
+    setPosts((atual) => (atual ?? []).filter((p) => p.id !== postParaExcluir.id));
+    setPostParaExcluir(null);
+  }
+
+  function fecharModalExcluir(aberto: boolean) {
+    if (aberto) return;
+    setPostParaExcluir(null);
+    setErroExcluir(false);
+  }
 
   async function carregar() {
     setErro(false);
@@ -286,6 +320,14 @@ function BlogAdminIndex() {
                               <Eye size={16} aria-hidden="true" />
                             </a>
                           )}
+                          <button
+                            type="button"
+                            onClick={() => setPostParaExcluir(post)}
+                            title="Excluir"
+                            className="flex h-9 w-9 items-center justify-center rounded-lg border border-[var(--line)] text-[var(--ink-soft)] hover:border-[var(--danger)] hover:text-[var(--danger)]"
+                          >
+                            <Trash2 size={16} aria-hidden="true" />
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -296,6 +338,43 @@ function BlogAdminIndex() {
           </>
         )}
       </div>
+
+      <AlertDialog open={postParaExcluir !== null} onOpenChange={fecharModalExcluir}>
+        <AlertDialogContent
+          className="polia-v3 border border-[var(--line)] bg-white"
+          style={TOKEN_BRIDGE_V3}
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-[var(--ink)]">Excluir este post</AlertDialogTitle>
+            <AlertDialogDescription className="text-[var(--ink-soft)]">
+              {postParaExcluir && (
+                <>
+                  "<strong>{postParaExcluir.titulo}</strong>" some do blog e do painel agora mesmo.
+                  Essa exclusão é definitiva, não tem como desfazer.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          {erroExcluir && (
+            <p className="text-[13px] text-[var(--danger)]">
+              Não deu pra excluir agora. Tenta de novo.
+            </p>
+          )}
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleExcluir();
+              }}
+              disabled={excluindo}
+              className="bg-[var(--danger)] text-white hover:bg-[var(--danger)]"
+            >
+              {excluindo ? "Excluindo..." : "Excluir definitivamente"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
