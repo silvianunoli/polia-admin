@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Loader2, Upload, X } from "lucide-react";
+import { Check, Loader2, Upload, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import type { BlogPost, BlogPostInsert, BlogPostUpdate } from "@/lib/blog-types";
 import { parseMarkdownToDoc, serializeDocToMarkdown, type DocNode } from "@/lib/blogMarkdown";
@@ -161,7 +161,12 @@ export function PostEditor({ post }: PostEditorProps) {
   const [excluindo, setExcluindo] = useState(false);
   const [confirmarExclusaoAberto, setConfirmarExclusaoAberto] = useState(false);
   const [previewAberto, setPreviewAberto] = useState(false);
-  const [autosaveTexto, setAutosaveTexto] = useState<string | null>(null);
+  // Indicador persistente de estado de salvamento (ícone, não só texto que
+  // some sozinho) -- cobre tanto o autosave quanto o salvamento manual feito
+  // depois que a publicação/agendamento já foi decidido nesta sessão (ver
+  // publicacaoDecididaRef).
+  const [temAlteracoesNaoSalvas, setTemAlteracoesNaoSalvas] = useState(false);
+  const [autosalvando, setAutosalvando] = useState(false);
 
   const [uploadCorpoEstado, setUploadCorpoEstado] = useState<EstadoUpload>("vazio");
   const [uploadCorpoErro, setUploadCorpoErro] = useState<ErroUpload | null>(null);
@@ -298,10 +303,14 @@ export function PostEditor({ post }: PostEditorProps) {
     return { ok: true, payload };
   }
 
-  async function salvar(modo: QuandoPublicar | null): Promise<boolean> {
-    // Autosave nunca roda depois que a publicação foi decidida explicitamente
-    // nesta sessão.
-    if (modo === null && publicacaoDecididaRef.current) return false;
+  async function salvar(
+    modo: QuandoPublicar | null,
+    opts?: { manual?: boolean },
+  ): Promise<boolean> {
+    // Autosave AUTOMÁTICO (debounce, sem clique) nunca roda depois que a
+    // publicação foi decidida explicitamente nesta sessão -- só um clique
+    // manual (botão principal ou "Salvar alterações") grava depois disso.
+    if (modo === null && publicacaoDecididaRef.current && !opts?.manual) return false;
 
     if (modo !== null) {
       if (!validarTitulo(titulo)) return false;
@@ -387,30 +396,45 @@ export function PostEditor({ post }: PostEditorProps) {
     const ok = await salvar(quandoPublicar);
     setSalvando(false);
     if (ok) {
-      setAutosaveTexto(null);
+      setTemAlteracoesNaoSalvas(false);
       if (!isEditMode) {
         navigate({ to: "/blog/$id", params: { id: postId } });
       }
     }
   }
 
+  // Botão "Salvar alterações": só aparece depois que publicar/agendar já foi
+  // decidido nesta sessão (autosave automático parou de rodar) e existe
+  // edição pendente -- sem isso, quem corrige um parágrafo num post já
+  // publicado/agendado não tinha como salvar sem mexer de novo no agendamento.
+  async function handleSalvarAlteracoes() {
+    setSalvando(true);
+    const ok = await salvar(null, { manual: true });
+    setSalvando(false);
+    if (ok) setTemAlteracoesNaoSalvas(false);
+  }
+
   // Autosave: debounce de ~3s depois de parar de digitar, salva os campos de
   // conteúdo como rascunho (sem tocar em publicado/agendado_para), a menos
-  // que o botão de publicar/agendar já tenha sido clicado nesta sessão.
+  // que o botão de publicar/agendar já tenha sido clicado nesta sessão --
+  // nesse caso só marca "alterações não salvas" (ver indicador no cabeçalho)
+  // e espera um clique manual em "Salvar alterações".
   useEffect(() => {
     if (primeiraRenderRef.current) {
       primeiraRenderRef.current = false;
       return;
     }
+    setTemAlteracoesNaoSalvas(true);
     if (publicacaoDecididaRef.current) return;
     if (!titulo.trim()) return; // nada pra salvar ainda
 
     if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
     autosaveTimerRef.current = setTimeout(async () => {
       const eraNovo = !existeNoBanco;
-      setAutosaveTexto("Salvando...");
+      setAutosalvando(true);
       const ok = await salvar(null);
-      setAutosaveTexto(ok ? "Salvo automaticamente" : null);
+      setAutosalvando(false);
+      if (ok) setTemAlteracoesNaoSalvas(false);
       // Autosave criou a linha agora (1ª vez): troca a URL de /blog/novo pra
       // /blog/$id, senão a URL fica desencontrada da linha real (mesmo bug
       // que fazia o autosave seguinte tentar INSERT de novo, corrigido acima
@@ -563,7 +587,7 @@ export function PostEditor({ post }: PostEditorProps) {
     setSalvando(false);
     if (ok) {
       setQuandoPublicar("rascunho");
-      setAutosaveTexto(null);
+      setTemAlteracoesNaoSalvas(false);
     }
   }
 
@@ -590,8 +614,28 @@ export function PostEditor({ post }: PostEditorProps) {
           <strong className="text-[15px] text-[var(--ink)]">
             {isEditMode ? "Editar post" : "Novo post"}
           </strong>
-          {autosaveTexto && (
-            <span className="ml-2 text-[13px] text-[var(--muted)]">{autosaveTexto}</span>
+          {(existeNoBanco || autosalvando || temAlteracoesNaoSalvas) && (
+            <span className="ml-2 inline-flex items-center gap-1.5 text-[13px] text-[var(--muted)]">
+              {autosalvando ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+                  Salvando...
+                </>
+              ) : temAlteracoesNaoSalvas ? (
+                <>
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-[var(--highlight)]"
+                    aria-hidden="true"
+                  />
+                  Alterações não salvas
+                </>
+              ) : (
+                <>
+                  <Check size={14} className="text-[var(--secondary-text)]" aria-hidden="true" />
+                  Salvo
+                </>
+              )}
+            </span>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -602,6 +646,17 @@ export function PostEditor({ post }: PostEditorProps) {
               className="rounded-lg border border-[var(--danger)] px-4 py-2.5 text-[14px] font-semibold text-[var(--danger)] transition-colors hover:bg-[var(--danger-soft)]"
             >
               Excluir
+            </button>
+          )}
+          {temAlteracoesNaoSalvas && publicacaoDecididaRef.current && (
+            <button
+              type="button"
+              onClick={handleSalvarAlteracoes}
+              disabled={salvando}
+              className="inline-flex items-center gap-2 rounded-lg border border-[var(--line)] px-4 py-2.5 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--secondary)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {salvando && <Loader2 size={16} className="animate-spin" aria-hidden="true" />}
+              Salvar alterações
             </button>
           )}
           <button

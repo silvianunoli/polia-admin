@@ -230,10 +230,17 @@ function BlogAdminIndex() {
                         >
                           {post.titulo}
                         </Link>
-                        <div className="mt-1 flex flex-wrap gap-2 text-[13px] text-[var(--muted)]">
-                          {post.categoria && <span>{post.categoria}</span>}
-                          {post.categoria && post.tempo_leitura ? <span>·</span> : null}
-                          {post.tempo_leitura && <span>{post.tempo_leitura} min</span>}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                          {post.categoria && (
+                            <span className="inline-flex items-center rounded-full border border-[var(--line)] bg-[var(--bg)] px-2 py-0.5 text-[12px] font-semibold text-[var(--ink-soft)]">
+                              {post.categoria}
+                            </span>
+                          )}
+                          {post.tempo_leitura && (
+                            <span className="text-[13px] text-[var(--muted)]">
+                              {post.tempo_leitura} min
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
