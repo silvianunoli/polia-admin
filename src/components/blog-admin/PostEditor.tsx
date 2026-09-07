@@ -24,7 +24,7 @@ export type PostEditorProps = {
   post: BlogPost | null;
 };
 
-const CATEGORIAS = ["Método", "Preço", "Números", "Identidade", "Rotina", "Motivação"] as const;
+const CATEGORIAS = ["Começar", "Dinheiro e Gestão", "Empreender Sozinha", "Crescimento"] as const;
 
 type QuandoPublicar = "agora" | "agendar" | "rascunho";
 
