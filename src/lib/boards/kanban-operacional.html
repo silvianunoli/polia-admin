@@ -680,7 +680,7 @@ function renderKPIs() {
   var todas = todasTarefas();
   var visiveis = todas.filter(passaFiltro);
   var atual = sprintAtual();
-  var noSprintAtual = todas.filter(function (t) { return t.sprint === atual && t.status !== "concluido"; });
+  var noSprintAtual = todas.filter(function (t) { return t.sprint === atual && t.status !== "concluido" && t.status !== "descartado"; });
   var fazendo = todas.filter(function (t) { return t.status === "fazendo"; });
   var concluidas = todas.filter(function (t) { return t.status === "concluido"; });
 
@@ -721,7 +721,10 @@ function renderChipsPessoa() {
 
 function renderTabsVer() {
   var todas = todasTarefas();
-  var pendentes = todas.filter(function (t) { return t.status !== "concluido"; });
+  // "descartado" (won't-do) é status terminal como "concluido", mas some do
+  // quadro sem coluna própria -- sem excluir aqui, a aba conta a tarefa e o
+  // quadro (que só soma as 4 colunas ativas) não bate no número.
+  var pendentes = todas.filter(function (t) { return t.status !== "concluido" && t.status !== "descartado"; });
   var tabs = [
     { id: "todos", rot: "Todas" },
     { id: "silvia", rot: "Minhas tarefas" },
