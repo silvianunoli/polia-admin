@@ -180,6 +180,7 @@ select, .busca {
 .pri.baixa { background:var(--line); color:var(--muted); }
 .card-t .titulo { font-size:12.5px; line-height:1.4; }
 .card-t .rodape { display:flex; align-items:center; justify-content:space-between; margin-top:9px; }
+.card-t .rodape-esq { display:flex; align-items:center; gap:6px; }
 .mini-avatar { width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:var(--font-accent); font-weight:700; font-size:8.5px; flex-shrink:0; }
 .card-t .id-tag { font-size:9.5px; color:var(--muted); font-family:var(--font-accent); }
 
@@ -810,7 +811,9 @@ function cardHTML(t) {
     (t.local ? '<span class="tag-local">local</span>' : '') +
     '<span class="tag-sprint">' + sprintRot + '</span></div>' +
     '<div class="titulo">' + t.titulo + '</div>' +
-    '<div class="rodape"><span class="pri ' + t.prioridade + '">' + t.prioridade + '</span>' +
+    '<div class="rodape"><span class="rodape-esq">' +
+    (t.local ? '' : '<span class="id-tag">' + t.id + '</span>') +
+    '<span class="pri ' + t.prioridade + '">' + t.prioridade + '</span></span>' +
     '<span class="mini-avatar ini ' + p.cor + '" title="' + p.nome + '">' + p.nome.charAt(0) + '</span></div>' +
     '</div>';
 }
