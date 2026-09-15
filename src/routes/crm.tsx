@@ -59,6 +59,15 @@ const STATUS_META: Record<StatusKey, { label: string; className: string }> = {
   sumida: { label: "Sumida", className: "bg-[var(--danger-soft)] text-[var(--danger)]" },
 };
 
+// Nomes visíveis desde 14/09/2026 (Grátis/Premium/Pro) — a chave interna
+// confere/controle/projete continua em profiles.plano, nunca exibir crua.
+const PLANO_LABEL: Record<string, string> = {
+  confere: "Grátis",
+  controle: "Premium",
+  projete: "Pro",
+  beta: "Beta",
+};
+
 const inputClass =
   "rounded-xl border border-[var(--line)] bg-white px-4 py-2 font-sans text-[14px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--secondary)] focus:outline-none";
 const btnPrimary =
@@ -302,7 +311,7 @@ function AdminCRM() {
                       </td>
                       <td className="px-5 py-3">
                         <span className="rounded-full bg-[var(--line)] px-2 py-1 font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink-soft)]">
-                          {c.plano ?? "beta"}
+                          {PLANO_LABEL[c.plano ?? "beta"] ?? c.plano}
                         </span>
                       </td>
                       <td className="px-5 py-3 font-sans text-[13px]">
