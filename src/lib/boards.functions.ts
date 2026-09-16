@@ -268,9 +268,12 @@ export const moverTarefaLocalKanban = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => moverTarefaLocalInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
+    // concluido_em só faz sentido junto de status "concluido" -- "mover" pra
+    // qualquer outra coluna limpa a data (quem marca "concluido" de verdade
+    // usa a ação "concluir", que grava a data).
     const { error } = await supabaseAdmin
       .from("office_tarefas_catalogo")
-      .update({ status: data.status })
+      .update({ status: data.status, concluido_em: data.status === "concluido" ? undefined : null })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };

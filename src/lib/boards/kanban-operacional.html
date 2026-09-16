@@ -825,7 +825,7 @@ function cardHTML(t) {
   var p = PESSOAS[t.pessoa];
   var sprintRot = t.sprint ? t.sprint : "—";
   return '<div class="card-t' + (t.status === "concluido" ? " concluido" : "") + (t.local ? " local" : "") + '"' +
-    (t.local ? ' draggable="true"' : '') + ' data-id="' + t.id + '">' +
+    ' draggable="true" data-id="' + t.id + '">' +
     '<div class="linha-topo"><span class="tag-area">' + (AREAS[t.area] || t.area) + '</span>' +
     (t.local ? '<span class="tag-local">local</span>' : '') +
     '<span class="tag-sprint">' + sprintRot + '</span></div>' +
@@ -904,19 +904,35 @@ async function removerTarefaLocal(id) {
 }
 
 async function moverTarefaLocal(id, novoStatus) {
-  var achou = false;
-  cacheTarefasLocais.forEach(function (t) { if (t.id === id) { t.status = novoStatus; achou = true; } });
-  if (!achou) return;
+  var achouLocal = false;
+  cacheTarefasLocais.forEach(function (t) { if (t.id === id) { t.status = novoStatus; achouLocal = true; } });
+  // Cards do catálogo (não-locais) também podem ser arrastados -- mutam
+  // catalogoEfetivo direto, já que todasTarefas() lê dali.
+  var achouCatalogo = false;
+  if (!achouLocal) {
+    catalogoEfetivo.forEach(function (t) {
+      if (t.id === id) {
+        t.status = novoStatus;
+        t.concluidoEm = novoStatus === "concluido" ? hojeISO() : null;
+        achouCatalogo = true;
+      }
+    });
+  }
+  if (!achouLocal && !achouCatalogo) return;
   if (EMBUTIDO) {
-    try { await chamarPai("mover", { id: id, status: novoStatus }); }
-    catch (e) { alert("Não consegui salvar no banco agora. Tenta de novo em instantes."); }
-  } else if (MODO === "api") {
+    try {
+      // "concluido" passa pela mesma ação do botão (grava concluido_em de
+      // verdade); qualquer outra coluna usa mover, que só troca o status.
+      if (!achouLocal && novoStatus === "concluido") await chamarPai("concluir", { id: id });
+      else await chamarPai("mover", { id: id, status: novoStatus });
+    } catch (e) { alert("Não consegui salvar no banco agora. Tenta de novo em instantes."); }
+  } else if (MODO === "api" && achouLocal) {
     try {
       await fetch("/api/tarefas-locais/" + encodeURIComponent(id), {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: novoStatus })
       });
     } catch (e) { alert("Não consegui salvar no Supabase agora. Tenta de novo em instantes."); }
-  } else {
+  } else if (achouLocal) {
     gravarLocalTarefas(cacheTarefasLocais);
   }
   renderTudo();
@@ -1009,7 +1025,7 @@ document.addEventListener("click", function (ev) {
 });
 
 document.addEventListener("dragstart", function (ev) {
-  var card = ev.target.closest(".card-t.local");
+  var card = ev.target.closest(".card-t");
   if (!card) return;
   ev.dataTransfer.setData("text/plain", card.getAttribute("data-id"));
   ev.dataTransfer.effectAllowed = "move";
@@ -1017,7 +1033,7 @@ document.addEventListener("dragstart", function (ev) {
 });
 
 document.addEventListener("dragend", function (ev) {
-  var card = ev.target.closest(".card-t.local");
+  var card = ev.target.closest(".card-t");
   if (card) card.classList.remove("arrastando");
   document.querySelectorAll(".lista-cards.pode-soltar").forEach(function (el) { el.classList.remove("pode-soltar"); });
 });
