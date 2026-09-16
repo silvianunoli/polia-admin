@@ -790,25 +790,32 @@ const TOP_RISCOS = [
 ];
 
 const MESES = [
-  { m:"mai", commits:389, mig:27, nota:"a funda\u00e7\u00e3o: o app nasce, 21 migrations num \u00fanico dia" },
-  { m:"jun", commits:40,  mig:14, nota:"redesign v3, painel novo, camada Seu Dia" },
-  { m:"jul", commits:70,  mig:78, nota:"o m\u00eas pesado: Stripe LIVE, admin pr\u00f3prio, m\u00f3dulo social, seguran\u00e7a" },
-  { m:"ago", commits:28,  mig:2,  nota:"copy, SEO e pr\u00e9-lan\u00e7amento: menos c\u00f3digo, mais afia\u00e7\u00e3o" }
+  { m:"mai", commits:389, mig:22, nota:"a funda\u00e7\u00e3o: o app nasce, 21 migrations num \u00fanico dia" },
+  { m:"jun", commits:40,  mig:8,  nota:"redesign v3, painel novo, camada Seu Dia" },
+  { m:"jul", commits:82,  mig:51, nota:"o m\u00eas pesado: Stripe LIVE, admin extra\u00eddo em repo pr\u00f3prio, m\u00f3dulo social, seguran\u00e7a" },
+  { m:"ago", commits:28,  mig:3,  nota:"copy, SEO e pr\u00e9-lan\u00e7amento: menos c\u00f3digo, mais afia\u00e7\u00e3o" },
+  { m:"set", commits:96,  mig:4,  nota:"subdom\u00ednios (servi\u00e7os, comunidade) viram reposit\u00f3rio pr\u00f3prio, planos renomeados, deploy autom\u00e1tico ligado (e um incidente de produ\u00e7\u00e3o ca\u00e7ado e corrigido no mesmo dia)" }
 ];
+/* Commits somados dos 4 repos (polia-app, polia-admin, polia-servicos,
+   polia-comunidade); migrations s\u00f3 de polia-app, \u00fanico dono do schema.
+   Recalculado 15/09/2026 via git log de cada repo -- a vers\u00e3o anterior s\u00f3
+   contava polia-app e nunca tinha sido atualizada com setembro. */
 
-/* Horas de trabalho: reconstruidas de 42.894 eventos com hora exata (539 commits +
-   42.355 mensagens das 43 sessoes de Claude Code deste workspace). Metodo: eventos a
-   ate 45 min de distancia formam um bloco continuo; cada bloco ganha 10 min de
-   aquecimento. 133 blocos. Script: calcular-horas.js na raiz do workspace. */
+/* Horas de trabalho: reconstruidas de 57.040 eventos com hora exata (636 commits +
+   56.404 mensagens das 57 sessoes de Claude Code deste workspace, todas lidas ate
+   15/09/2026). Metodo: eventos a ate 45 min de distancia formam um bloco continuo;
+   cada bloco ganha 10 min de aquecimento. 178 blocos. Script: calcular-horas.js na
+   raiz do workspace. */
 const HORAS = {
-  total: "178,9", dias: 44, media: "4,1", maiorDia: "27/07", maiorHoras: "14,8",
+  total: "230,3", dias: 61, media: "3,8", maiorDia: "15/09", maiorHoras: "16,2",
   porMes: [
-    { m:"mai", h:13.1,  rot:"13,1 h" },
-    { m:"jun", h:21.3,  rot:"21,3 h" },
+    { m:"mai", h:13.2,  rot:"13,2 h" },
+    { m:"jun", h:21,    rot:"21 h" },
     { m:"jul", h:104.6, rot:"104,6 h" },
-    { m:"ago", h:39.9,  rot:"39,9 h (at\u00e9 19/08)" }
+    { m:"ago", h:44.1,  rot:"44,1 h" },
+    { m:"set", h:47.3,  rot:"47,3 h (at\u00e9 15/09)" }
   ],
-  metodo: "Como foi contado: 42.894 eventos com hora exata (539 commits + 42.355 mensagens de sess\u00e3o) agrupados em 133 blocos de trabalho; eventos a at\u00e9 45 minutos de dist\u00e2ncia contam como bloco cont\u00ednuo, e cada bloco ganha 10 minutos de aquecimento. O que este n\u00famero N\u00c3O v\u00ea, e por isso \u00e9 piso e n\u00e3o total: sess\u00f5es do Cowork, trabalho no Figma e no Notion, tempo de pensar longe do computador, e quase tudo de maio e junho, quando o projeto vivia no Lovable e s\u00f3 os commits deixaram rastro nesta m\u00e1quina (389 commits de maio viraram s\u00f3 13 horas cont\u00e1veis; o real desses meses \u00e9 maior). O maior dia registrado foi 27/07, o dia da extra\u00e7\u00e3o do admin."
+  metodo: "Como foi contado: 57.040 eventos com hora exata (636 commits + 56.404 mensagens de sess\u00e3o) agrupados em 178 blocos de trabalho; eventos a at\u00e9 45 minutos de dist\u00e2ncia contam como bloco cont\u00ednuo, e cada bloco ganha 10 minutos de aquecimento. O que este n\u00famero N\u00c3O v\u00ea, e por isso \u00e9 piso e n\u00e3o total: sess\u00f5es do Cowork, trabalho no Figma e no Notion, tempo de pensar longe do computador, e quase tudo de maio e junho, quando o projeto vivia no Lovable e s\u00f3 os commits deixaram rastro nesta m\u00e1quina (389 commits de maio viraram s\u00f3 13,2 horas cont\u00e1veis; o real desses meses \u00e9 maior). O maior dia registrado foi 15/09: deploy autom\u00e1tico ligado nos 4 reposit\u00f3rios, um incidente de produ\u00e7\u00e3o (e o conserto), sess\u00e3o maratona."
 };
 
 /* N\u00fameros do neg\u00f3cio: SQL direto no banco de produ\u00e7\u00e3o (execute_sql via MCP), 19/08/2026. Sem mudan\u00e7a em rela\u00e7\u00e3o a 18/08. */
