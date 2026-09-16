@@ -211,11 +211,16 @@ export const renomearColunaConteudo = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-// Escrita do Kanban embutido (tarefas soltas que a Sil cria direto no board, e
-// marcações de concluído) -- espelha as rotas /api/tarefas-locais e
-// /api/concluidos que existiam no polia-office. Chamadas via postMessage
-// pela ponte em kanban.tsx, nunca por fetch direto do iframe (ele não tem
-// como anexar o Bearer token).
+// Escrita do Kanban embutido (tarefas soltas que a Sil cria direto no board,
+// e marcações de concluído) -- grava direto em office_tarefas_catalogo, a
+// mesma tabela que o Claude Code usa por SQL. Antes (até 16/09/2026) essas
+// duas ações gravavam em duas tabelas-sombra (office_tarefas_locais,
+// office_concluidos_locais) que buscarHtmlKanban() nunca relia de volta --
+// então a escrita ia pro Supabase de verdade, mas sumia pro board em
+// qualquer sessão nova ou outro navegador, sobrevivendo só via localStorage
+// do aparelho que escreveu. Ver VAR-149/conversa de 16/09 no board. Chamadas
+// via postMessage pela ponte em kanban.tsx, nunca por fetch direto do
+// iframe (ele não tem como anexar o Bearer token).
 const novaTarefaLocalInput = z.object({
   titulo: z.string().trim().min(1).max(500),
   area: z.string().max(100).default("produto"),
@@ -231,9 +236,13 @@ export const criarTarefaLocalKanban = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => novaTarefaLocalInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
+    // Mesmo esquema de id que o board já usa no modo 100% local (fallback
+    // sem admin/sem API): prefixo LOC- + timestamp, único o bastante pro
+    // ritmo de uso manual daqui.
+    const id = `LOC-${Date.now()}`;
     const { data: criada, error } = await supabaseAdmin
-      .from("office_tarefas_locais")
-      .insert(data)
+      .from("office_tarefas_catalogo")
+      .insert({ id, ...data })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -241,7 +250,7 @@ export const criarTarefaLocalKanban = createServerFn({ method: "POST" })
   });
 
 const moverTarefaLocalInput = z.object({
-  id: z.string().uuid(),
+  id: z.string().min(1).max(200),
   status: z.string().max(50),
 });
 
@@ -251,27 +260,28 @@ export const moverTarefaLocalKanban = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const { error } = await supabaseAdmin
-      .from("office_tarefas_locais")
+      .from("office_tarefas_catalogo")
       .update({ status: data.status })
       .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-const removerTarefaLocalInput = z.object({ id: z.string().uuid() });
+const removerTarefaLocalInput = z.object({ id: z.string().min(1).max(200) });
 
 export const removerTarefaLocalKanban = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => removerTarefaLocalInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("office_tarefas_locais").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin.from("office_tarefas_catalogo").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
 
-// tarefaId aceita tanto um UUID de tarefa local quanto um id de catálogo tipo
-// "COPY-02" -- sem formato fixo, por isso só limite de tamanho.
+// tarefaId é sempre um id de catálogo (ex: "COPY-02", "VAR-84") -- o botão
+// "Marcar como concluído" só aparece pra cards que vêm do catálogo, nunca
+// pros locais (esses têm botão de Remover em vez disso).
 const marcarConcluidoInput = z.object({ tarefaId: z.string().min(1).max(200) });
 
 export const marcarConcluidoKanban = createServerFn({ method: "POST" })
@@ -279,9 +289,11 @@ export const marcarConcluidoKanban = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => marcarConcluidoInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
+    const hoje = new Date().toISOString().slice(0, 10);
     const { error } = await supabaseAdmin
-      .from("office_concluidos_locais")
-      .upsert({ tarefa_id: data.tarefaId }, { onConflict: "tarefa_id" });
+      .from("office_tarefas_catalogo")
+      .update({ status: "concluido", concluido_em: hoje })
+      .eq("id", data.tarefaId);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

@@ -277,7 +277,7 @@ select, .busca {
 <section class="board" id="board"></section>
 
 <footer class="rodape-pagina">
-  <span>A maior parte das tarefas aqui é criada e movida por mim, o Claude, direto na sessão. O que você adiciona no botão "+ Nova tarefa" fica só neste navegador até você copiar o resumo pra mim.</span>
+  <span id="rodape-texto-local">A maior parte das tarefas aqui é criada e movida por mim, o Claude, direto na sessão. O que você adiciona no botão "+ Nova tarefa" fica só neste navegador até você copiar o resumo pra mim.</span>
   <a href="https://office.usepolia.com.br/estrategico" target="_blank" rel="noopener">Ver o board estratégico (Gerenciamento Pólia) →</a>
 </footer>
 
@@ -286,7 +286,7 @@ select, .busca {
 
 <div class="overlay-form escondido" id="overlay-form">
   <div class="form-card">
-    <h3>Nova tarefa <span class="tag-local">local, só neste navegador</span></h3>
+    <h3>Nova tarefa <span class="tag-local" id="tag-local-form">local, só neste navegador</span></h3>
     <div class="form-grid">
       <label class="full">Título<input type="text" id="nt-titulo" placeholder="O que precisa ser feito"></label>
       <label>Área<select id="nt-area"></select></label>
@@ -550,6 +550,22 @@ function diaSemana() { return new Date(hojeISO() + "T12:00:00").getDay(); }
 // (claude.ai) ou em qualquer outro host -- o CSP do Artifact bloqueia fetch pra
 // fora, então cai pro localStorage de sempre (efêmero, só neste navegador).
 var MODO = (typeof location !== "undefined" && /usepolia\.com\.br$|\.workers\.dev$/.test(location.hostname)) ? "api" : "local";
+
+// Texto do rodapé/tag muda de verdade conforme o modo: "embutido" (dentro do
+// admin) e "api" escrevem no Supabase na hora; só "local" de verdade (Artifact
+// solto no claude.ai) fica preso ao localStorage deste navegador. Chamado
+// depois que EMBUTIDO é calculado (perto do fim do arquivo).
+function atualizarTextoLocal() {
+  var gravaNoBanco = EMBUTIDO || MODO === "api";
+  var rodape = document.getElementById("rodape-texto-local");
+  if (rodape) {
+    rodape.textContent = gravaNoBanco
+      ? 'A maior parte das tarefas aqui é criada e movida por mim, o Claude, direto na sessão. O que você adiciona no botão "+ Nova tarefa" já grava no banco na hora -- não precisa copiar nada pra mim, e aparece pra qualquer sessão futura.'
+      : 'A maior parte das tarefas aqui é criada e movida por mim, o Claude, direto na sessão. O que você adiciona no botão "+ Nova tarefa" fica só neste navegador até você copiar o resumo pra mim.';
+  }
+  var tag = document.getElementById("tag-local-form");
+  if (tag) tag.textContent = gravaNoBanco ? "grava direto no banco" : "local, só neste navegador";
+}
 
 // EMBUTIDO: board rodando dentro do iframe srcDoc do admin (polia-admin). Aqui
 // dentro não existe fetch autenticado nem detecção de domínio (location.hostname
@@ -1037,6 +1053,7 @@ document.getElementById("busca").addEventListener("input", function (e) { estado
 preencherSelects();
 renderTudo();
 carregarEstado();
+atualizarTextoLocal();
 </script>
 </body>
 </html>
