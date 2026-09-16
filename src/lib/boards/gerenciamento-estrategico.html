@@ -696,7 +696,7 @@ table.tab-tabela tr:last-child td { border-bottom:none; }
 
     <div id="v-backlog" class="escondido">
       <div class="form-tarefa escondido" id="form-tarefa">
-        <h3>Nova tarefa <span class="tag-local">local, s&#243; neste navegador</span></h3>
+        <h3>Nova tarefa <span class="tag-local" id="tag-local-form">local, s&#243; neste navegador</span></h3>
         <div class="form-grid">
           <label>T&#237;tulo<input type="text" id="nt-titulo" placeholder="O que precisa ser feito"></label>
           <label>&#193;rea<select id="nt-area"></select></label>
@@ -1576,9 +1576,60 @@ function renderPerguntas(slug){
   }).join("");
 }
 
-/* Itens marcados como conclu\u00eddos por voc\u00ea: local no navegador, nunca escreve no
-   POLIA-BOARD.md nem no banco sozinho. Use "copiar resumo" pra eu fechar de verdade. */
+/* Ponte com o polia-admin (16/09/2026): igual ao Kanban Operacional -- o
+   board roda dentro de um iframe srcDoc sem fetch autenticado, ent\u00e3o toda
+   escrita passa por postMessage pro pai, que chama a mesma server function
+   que o /kanban usa (as duas telas escrevem na mesma office_tarefas_catalogo).
+   Antes, "marcar como conclu\u00eddo" e "+ Nova tarefa" ficavam s\u00f3 no
+   localStorage at\u00e9 voc\u00ea copiar um resumo pra eu incluir manualmente -- agora
+   grava direto, sem esse passo. */
+var EMBUTIDO = (typeof window !== "undefined" && window.parent !== window);
+var pmSeq = 0;
+var pmPendentes = {};
+if (EMBUTIDO) {
+  window.addEventListener("message", function (ev) {
+    var msg = ev.data;
+    if (!msg || msg.tipo !== "kanban:resposta" || !msg.reqId) return;
+    var pend = pmPendentes[msg.reqId];
+    if (!pend) return;
+    delete pmPendentes[msg.reqId];
+    if (msg.ok) pend.resolve(msg.dados);
+    else pend.reject(new Error(msg.erro || "falha"));
+  });
+}
+function chamarPai(acao, payload) {
+  return new Promise(function (resolve, reject) {
+    var reqId = "e" + (++pmSeq) + "_" + Date.now();
+    pmPendentes[reqId] = { resolve: resolve, reject: reject };
+    window.parent.postMessage({ tipo: "kanban:acao", reqId: reqId, acao: acao, payload: payload }, "*");
+    setTimeout(function () {
+      if (pmPendentes[reqId]) { delete pmPendentes[reqId]; reject(new Error("timeout")); }
+    }, 8000);
+  });
+}
+// Cat\u00e1logo vivo injetado pelo servidor (ver buscarHtmlEstrategico em
+// boards.functions.ts) -- s\u00f3 usado pra saber status real (conclu\u00eddo ou n\u00e3o)
+// e pra achar as tarefas LOC-* criadas direto neste board. Os EPICOS/ITENS
+// continuam vindo do snapshot est\u00e1tico do arquivo.
+function catalogoVivo() {
+  return (typeof window !== "undefined" && Array.isArray(window.__CATALOGO_SUPABASE__))
+    ? window.__CATALOGO_SUPABASE__
+    : [];
+}
+function statusNoCatalogo(id) {
+  var linha = catalogoVivo().find(function (r) { return r.id === id; });
+  return linha ? linha.status : null;
+}
+
+/* Itens marcados como conclu\u00eddos por voc\u00ea: quando EMBUTIDO, grava direto em
+   office_tarefas_catalogo (status "concluido"). Fora do polia-admin (Artifact
+   solto), cai pro localStorage de sempre, sem sincronizar com ningu\u00e9m. */
 function concluidosSil(){
+  if (EMBUTIDO) {
+    return catalogoVivo()
+      .filter(function (r) { return r.status === "concluido"; })
+      .map(function (r) { return r.id; });
+  }
   try { return JSON.parse(localStorage.getItem("polia_concluidos_sil") || "[]"); }
   catch (e) { return []; }
 }
@@ -1586,7 +1637,22 @@ function salvarConcluidosSil(lista){
   try { localStorage.setItem("polia_concluidos_sil", JSON.stringify(lista)); }
   catch (e) {}
 }
-function marcarConcluido(id){
+async function marcarConcluido(id){
+  if (EMBUTIDO) {
+    var jaFeito = statusNoCatalogo(id) === "concluido";
+    try {
+      if (jaFeito) await chamarPai("mover", { id: id, status: "afazer" });
+      else await chamarPai("concluir", { id: id });
+    } catch (e) {
+      alert("N\u00e3o consegui salvar no banco agora. Tenta de novo em instantes.");
+      return;
+    }
+    var linha = catalogoVivo().find(function (r) { return r.id === id; });
+    if (linha) linha.status = jaFeito ? "afazer" : "concluido";
+    abrirItem(id);
+    montarKanban();
+    return;
+  }
   let lista = concluidosSil();
   if (lista.indexOf(id) > -1) lista = lista.filter(function(x){ return x !== id; });
   else lista.push(id);
@@ -1598,6 +1664,7 @@ function marcarConcluido(id){
 function atualizarContadorConcluidos(){
   const el = document.getElementById("copiar-resumo");
   if (!el) return;
+  if (EMBUTIDO) { el.style.display = "none"; return; }
   const n = concluidosSil().length + tarefasLocais().length;
   el.textContent = n ? ("Copiar resumo (" + n + " mudan\u00e7a" + (n>1?"s":"") + ") pro Claude") : "Nenhuma mudan\u00e7a ainda";
   el.disabled = !n;
@@ -1633,11 +1700,25 @@ function copiarResumoConcluidos(){
   }
 }
 
-/* Tarefas locais: adicionadas por voc\u00ea direto no painel, sem passar por mim.
-   Vivem s\u00f3 no localStorage deste navegador, no formato de um item de ITENS
-   (mesmos campos: id/sala/area/dono/trava/rot/fonte/txt) mais _meta pra funcionar
-   igual na Tabela. Use "Copiar resumo" pra eu incluir de verdade no board. */
+/* Tarefas locais: adicionadas por voc\u00ea direto no painel. Quando EMBUTIDO,
+   v\u00eam do cat\u00e1logo vivo (linhas LOC-* de office_tarefas_catalogo), j\u00e1
+   remapeadas pro formato de um item de ITENS (id/sala/area/dono/trava/rot/
+   fonte/txt) mais _meta pra funcionar igual na Tabela. Fora do polia-admin
+   cai pro localStorage de sempre. */
 function tarefasLocais(){
+  if (EMBUTIDO) {
+    return catalogoVivo()
+      .filter(function (r) { return typeof r.id === "string" && r.id.indexOf("LOC-") === 0; })
+      .map(function (r) {
+        var statusMeta = r.status === "concluido" ? "concluido" : r.status === "travado" ? "travado" : "andamento";
+        var donoLocal = r.pessoa === "silvia" ? "sil" : "claude";
+        return {
+          id: r.id, sala: r.area, area: r.area, dono: donoLocal, trava: 0, rot: r.titulo,
+          fonte: "adicionada por voc\u00ea", txt: r.nota || r.titulo, local: true,
+          _meta: { status: statusMeta, prioridade: r.prioridade, de: null, ate: null, semana: null }
+        };
+      });
+  }
   try { return JSON.parse(localStorage.getItem("polia_tarefas_locais") || "[]"); }
   catch (e) { return []; }
 }
@@ -1651,7 +1732,7 @@ function todosItens(){
 function metaDoItem(i){
   return i.local ? i._meta : TABELA_META[i.id];
 }
-function adicionarTarefaLocal(){
+async function adicionarTarefaLocal(){
   const campoTitulo = document.getElementById("nt-titulo");
   const titulo = campoTitulo.value.trim();
   if (!titulo) { campoTitulo.style.borderColor = "var(--danger)"; return; }
@@ -1660,16 +1741,32 @@ function adicionarTarefaLocal(){
   const prioridade = document.getElementById("nt-prioridade").value;
   const trava = document.getElementById("nt-trava").checked ? 1 : 0;
   const nota = document.getElementById("nt-nota").value.trim();
-  const hoje = new Date();
-  const dataRot = String(hoje.getDate()).padStart(2,"0") + "/" + String(hoje.getMonth()+1).padStart(2,"0");
-  const lista = tarefasLocais();
-  lista.push({
-    id: "LOC-" + Date.now(), sala: area, area: area, dono: dono, trava: trava, rot: titulo,
-    fonte: "adicionada por voc\u00ea em " + dataRot,
-    txt: nota || titulo, local: true,
-    _meta: { status:"andamento", prioridade: prioridade, de:null, ate:null, semana:null }
-  });
-  salvarTarefasLocais(lista);
+  if (EMBUTIDO) {
+    var notaFinal = (nota || titulo) + (trava ? " (trava outubro/2026)" : "");
+    var novaEmb = {
+      titulo: titulo, area: area, pessoa: dono === "sil" ? "silvia" : "claudinho",
+      status: "afazer", prioridade: prioridade, nota: notaFinal
+    };
+    try {
+      var criadaEmb = await chamarPai("criar", novaEmb);
+      if (!criadaEmb || !criadaEmb.id) throw new Error("resposta sem id");
+      catalogoVivo().push(criadaEmb);
+    } catch (e) {
+      alert("N\u00e3o consegui salvar no banco agora. Tenta de novo em instantes.");
+      return;
+    }
+  } else {
+    const hoje = new Date();
+    const dataRot = String(hoje.getDate()).padStart(2,"0") + "/" + String(hoje.getMonth()+1).padStart(2,"0");
+    const lista = tarefasLocais();
+    lista.push({
+      id: "LOC-" + Date.now(), sala: area, area: area, dono: dono, trava: trava, rot: titulo,
+      fonte: "adicionada por voc\u00ea em " + dataRot,
+      txt: nota || titulo, local: true,
+      _meta: { status:"andamento", prioridade: prioridade, de:null, ate:null, semana:null }
+    });
+    salvarTarefasLocais(lista);
+  }
   campoTitulo.value = "";
   campoTitulo.style.borderColor = "";
   document.getElementById("nt-nota").value = "";
@@ -1679,9 +1776,17 @@ function adicionarTarefaLocal(){
   montarTabela();
   atualizarContadorConcluidos();
 }
-function removerTarefaLocal(id){
-  const lista = tarefasLocais().filter(function(t){ return t.id !== id; });
-  salvarTarefasLocais(lista);
+async function removerTarefaLocal(id){
+  if (EMBUTIDO) {
+    try { await chamarPai("remover", { id: id }); }
+    catch (e) { alert("N\u00e3o consegui remover no banco agora. Tenta de novo em instantes."); return; }
+    var cv = catalogoVivo();
+    var idx = cv.findIndex(function (r) { return r.id === id; });
+    if (idx > -1) cv.splice(idx, 1);
+  } else {
+    const lista = tarefasLocais().filter(function(t){ return t.id !== id; });
+    salvarTarefasLocais(lista);
+  }
   drawer.classList.remove("aberto");
   montarKanban();
   montarTabela();
@@ -2177,14 +2282,20 @@ function abrirItem(id){
     '<div class="linha-meta"><dt>Trava outubro</dt><dd>' + (it.trava?"Sim":"N\u00e3o") + '</dd></div>' +
     '<div class="linha-meta"><dt>De onde veio</dt><dd>' + it.fonte + '</dd></div>';
   const acao = document.getElementById("d-acao");
+  const notaGravacao = EMBUTIDO
+    ? "J\u00e1 grava direto no banco, sem passar por mim."
+    : "Essa tarefa existe s\u00f3 no seu navegador. Use \u201cCopiar resumo\u201d no backlog pra eu incluir de verdade no board.";
   if (it.local) {
     acao.innerHTML = '<button class="btn-marcar" id="d-remover" data-id="' + it.id + '">Remover tarefa local</button>' +
-      '<p class="nota-local">Essa tarefa existe s\u00f3 no seu navegador. Use \u201cCopiar resumo\u201d no backlog pra eu incluir de verdade no board.</p>';
+      '<p class="nota-local">' + notaGravacao + '</p>';
   } else if (it.dono === "sil") {
     const feito = concluidosSil().indexOf(it.id) > -1;
+    const notaMarcar = EMBUTIDO
+      ? "J\u00e1 grava direto no banco, sem passar por mim."
+      : "Fica salvo s\u00f3 neste navegador. Use \u201cCopiar resumo\u201d no backlog pra eu fechar de verdade no board.";
     acao.innerHTML = '<button class="btn-marcar' + (feito?" feito":"") + '" id="d-marcar" data-id="' + it.id + '">' +
       (feito ? "\u2713 Marcado como conclu\u00eddo \u2014 clique pra desfazer" : "Marcar como conclu\u00eddo") + '</button>' +
-      '<p class="nota-local">Fica salvo s\u00f3 neste navegador. Use \u201cCopiar resumo\u201d no backlog pra eu fechar de verdade no board.</p>';
+      '<p class="nota-local">' + notaMarcar + '</p>';
   } else {
     acao.innerHTML = "";
   }
@@ -2260,6 +2371,8 @@ document.getElementById("dias").textContent =
 
 document.getElementById("nt-area").innerHTML = AREAS.map(a => '<option value="' + a.id + '">' + a.nome + '</option>').join("");
 document.getElementById("bloco-filtro").classList.add("escondido");
+var tagLocalForm = document.getElementById("tag-local-form");
+if (tagLocalForm && EMBUTIDO) tagLocalForm.textContent = "grava direto no banco";
 atualizarContadorConcluidos();
 montarResumo();
 montarTabela();

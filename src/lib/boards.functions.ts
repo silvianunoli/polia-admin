@@ -64,7 +64,16 @@ export const buscarHtmlEstrategico = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
-    return estrategicoHtml;
+    // Mesmo motivo do buscarHtmlKanban: o board é HTML estático puro (iframe
+    // srcDoc), então o catálogo vivo precisa vir injetado antes do script
+    // rodar (ver window.__CATALOGO_SUPABASE__ em carregarCatalogoVivo() no
+    // HTML). Só usado pra "marcar como concluído" e tarefas locais (LOC-*) --
+    // os EPICOS/ITENS em si continuam vindo do snapshot estático do arquivo.
+    const { data } = await supabaseAdmin.from("office_tarefas_catalogo").select("*");
+    const catalogo = Array.isArray(data) ? data.map(linhaCatalogoParaFrontend) : [];
+    const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
+    const script = `<script>window.__CATALOGO_SUPABASE__=${json};</script>`;
+    return estrategicoHtml.replace("<body>", `<body>${script}`);
   });
 
 interface ConteudoRow {
