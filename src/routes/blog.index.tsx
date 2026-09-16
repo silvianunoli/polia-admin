@@ -311,7 +311,7 @@ function BlogAdminIndex() {
                           </Link>
                           {status === "publicado" && (
                             <a
-                              href={`https://usepolia.com.br/blog/${post.slug}`}
+                              href={`https://one.usepolia.com.br/blog/${post.slug}`}
                               target="_blank"
                               rel="noreferrer"
                               title="Ver no blog"

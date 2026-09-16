@@ -60,7 +60,7 @@ export const criarConvite = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-const SITE_URL = "https://usepolia.com.br";
+const SITE_URL = "https://one.usepolia.com.br";
 
 export const enviarConvite = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
