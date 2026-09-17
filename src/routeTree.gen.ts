@@ -34,9 +34,41 @@ import { Route as BlogIdRouteImport } from './routes/blog.$id'
 import { Route as BlogNovoRouteImport } from './routes/blog.novo'
 import { Route as ChamadosIndexRouteImport } from './routes/chamados.index'
 import { Route as ChamadosIdRouteImport } from './routes/chamados.$id'
+import { Route as FounderIndexRouteImport } from './routes/founder/index'
+import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
+import { Route as FounderNumerosRouteImport } from './routes/founder/numeros'
+import { Route as FounderSaudeRouteImport } from './routes/founder/saude'
 import { Route as PesquisasIndexRouteImport } from './routes/pesquisas.index'
 import { Route as PesquisasSlugRouteImport } from './routes/pesquisas.$slug'
 import { Route as UsuariosIdRouteImport } from './routes/usuarios.$id'
+import { Route as FounderAnalyticsIndexRouteImport } from './routes/founder/analytics.index'
+import { Route as FounderAnalyticsComportamentoRouteImport } from './routes/founder/analytics.comportamento'
+import { Route as FounderAnalyticsFuncionalidadesRouteImport } from './routes/founder/analytics.funcionalidades'
+import { Route as FounderAnalyticsJornadasRouteImport } from './routes/founder/analytics.jornadas'
+import { Route as FounderAnalyticsRetencaoRouteImport } from './routes/founder/analytics.retencao'
+import { Route as FounderAnalyticsSegmentosRouteImport } from './routes/founder/analytics.segmentos'
+import { Route as FounderAnalyticsSessoesRouteImport } from './routes/founder/analytics.sessoes'
+import { Route as FounderAnalyticsUsuariasRouteImport } from './routes/founder/analytics.usuarias'
+import { Route as FounderFeaturesExperimentosRouteImport } from './routes/founder/features.experimentos'
+import { Route as FounderFeaturesFlagsRouteImport } from './routes/founder/features.flags'
+import { Route as FounderFeaturesReleasesRouteImport } from './routes/founder/features.releases'
+import { Route as FounderInfraApiRouteImport } from './routes/founder/infra.api'
+import { Route as FounderInfraBancoRouteImport } from './routes/founder/infra.banco'
+import { Route as FounderInfraIaRouteImport } from './routes/founder/infra.ia'
+import { Route as FounderInfraStorageRouteImport } from './routes/founder/infra.storage'
+import { Route as FounderNegocioAssinaturasRouteImport } from './routes/founder/negocio.assinaturas'
+import { Route as FounderNegocioChurnRouteImport } from './routes/founder/negocio.churn'
+import { Route as FounderNegocioConversaoRouteImport } from './routes/founder/negocio.conversao'
+import { Route as FounderNegocioReceitaRouteImport } from './routes/founder/negocio.receita'
+import { Route as FounderOperacaoErrosRouteImport } from './routes/founder/operacao.erros'
+import { Route as FounderOperacaoIntegracoesRouteImport } from './routes/founder/operacao.integracoes'
+import { Route as FounderOperacaoJobsRouteImport } from './routes/founder/operacao.jobs'
+import { Route as FounderOperacaoLogsRouteImport } from './routes/founder/operacao.logs'
+import { Route as FounderProdutoAtivacaoRouteImport } from './routes/founder/produto.ativacao'
+import { Route as FounderProdutoExperimentosRouteImport } from './routes/founder/produto.experimentos'
+import { Route as FounderProdutoFeedbackRouteImport } from './routes/founder/produto.feedback'
+import { Route as FounderProdutoFunilRouteImport } from './routes/founder/produto.funil'
+import { Route as FounderAnalyticsUsuariasIdRouteImport } from './routes/founder/analytics.usuarias.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -163,6 +195,26 @@ const ChamadosIdRoute = ChamadosIdRouteImport.update({
   path: '/chamados/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FounderIndexRoute = FounderIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderAlertasRoute = FounderAlertasRouteImport.update({
+  id: '/alertas',
+  path: '/alertas',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderNumerosRoute = FounderNumerosRouteImport.update({
+  id: '/numeros',
+  path: '/numeros',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderSaudeRoute = FounderSaudeRouteImport.update({
+  id: '/saude',
+  path: '/saude',
+  getParentRoute: () => FounderRoute,
+} as any)
 const PesquisasIndexRoute = PesquisasIndexRouteImport.update({
   id: '/pesquisas/',
   path: '/pesquisas/',
@@ -178,6 +230,157 @@ const UsuariosIdRoute = UsuariosIdRouteImport.update({
   path: '/usuarios/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FounderAnalyticsIndexRoute = FounderAnalyticsIndexRouteImport.update({
+  id: '/analytics/',
+  path: '/analytics/',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderAnalyticsComportamentoRoute =
+  FounderAnalyticsComportamentoRouteImport.update({
+    id: '/analytics/comportamento',
+    path: '/analytics/comportamento',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderAnalyticsFuncionalidadesRoute =
+  FounderAnalyticsFuncionalidadesRouteImport.update({
+    id: '/analytics/funcionalidades',
+    path: '/analytics/funcionalidades',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderAnalyticsJornadasRoute =
+  FounderAnalyticsJornadasRouteImport.update({
+    id: '/analytics/jornadas',
+    path: '/analytics/jornadas',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderAnalyticsRetencaoRoute =
+  FounderAnalyticsRetencaoRouteImport.update({
+    id: '/analytics/retencao',
+    path: '/analytics/retencao',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderAnalyticsSegmentosRoute =
+  FounderAnalyticsSegmentosRouteImport.update({
+    id: '/analytics/segmentos',
+    path: '/analytics/segmentos',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderAnalyticsSessoesRoute = FounderAnalyticsSessoesRouteImport.update({
+  id: '/analytics/sessoes',
+  path: '/analytics/sessoes',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderAnalyticsUsuariasRoute =
+  FounderAnalyticsUsuariasRouteImport.update({
+    id: '/analytics/usuarias',
+    path: '/analytics/usuarias',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderFeaturesExperimentosRoute =
+  FounderFeaturesExperimentosRouteImport.update({
+    id: '/features/experimentos',
+    path: '/features/experimentos',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderFeaturesFlagsRoute = FounderFeaturesFlagsRouteImport.update({
+  id: '/features/flags',
+  path: '/features/flags',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderFeaturesReleasesRoute = FounderFeaturesReleasesRouteImport.update({
+  id: '/features/releases',
+  path: '/features/releases',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderInfraApiRoute = FounderInfraApiRouteImport.update({
+  id: '/infra/api',
+  path: '/infra/api',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderInfraBancoRoute = FounderInfraBancoRouteImport.update({
+  id: '/infra/banco',
+  path: '/infra/banco',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderInfraIaRoute = FounderInfraIaRouteImport.update({
+  id: '/infra/ia',
+  path: '/infra/ia',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderInfraStorageRoute = FounderInfraStorageRouteImport.update({
+  id: '/infra/storage',
+  path: '/infra/storage',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderNegocioAssinaturasRoute =
+  FounderNegocioAssinaturasRouteImport.update({
+    id: '/negocio/assinaturas',
+    path: '/negocio/assinaturas',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderNegocioChurnRoute = FounderNegocioChurnRouteImport.update({
+  id: '/negocio/churn',
+  path: '/negocio/churn',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderNegocioConversaoRoute = FounderNegocioConversaoRouteImport.update({
+  id: '/negocio/conversao',
+  path: '/negocio/conversao',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderNegocioReceitaRoute = FounderNegocioReceitaRouteImport.update({
+  id: '/negocio/receita',
+  path: '/negocio/receita',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderOperacaoErrosRoute = FounderOperacaoErrosRouteImport.update({
+  id: '/operacao/erros',
+  path: '/operacao/erros',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderOperacaoIntegracoesRoute =
+  FounderOperacaoIntegracoesRouteImport.update({
+    id: '/operacao/integracoes',
+    path: '/operacao/integracoes',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderOperacaoJobsRoute = FounderOperacaoJobsRouteImport.update({
+  id: '/operacao/jobs',
+  path: '/operacao/jobs',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderOperacaoLogsRoute = FounderOperacaoLogsRouteImport.update({
+  id: '/operacao/logs',
+  path: '/operacao/logs',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderProdutoAtivacaoRoute = FounderProdutoAtivacaoRouteImport.update({
+  id: '/produto/ativacao',
+  path: '/produto/ativacao',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderProdutoExperimentosRoute =
+  FounderProdutoExperimentosRouteImport.update({
+    id: '/produto/experimentos',
+    path: '/produto/experimentos',
+    getParentRoute: () => FounderRoute,
+  } as any)
+const FounderProdutoFeedbackRoute = FounderProdutoFeedbackRouteImport.update({
+  id: '/produto/feedback',
+  path: '/produto/feedback',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderProdutoFunilRoute = FounderProdutoFunilRouteImport.update({
+  id: '/produto/funil',
+  path: '/produto/funil',
+  getParentRoute: () => FounderRoute,
+} as any)
+const FounderAnalyticsUsuariasIdRoute =
+  FounderAnalyticsUsuariasIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => FounderAnalyticsUsuariasRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -190,7 +393,7 @@ export interface FileRoutesByFullPath {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
-  '/founder': typeof FounderRoute
+  '/founder': typeof FounderRouteWithChildren
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -203,11 +406,43 @@ export interface FileRoutesByFullPath {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/founder/alertas': typeof FounderAlertasRoute
+  '/founder/numeros': typeof FounderNumerosRoute
+  '/founder/saude': typeof FounderSaudeRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
+  '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
+  '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
+  '/founder/analytics/retencao': typeof FounderAnalyticsRetencaoRoute
+  '/founder/analytics/segmentos': typeof FounderAnalyticsSegmentosRoute
+  '/founder/analytics/sessoes': typeof FounderAnalyticsSessoesRoute
+  '/founder/analytics/usuarias': typeof FounderAnalyticsUsuariasRouteWithChildren
+  '/founder/features/experimentos': typeof FounderFeaturesExperimentosRoute
+  '/founder/features/flags': typeof FounderFeaturesFlagsRoute
+  '/founder/features/releases': typeof FounderFeaturesReleasesRoute
+  '/founder/infra/api': typeof FounderInfraApiRoute
+  '/founder/infra/banco': typeof FounderInfraBancoRoute
+  '/founder/infra/ia': typeof FounderInfraIaRoute
+  '/founder/infra/storage': typeof FounderInfraStorageRoute
+  '/founder/negocio/assinaturas': typeof FounderNegocioAssinaturasRoute
+  '/founder/negocio/churn': typeof FounderNegocioChurnRoute
+  '/founder/negocio/conversao': typeof FounderNegocioConversaoRoute
+  '/founder/negocio/receita': typeof FounderNegocioReceitaRoute
+  '/founder/operacao/erros': typeof FounderOperacaoErrosRoute
+  '/founder/operacao/integracoes': typeof FounderOperacaoIntegracoesRoute
+  '/founder/operacao/jobs': typeof FounderOperacaoJobsRoute
+  '/founder/operacao/logs': typeof FounderOperacaoLogsRoute
+  '/founder/produto/ativacao': typeof FounderProdutoAtivacaoRoute
+  '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
+  '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
+  '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/founder/analytics/': typeof FounderAnalyticsIndexRoute
+  '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -220,7 +455,6 @@ export interface FileRoutesByTo {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
-  '/founder': typeof FounderRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -233,11 +467,43 @@ export interface FileRoutesByTo {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/founder/alertas': typeof FounderAlertasRoute
+  '/founder/numeros': typeof FounderNumerosRoute
+  '/founder/saude': typeof FounderSaudeRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog': typeof BlogIndexRoute
   '/chamados': typeof ChamadosIndexRoute
+  '/founder': typeof FounderIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
+  '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
+  '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
+  '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
+  '/founder/analytics/retencao': typeof FounderAnalyticsRetencaoRoute
+  '/founder/analytics/segmentos': typeof FounderAnalyticsSegmentosRoute
+  '/founder/analytics/sessoes': typeof FounderAnalyticsSessoesRoute
+  '/founder/analytics/usuarias': typeof FounderAnalyticsUsuariasRouteWithChildren
+  '/founder/features/experimentos': typeof FounderFeaturesExperimentosRoute
+  '/founder/features/flags': typeof FounderFeaturesFlagsRoute
+  '/founder/features/releases': typeof FounderFeaturesReleasesRoute
+  '/founder/infra/api': typeof FounderInfraApiRoute
+  '/founder/infra/banco': typeof FounderInfraBancoRoute
+  '/founder/infra/ia': typeof FounderInfraIaRoute
+  '/founder/infra/storage': typeof FounderInfraStorageRoute
+  '/founder/negocio/assinaturas': typeof FounderNegocioAssinaturasRoute
+  '/founder/negocio/churn': typeof FounderNegocioChurnRoute
+  '/founder/negocio/conversao': typeof FounderNegocioConversaoRoute
+  '/founder/negocio/receita': typeof FounderNegocioReceitaRoute
+  '/founder/operacao/erros': typeof FounderOperacaoErrosRoute
+  '/founder/operacao/integracoes': typeof FounderOperacaoIntegracoesRoute
+  '/founder/operacao/jobs': typeof FounderOperacaoJobsRoute
+  '/founder/operacao/logs': typeof FounderOperacaoLogsRoute
+  '/founder/produto/ativacao': typeof FounderProdutoAtivacaoRoute
+  '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
+  '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
+  '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/founder/analytics': typeof FounderAnalyticsIndexRoute
+  '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -251,7 +517,7 @@ export interface FileRoutesById {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
-  '/founder': typeof FounderRoute
+  '/founder': typeof FounderRouteWithChildren
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -264,11 +530,43 @@ export interface FileRoutesById {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/founder/alertas': typeof FounderAlertasRoute
+  '/founder/numeros': typeof FounderNumerosRoute
+  '/founder/saude': typeof FounderSaudeRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
+  '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
+  '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
+  '/founder/analytics/retencao': typeof FounderAnalyticsRetencaoRoute
+  '/founder/analytics/segmentos': typeof FounderAnalyticsSegmentosRoute
+  '/founder/analytics/sessoes': typeof FounderAnalyticsSessoesRoute
+  '/founder/analytics/usuarias': typeof FounderAnalyticsUsuariasRouteWithChildren
+  '/founder/features/experimentos': typeof FounderFeaturesExperimentosRoute
+  '/founder/features/flags': typeof FounderFeaturesFlagsRoute
+  '/founder/features/releases': typeof FounderFeaturesReleasesRoute
+  '/founder/infra/api': typeof FounderInfraApiRoute
+  '/founder/infra/banco': typeof FounderInfraBancoRoute
+  '/founder/infra/ia': typeof FounderInfraIaRoute
+  '/founder/infra/storage': typeof FounderInfraStorageRoute
+  '/founder/negocio/assinaturas': typeof FounderNegocioAssinaturasRoute
+  '/founder/negocio/churn': typeof FounderNegocioChurnRoute
+  '/founder/negocio/conversao': typeof FounderNegocioConversaoRoute
+  '/founder/negocio/receita': typeof FounderNegocioReceitaRoute
+  '/founder/operacao/erros': typeof FounderOperacaoErrosRoute
+  '/founder/operacao/integracoes': typeof FounderOperacaoIntegracoesRoute
+  '/founder/operacao/jobs': typeof FounderOperacaoJobsRoute
+  '/founder/operacao/logs': typeof FounderOperacaoLogsRoute
+  '/founder/produto/ativacao': typeof FounderProdutoAtivacaoRoute
+  '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
+  '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
+  '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/founder/analytics/': typeof FounderAnalyticsIndexRoute
+  '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -296,11 +594,43 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/founder/alertas'
+    | '/founder/numeros'
+    | '/founder/saude'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/founder/'
     | '/pesquisas/'
+    | '/founder/analytics/comportamento'
+    | '/founder/analytics/funcionalidades'
+    | '/founder/analytics/jornadas'
+    | '/founder/analytics/retencao'
+    | '/founder/analytics/segmentos'
+    | '/founder/analytics/sessoes'
+    | '/founder/analytics/usuarias'
+    | '/founder/features/experimentos'
+    | '/founder/features/flags'
+    | '/founder/features/releases'
+    | '/founder/infra/api'
+    | '/founder/infra/banco'
+    | '/founder/infra/ia'
+    | '/founder/infra/storage'
+    | '/founder/negocio/assinaturas'
+    | '/founder/negocio/churn'
+    | '/founder/negocio/conversao'
+    | '/founder/negocio/receita'
+    | '/founder/operacao/erros'
+    | '/founder/operacao/integracoes'
+    | '/founder/operacao/jobs'
+    | '/founder/operacao/logs'
+    | '/founder/produto/ativacao'
+    | '/founder/produto/experimentos'
+    | '/founder/produto/feedback'
+    | '/founder/produto/funil'
+    | '/founder/analytics/'
+    | '/founder/analytics/usuarias/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -313,7 +643,6 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/estrategico'
     | '/flags'
-    | '/founder'
     | '/funil'
     | '/governanca'
     | '/kanban'
@@ -326,11 +655,43 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/founder/alertas'
+    | '/founder/numeros'
+    | '/founder/saude'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog'
     | '/chamados'
+    | '/founder'
     | '/pesquisas'
+    | '/founder/analytics/comportamento'
+    | '/founder/analytics/funcionalidades'
+    | '/founder/analytics/jornadas'
+    | '/founder/analytics/retencao'
+    | '/founder/analytics/segmentos'
+    | '/founder/analytics/sessoes'
+    | '/founder/analytics/usuarias'
+    | '/founder/features/experimentos'
+    | '/founder/features/flags'
+    | '/founder/features/releases'
+    | '/founder/infra/api'
+    | '/founder/infra/banco'
+    | '/founder/infra/ia'
+    | '/founder/infra/storage'
+    | '/founder/negocio/assinaturas'
+    | '/founder/negocio/churn'
+    | '/founder/negocio/conversao'
+    | '/founder/negocio/receita'
+    | '/founder/operacao/erros'
+    | '/founder/operacao/integracoes'
+    | '/founder/operacao/jobs'
+    | '/founder/operacao/logs'
+    | '/founder/produto/ativacao'
+    | '/founder/produto/experimentos'
+    | '/founder/produto/feedback'
+    | '/founder/produto/funil'
+    | '/founder/analytics'
+    | '/founder/analytics/usuarias/$id'
   id:
     | '__root__'
     | '/'
@@ -356,11 +717,43 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/founder/alertas'
+    | '/founder/numeros'
+    | '/founder/saude'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/founder/'
     | '/pesquisas/'
+    | '/founder/analytics/comportamento'
+    | '/founder/analytics/funcionalidades'
+    | '/founder/analytics/jornadas'
+    | '/founder/analytics/retencao'
+    | '/founder/analytics/segmentos'
+    | '/founder/analytics/sessoes'
+    | '/founder/analytics/usuarias'
+    | '/founder/features/experimentos'
+    | '/founder/features/flags'
+    | '/founder/features/releases'
+    | '/founder/infra/api'
+    | '/founder/infra/banco'
+    | '/founder/infra/ia'
+    | '/founder/infra/storage'
+    | '/founder/negocio/assinaturas'
+    | '/founder/negocio/churn'
+    | '/founder/negocio/conversao'
+    | '/founder/negocio/receita'
+    | '/founder/operacao/erros'
+    | '/founder/operacao/integracoes'
+    | '/founder/operacao/jobs'
+    | '/founder/operacao/logs'
+    | '/founder/produto/ativacao'
+    | '/founder/produto/experimentos'
+    | '/founder/produto/feedback'
+    | '/founder/produto/funil'
+    | '/founder/analytics/'
+    | '/founder/analytics/usuarias/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -374,7 +767,7 @@ export interface RootRouteChildren {
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
   FlagsRoute: typeof FlagsRoute
-  FounderRoute: typeof FounderRoute
+  FounderRoute: typeof FounderRouteWithChildren
   FunilRoute: typeof FunilRoute
   GovernancaRoute: typeof GovernancaRoute
   KanbanRoute: typeof KanbanRoute
@@ -571,6 +964,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChamadosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/founder/': {
+      id: '/founder/'
+      path: '/'
+      fullPath: '/founder/'
+      preLoaderRoute: typeof FounderIndexRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/alertas': {
+      id: '/founder/alertas'
+      path: '/alertas'
+      fullPath: '/founder/alertas'
+      preLoaderRoute: typeof FounderAlertasRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/numeros': {
+      id: '/founder/numeros'
+      path: '/numeros'
+      fullPath: '/founder/numeros'
+      preLoaderRoute: typeof FounderNumerosRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/saude': {
+      id: '/founder/saude'
+      path: '/saude'
+      fullPath: '/founder/saude'
+      preLoaderRoute: typeof FounderSaudeRouteImport
+      parentRoute: typeof FounderRoute
+    }
     '/pesquisas/': {
       id: '/pesquisas/'
       path: '/pesquisas'
@@ -592,8 +1013,289 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsuariosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/founder/analytics/': {
+      id: '/founder/analytics/'
+      path: '/analytics'
+      fullPath: '/founder/analytics/'
+      preLoaderRoute: typeof FounderAnalyticsIndexRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/comportamento': {
+      id: '/founder/analytics/comportamento'
+      path: '/analytics/comportamento'
+      fullPath: '/founder/analytics/comportamento'
+      preLoaderRoute: typeof FounderAnalyticsComportamentoRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/funcionalidades': {
+      id: '/founder/analytics/funcionalidades'
+      path: '/analytics/funcionalidades'
+      fullPath: '/founder/analytics/funcionalidades'
+      preLoaderRoute: typeof FounderAnalyticsFuncionalidadesRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/jornadas': {
+      id: '/founder/analytics/jornadas'
+      path: '/analytics/jornadas'
+      fullPath: '/founder/analytics/jornadas'
+      preLoaderRoute: typeof FounderAnalyticsJornadasRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/retencao': {
+      id: '/founder/analytics/retencao'
+      path: '/analytics/retencao'
+      fullPath: '/founder/analytics/retencao'
+      preLoaderRoute: typeof FounderAnalyticsRetencaoRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/segmentos': {
+      id: '/founder/analytics/segmentos'
+      path: '/analytics/segmentos'
+      fullPath: '/founder/analytics/segmentos'
+      preLoaderRoute: typeof FounderAnalyticsSegmentosRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/sessoes': {
+      id: '/founder/analytics/sessoes'
+      path: '/analytics/sessoes'
+      fullPath: '/founder/analytics/sessoes'
+      preLoaderRoute: typeof FounderAnalyticsSessoesRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/usuarias': {
+      id: '/founder/analytics/usuarias'
+      path: '/analytics/usuarias'
+      fullPath: '/founder/analytics/usuarias'
+      preLoaderRoute: typeof FounderAnalyticsUsuariasRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/features/experimentos': {
+      id: '/founder/features/experimentos'
+      path: '/features/experimentos'
+      fullPath: '/founder/features/experimentos'
+      preLoaderRoute: typeof FounderFeaturesExperimentosRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/features/flags': {
+      id: '/founder/features/flags'
+      path: '/features/flags'
+      fullPath: '/founder/features/flags'
+      preLoaderRoute: typeof FounderFeaturesFlagsRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/features/releases': {
+      id: '/founder/features/releases'
+      path: '/features/releases'
+      fullPath: '/founder/features/releases'
+      preLoaderRoute: typeof FounderFeaturesReleasesRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/infra/api': {
+      id: '/founder/infra/api'
+      path: '/infra/api'
+      fullPath: '/founder/infra/api'
+      preLoaderRoute: typeof FounderInfraApiRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/infra/banco': {
+      id: '/founder/infra/banco'
+      path: '/infra/banco'
+      fullPath: '/founder/infra/banco'
+      preLoaderRoute: typeof FounderInfraBancoRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/infra/ia': {
+      id: '/founder/infra/ia'
+      path: '/infra/ia'
+      fullPath: '/founder/infra/ia'
+      preLoaderRoute: typeof FounderInfraIaRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/infra/storage': {
+      id: '/founder/infra/storage'
+      path: '/infra/storage'
+      fullPath: '/founder/infra/storage'
+      preLoaderRoute: typeof FounderInfraStorageRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/negocio/assinaturas': {
+      id: '/founder/negocio/assinaturas'
+      path: '/negocio/assinaturas'
+      fullPath: '/founder/negocio/assinaturas'
+      preLoaderRoute: typeof FounderNegocioAssinaturasRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/negocio/churn': {
+      id: '/founder/negocio/churn'
+      path: '/negocio/churn'
+      fullPath: '/founder/negocio/churn'
+      preLoaderRoute: typeof FounderNegocioChurnRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/negocio/conversao': {
+      id: '/founder/negocio/conversao'
+      path: '/negocio/conversao'
+      fullPath: '/founder/negocio/conversao'
+      preLoaderRoute: typeof FounderNegocioConversaoRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/negocio/receita': {
+      id: '/founder/negocio/receita'
+      path: '/negocio/receita'
+      fullPath: '/founder/negocio/receita'
+      preLoaderRoute: typeof FounderNegocioReceitaRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/operacao/erros': {
+      id: '/founder/operacao/erros'
+      path: '/operacao/erros'
+      fullPath: '/founder/operacao/erros'
+      preLoaderRoute: typeof FounderOperacaoErrosRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/operacao/integracoes': {
+      id: '/founder/operacao/integracoes'
+      path: '/operacao/integracoes'
+      fullPath: '/founder/operacao/integracoes'
+      preLoaderRoute: typeof FounderOperacaoIntegracoesRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/operacao/jobs': {
+      id: '/founder/operacao/jobs'
+      path: '/operacao/jobs'
+      fullPath: '/founder/operacao/jobs'
+      preLoaderRoute: typeof FounderOperacaoJobsRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/operacao/logs': {
+      id: '/founder/operacao/logs'
+      path: '/operacao/logs'
+      fullPath: '/founder/operacao/logs'
+      preLoaderRoute: typeof FounderOperacaoLogsRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/produto/ativacao': {
+      id: '/founder/produto/ativacao'
+      path: '/produto/ativacao'
+      fullPath: '/founder/produto/ativacao'
+      preLoaderRoute: typeof FounderProdutoAtivacaoRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/produto/experimentos': {
+      id: '/founder/produto/experimentos'
+      path: '/produto/experimentos'
+      fullPath: '/founder/produto/experimentos'
+      preLoaderRoute: typeof FounderProdutoExperimentosRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/produto/feedback': {
+      id: '/founder/produto/feedback'
+      path: '/produto/feedback'
+      fullPath: '/founder/produto/feedback'
+      preLoaderRoute: typeof FounderProdutoFeedbackRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/produto/funil': {
+      id: '/founder/produto/funil'
+      path: '/produto/funil'
+      fullPath: '/founder/produto/funil'
+      preLoaderRoute: typeof FounderProdutoFunilRouteImport
+      parentRoute: typeof FounderRoute
+    }
+    '/founder/analytics/usuarias/$id': {
+      id: '/founder/analytics/usuarias/$id'
+      path: '/$id'
+      fullPath: '/founder/analytics/usuarias/$id'
+      preLoaderRoute: typeof FounderAnalyticsUsuariasIdRouteImport
+      parentRoute: typeof FounderAnalyticsUsuariasRoute
+    }
   }
 }
+
+interface FounderAnalyticsUsuariasRouteChildren {
+  FounderAnalyticsUsuariasIdRoute: typeof FounderAnalyticsUsuariasIdRoute
+}
+
+const FounderAnalyticsUsuariasRouteChildren: FounderAnalyticsUsuariasRouteChildren =
+  {
+    FounderAnalyticsUsuariasIdRoute: FounderAnalyticsUsuariasIdRoute,
+  }
+
+const FounderAnalyticsUsuariasRouteWithChildren =
+  FounderAnalyticsUsuariasRoute._addFileChildren(
+    FounderAnalyticsUsuariasRouteChildren,
+  )
+
+interface FounderRouteChildren {
+  FounderAlertasRoute: typeof FounderAlertasRoute
+  FounderNumerosRoute: typeof FounderNumerosRoute
+  FounderSaudeRoute: typeof FounderSaudeRoute
+  FounderIndexRoute: typeof FounderIndexRoute
+  FounderAnalyticsComportamentoRoute: typeof FounderAnalyticsComportamentoRoute
+  FounderAnalyticsFuncionalidadesRoute: typeof FounderAnalyticsFuncionalidadesRoute
+  FounderAnalyticsJornadasRoute: typeof FounderAnalyticsJornadasRoute
+  FounderAnalyticsRetencaoRoute: typeof FounderAnalyticsRetencaoRoute
+  FounderAnalyticsSegmentosRoute: typeof FounderAnalyticsSegmentosRoute
+  FounderAnalyticsSessoesRoute: typeof FounderAnalyticsSessoesRoute
+  FounderAnalyticsUsuariasRoute: typeof FounderAnalyticsUsuariasRouteWithChildren
+  FounderFeaturesExperimentosRoute: typeof FounderFeaturesExperimentosRoute
+  FounderFeaturesFlagsRoute: typeof FounderFeaturesFlagsRoute
+  FounderFeaturesReleasesRoute: typeof FounderFeaturesReleasesRoute
+  FounderInfraApiRoute: typeof FounderInfraApiRoute
+  FounderInfraBancoRoute: typeof FounderInfraBancoRoute
+  FounderInfraIaRoute: typeof FounderInfraIaRoute
+  FounderInfraStorageRoute: typeof FounderInfraStorageRoute
+  FounderNegocioAssinaturasRoute: typeof FounderNegocioAssinaturasRoute
+  FounderNegocioChurnRoute: typeof FounderNegocioChurnRoute
+  FounderNegocioConversaoRoute: typeof FounderNegocioConversaoRoute
+  FounderNegocioReceitaRoute: typeof FounderNegocioReceitaRoute
+  FounderOperacaoErrosRoute: typeof FounderOperacaoErrosRoute
+  FounderOperacaoIntegracoesRoute: typeof FounderOperacaoIntegracoesRoute
+  FounderOperacaoJobsRoute: typeof FounderOperacaoJobsRoute
+  FounderOperacaoLogsRoute: typeof FounderOperacaoLogsRoute
+  FounderProdutoAtivacaoRoute: typeof FounderProdutoAtivacaoRoute
+  FounderProdutoExperimentosRoute: typeof FounderProdutoExperimentosRoute
+  FounderProdutoFeedbackRoute: typeof FounderProdutoFeedbackRoute
+  FounderProdutoFunilRoute: typeof FounderProdutoFunilRoute
+  FounderAnalyticsIndexRoute: typeof FounderAnalyticsIndexRoute
+}
+
+const FounderRouteChildren: FounderRouteChildren = {
+  FounderAlertasRoute: FounderAlertasRoute,
+  FounderNumerosRoute: FounderNumerosRoute,
+  FounderSaudeRoute: FounderSaudeRoute,
+  FounderIndexRoute: FounderIndexRoute,
+  FounderAnalyticsComportamentoRoute: FounderAnalyticsComportamentoRoute,
+  FounderAnalyticsFuncionalidadesRoute: FounderAnalyticsFuncionalidadesRoute,
+  FounderAnalyticsJornadasRoute: FounderAnalyticsJornadasRoute,
+  FounderAnalyticsRetencaoRoute: FounderAnalyticsRetencaoRoute,
+  FounderAnalyticsSegmentosRoute: FounderAnalyticsSegmentosRoute,
+  FounderAnalyticsSessoesRoute: FounderAnalyticsSessoesRoute,
+  FounderAnalyticsUsuariasRoute: FounderAnalyticsUsuariasRouteWithChildren,
+  FounderFeaturesExperimentosRoute: FounderFeaturesExperimentosRoute,
+  FounderFeaturesFlagsRoute: FounderFeaturesFlagsRoute,
+  FounderFeaturesReleasesRoute: FounderFeaturesReleasesRoute,
+  FounderInfraApiRoute: FounderInfraApiRoute,
+  FounderInfraBancoRoute: FounderInfraBancoRoute,
+  FounderInfraIaRoute: FounderInfraIaRoute,
+  FounderInfraStorageRoute: FounderInfraStorageRoute,
+  FounderNegocioAssinaturasRoute: FounderNegocioAssinaturasRoute,
+  FounderNegocioChurnRoute: FounderNegocioChurnRoute,
+  FounderNegocioConversaoRoute: FounderNegocioConversaoRoute,
+  FounderNegocioReceitaRoute: FounderNegocioReceitaRoute,
+  FounderOperacaoErrosRoute: FounderOperacaoErrosRoute,
+  FounderOperacaoIntegracoesRoute: FounderOperacaoIntegracoesRoute,
+  FounderOperacaoJobsRoute: FounderOperacaoJobsRoute,
+  FounderOperacaoLogsRoute: FounderOperacaoLogsRoute,
+  FounderProdutoAtivacaoRoute: FounderProdutoAtivacaoRoute,
+  FounderProdutoExperimentosRoute: FounderProdutoExperimentosRoute,
+  FounderProdutoFeedbackRoute: FounderProdutoFeedbackRoute,
+  FounderProdutoFunilRoute: FounderProdutoFunilRoute,
+  FounderAnalyticsIndexRoute: FounderAnalyticsIndexRoute,
+}
+
+const FounderRouteWithChildren =
+  FounderRoute._addFileChildren(FounderRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -606,7 +1308,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
   FlagsRoute: FlagsRoute,
-  FounderRoute: FounderRoute,
+  FounderRoute: FounderRouteWithChildren,
   FunilRoute: FunilRoute,
   GovernancaRoute: GovernancaRoute,
   KanbanRoute: KanbanRoute,

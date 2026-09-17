@@ -98,10 +98,13 @@ function RootComponent() {
   // Páginas que ganharam entrada direta na Central (não passam mais pela
   // Sidebar pra serem alcançadas) -- mantêm o padding do layout padrão, só
   // trocam a Sidebar inteira por um link simples de volta.
+  // /founder tem layout próprio (sidebar do Founder Dashboard + header com o
+  // filtro de período), definido em src/routes/founder.tsx.
+  const layoutProprio = pathname === "/founder" || pathname.startsWith("/founder/");
+
   const semSidebar =
     pathname === "/crm" ||
     pathname === "/numeros" ||
-    pathname === "/founder" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||
     pathname.startsWith("/blog");
@@ -144,7 +147,7 @@ function RootComponent() {
     conteudo = null;
   } else if (estado === "negado") {
     conteudo = <ComingSoon />;
-  } else if (semChrome) {
+  } else if (semChrome || layoutProprio) {
     conteudo = <Outlet />;
   } else if (semSidebar) {
     conteudo = (
