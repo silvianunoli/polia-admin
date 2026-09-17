@@ -130,7 +130,7 @@ function FounderPulse() {
           label="Ativas"
           valor={n?.usuariasAtivas.atual}
           variacaoPct={n?.usuariasAtivas.variacaoPct}
-          descricao="atualizaram algo no período"
+          descricao="com ação real no período"
           carregando={carregando}
           href="/founder/numeros"
         />

@@ -176,6 +176,30 @@ async function contarAte(tabela: "profiles", coluna: string, fim: string): Promi
   return count ?? 0;
 }
 
+// "Ativa" = ação real registrada em founder_eventos (nunca feature_opened /
+// heartbeat) — a mesma definição do founder-monitor e das telas de analytics.
+const EVENTOS_ATIVOS = [
+  "feature_completed",
+  "create_product",
+  "edit_product",
+  "create_goal",
+  "edit_goal",
+  "onboarding_completed",
+  "business_created",
+];
+
+async function ativasPorEventos(ini: string, fim: string): Promise<number> {
+  const { data } = await supabaseAdmin
+    .from("founder_eventos")
+    .select("user_id")
+    .in("evento", EVENTOS_ATIVOS)
+    .not("user_id", "is", null)
+    .gte("criado_em", ini)
+    .lt("criado_em", fim)
+    .limit(20000);
+  return new Set(((data ?? []) as { user_id: string }[]).map((l) => l.user_id)).size;
+}
+
 function metrica(atual: number | null, anterior: number | null): Metrica {
   return {
     atual,
@@ -200,8 +224,8 @@ async function calcularNumeros(p: PeriodoResolvido): Promise<NumerosPrincipais> 
     contarAte("profiles", "created_at", p.fimAnterior),
     contar("profiles", "created_at", p.ini, p.fim),
     contar("profiles", "created_at", p.iniAnterior, p.fimAnterior),
-    contar("profiles", "updated_at", p.ini, p.fim),
-    contar("profiles", "updated_at", p.iniAnterior, p.fimAnterior),
+    ativasPorEventos(p.ini, p.fim),
+    ativasPorEventos(p.iniAnterior, p.fimAnterior),
     contar("erros_app", "criado_em", p.ini, p.fim),
     contar("erros_app", "criado_em", p.iniAnterior, p.fimAnterior),
     supabaseAdmin.from("assinaturas").select("price_id, status, updated_at"),

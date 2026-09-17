@@ -22,7 +22,7 @@ const DEFINICOES: { label: string; texto: string }[] = [
   {
     label: "Usuárias ativas",
     texto:
-      "contas que atualizaram algo no perfil ou no produto dentro do período (profiles.updated_at). Passa a ser ação real registrada por evento no bloco 2.",
+      "contas com pelo menos uma ação real registrada no período (criar ou editar produto ou meta, concluir onboarding, usar uma funcionalidade até o fim). Abrir tela e heartbeat não contam.",
   },
   {
     label: "Assinantes",
@@ -94,7 +94,7 @@ function NumerosPrincipais() {
           label="Usuárias ativas"
           valor={n?.usuariasAtivas.atual}
           variacaoPct={n?.usuariasAtivas.variacaoPct}
-          descricao="atualizaram algo no período"
+          descricao="com ação real no período"
           carregando={carregando}
         />
         <StatCard
