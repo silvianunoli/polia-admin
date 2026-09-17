@@ -2,7 +2,6 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   ClipboardList,
-  Gauge,
   Inbox,
   Kanban,
   LogOut,
@@ -14,7 +13,6 @@ import {
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { PoliaIcon } from "@/components/brand/PoliaLogo";
 
 export const Route = createFileRoute("/central")({
   head: () => ({ meta: [{ title: "Central de administração · Pólia" }] }),
@@ -37,18 +35,6 @@ const PRODUTOS: Produto[] = [
       "O cockpit: em 30 segundos, se a Pólia está saudável, o que precisa de atenção e os números.",
     href: "/founder",
     icone: Radar,
-  },
-  {
-    nome: "Números da Pólia One",
-    descricao: "Uso, negócio, saúde do sistema e alertas — tudo num resumo só.",
-    href: "/numeros",
-    icone: Gauge,
-  },
-  {
-    nome: "Admin da Pólia",
-    descricao: "Usuárias, conteúdo, métricas e operação do produto.",
-    href: "/painel",
-    icone: PoliaIcon,
   },
   {
     nome: "Kanban Operacional",
