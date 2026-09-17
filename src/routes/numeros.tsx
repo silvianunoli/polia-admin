@@ -2,399 +2,399 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { SkeletonBloco, SkeletonNumero } from "@/components/Skeleton";
 import { supabase } from "@/integrations/supabase/client";
-import { getResumoMonetizacao, type PlanoResumo } from "@/lib/admin-negocio.functions";
-import { ALERTA_ERRO_CLASS, ALERTA_OK_CLASS, BTN_LINK, CARD_CLASS } from "@/lib/botoes";
+import {
+  getResumoMonetizacao,
+  getResumoNumeros,
+  type ResumoNumeros,
+  type UsuariaResumo,
+} from "@/lib/admin-negocio.functions";
+import { ALERTA_ERRO_CLASS, BTN_LINK, CARD_CLASS } from "@/lib/botoes";
 
 export const Route = createFileRoute("/numeros")({
   head: () => ({ meta: [{ title: "Números da Pólia One · Gestão Pólia" }] }),
   component: NumerosPolia,
 });
 
-type AlertaAberto = {
-  id: string;
-  titulo: string;
-  criado_em: string;
-};
-
-type FeatureFlag = {
-  key: string;
-  enabled: boolean;
-};
-
 const LINKS_PROFUNDIDADE = [
   { to: "/painel", label: "Visão geral" },
+  { to: "/negocio", label: "Negócio" },
   { to: "/analytics", label: "Analytics" },
   { to: "/funil", label: "Funil de módulos" },
-  { to: "/qualidade", label: "Qualidade" },
-  { to: "/governanca", label: "Governança" },
-  { to: "/auditoria", label: "Auditoria" },
-  { to: "/logs", label: "Logs do sistema" },
+  { to: "/alertas", label: "Alertas" },
+  { to: "/flags", label: "Feature Flags" },
 ] as const;
 
 function formatarBRL(centavos: number) {
   return (centavos / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
+function formatarData(iso: string | null) {
+  if (!iso) return "sem atividade registrada";
+  return new Date(iso).toLocaleDateString("pt-BR");
+}
+
+function ListaUsuarias({ lista, total }: { lista: UsuariaResumo[]; total: number }) {
+  if (lista.length === 0) {
+    return <p className="font-sans text-[13px] text-[var(--muted)]">Ninguém nesse grupo agora.</p>;
+  }
+  return (
+    <div className="space-y-2">
+      {lista.slice(0, 8).map((u) => (
+        <div key={u.id} className="flex items-center justify-between">
+          <Link
+            to="/usuarios/$id"
+            params={{ id: u.id }}
+            className="truncate font-sans text-[13px] text-[var(--ink)] no-underline hover:underline"
+          >
+            {u.nome}
+          </Link>
+          <span className="shrink-0 pl-2 font-sans text-[11px] text-[var(--muted)]">
+            {formatarData(u.ultimaAtividade)}
+          </span>
+        </div>
+      ))}
+      {total > 8 && (
+        <p className="pt-1 font-sans text-[11px] text-[var(--muted)]">e mais {total - 8}.</p>
+      )}
+    </div>
+  );
+}
+
 function NumerosPolia() {
-  const [dau, setDau] = useState(0);
-  const [wau, setWau] = useState(0);
-  const [mau, setMau] = useState(0);
-  const [cadastros30d, setCadastros30d] = useState(0);
-  const [carregandoUso, setCarregandoUso] = useState(true);
-  const [erroUso, setErroUso] = useState(false);
+  const [resumo, setResumo] = useState<ResumoNumeros | null>(null);
+  const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState(false);
 
   const [mrrCentavos, setMrrCentavos] = useState(0);
   const [assinantesAtivas, setAssinantesAtivas] = useState(0);
-  const [porPlano, setPorPlano] = useState<PlanoResumo[]>([]);
-  const [carregandoMonetizacao, setCarregandoMonetizacao] = useState(true);
-  const [erroMonetizacao, setErroMonetizacao] = useState(false);
+  const [carregandoNegocio, setCarregandoNegocio] = useState(true);
 
-  const [saude, setSaude] = useState<{
-    eventos24h: number | null;
-    erros24h: number | null;
-    latencia: number | null;
-  }>({ eventos24h: null, erros24h: null, latencia: null });
-  const [carregandoSaude, setCarregandoSaude] = useState(true);
-  const [erroSaude, setErroSaude] = useState(false);
-
-  const [alertas, setAlertas] = useState<AlertaAberto[]>([]);
-  const [carregandoAlertas, setCarregandoAlertas] = useState(true);
-  const [erroAlertas, setErroAlertas] = useState(false);
-
-  const [flags, setFlags] = useState<FeatureFlag[]>([]);
-  const [carregandoFlags, setCarregandoFlags] = useState(true);
-  const [erroFlags, setErroFlags] = useState(false);
+  const [alertasAbertos, setAlertasAbertos] = useState(0);
+  const [flagsLigadas, setFlagsLigadas] = useState({ ligadas: 0, total: 0 });
+  const [carregandoPanorama, setCarregandoPanorama] = useState(true);
 
   useEffect(() => {
     (async () => {
-      const dia1 = new Date(Date.now() - 1 * 86400000).toISOString();
-      const dia7 = new Date(Date.now() - 7 * 86400000).toISOString();
-      const dia30 = new Date(Date.now() - 30 * 86400000).toISOString();
-
       try {
-        const respostas = await Promise.all([
-          supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia1),
-          supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia7),
-          supabase.from("eventos_analytics").select("sessao_id").gte("criado_em", dia30),
+        const r = await getResumoNumeros();
+        setResumo(r);
+      } catch {
+        setErro(true);
+      } finally {
+        setCarregando(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        const negocio = await getResumoMonetizacao();
+        setMrrCentavos(negocio.mrrCentavos);
+        setAssinantesAtivas(negocio.assinantesAtivas);
+      } catch {
+        // painel de negócio detalhado fica em /negocio — aqui é só o chip.
+      } finally {
+        setCarregandoNegocio(false);
+      }
+    })();
+
+    (async () => {
+      try {
+        const [{ count: alertas }, { data: flags }] = await Promise.all([
           supabase
-            .from("profiles")
+            .from("alertas_abertos")
             .select("*", { count: "exact", head: true })
-            .gte("created_at", dia30),
+            .eq("status", "aberto"),
+          supabase.from("feature_flags").select("enabled"),
         ]);
-        // O supabase-js devolve o erro no objeto, não lança: sem esta checagem
-        // a tela mostraria zero como se fosse número real.
-        if (respostas.some((r) => r.error)) setErroUso(true);
-        const [{ data: ev1 }, { data: ev7 }, { data: ev30 }, { count: cad30 }] = respostas;
-
-        setDau(new Set((ev1 ?? []).map((e) => e.sessao_id)).size);
-        setWau(new Set((ev7 ?? []).map((e) => e.sessao_id)).size);
-        setMau(new Set((ev30 ?? []).map((e) => e.sessao_id)).size);
-        setCadastros30d(cad30 ?? 0);
+        setAlertasAbertos(alertas ?? 0);
+        const linhas = (flags ?? []) as { enabled: boolean }[];
+        setFlagsLigadas({ ligadas: linhas.filter((f) => f.enabled).length, total: linhas.length });
       } catch {
-        setErroUso(true);
+        // idem — detalhe fica em /alertas e /flags.
       } finally {
-        setCarregandoUso(false);
-      }
-    })();
-
-    (async () => {
-      try {
-        const resumo = await getResumoMonetizacao();
-        setMrrCentavos(resumo.mrrCentavos);
-        setAssinantesAtivas(resumo.assinantesAtivas);
-        setPorPlano(resumo.porPlano);
-      } catch {
-        setErroMonetizacao(true);
-      } finally {
-        setCarregandoMonetizacao(false);
-      }
-    })();
-
-    (async () => {
-      const dia1 = new Date(Date.now() - 86400000).toISOString();
-      try {
-        const { data: logs24, error } = await supabase
-          .from("edge_function_logs")
-          .select("latency_ms, error_message")
-          .gte("created_at", dia1);
-        if (error) {
-          setErroSaude(true);
-          return;
-        }
-        const eventos = (logs24 ?? []) as {
-          latency_ms: number | null;
-          error_message: string | null;
-        }[];
-        const comLat = eventos.filter((l) => typeof l.latency_ms === "number");
-        setSaude({
-          eventos24h: eventos.length,
-          erros24h: eventos.filter((l) => l.error_message).length,
-          latencia: comLat.length
-            ? Math.round(comLat.reduce((s, l) => s + (l.latency_ms ?? 0), 0) / comLat.length)
-            : 0,
-        });
-      } catch {
-        setErroSaude(true);
-      } finally {
-        setCarregandoSaude(false);
-      }
-    })();
-
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("alertas_abertos")
-          .select("id,titulo,criado_em")
-          .eq("status", "aberto")
-          .order("criado_em", { ascending: false });
-        if (error) setErroAlertas(true);
-        setAlertas(data ?? []);
-      } catch {
-        setErroAlertas(true);
-      } finally {
-        setCarregandoAlertas(false);
-      }
-    })();
-
-    (async () => {
-      try {
-        const { data, error } = await supabase
-          .from("feature_flags")
-          .select("key,enabled")
-          .order("key");
-        if (error) setErroFlags(true);
-        setFlags(data ?? []);
-      } catch {
-        setErroFlags(true);
-      } finally {
-        setCarregandoFlags(false);
+        setCarregandoPanorama(false);
       }
     })();
   }, []);
 
-  const flagsAtivas = flags.filter((f) => f.enabled).length;
+  const funilPassos = resumo
+    ? [
+        { label: "Criou conta", valor: resumo.funil.totalCadastros },
+        { label: "Completou onboarding", valor: resumo.funil.completaramOnboarding },
+        { label: "Criou o primeiro negócio", valor: resumo.funil.criaramPrimeiroNegocio },
+        { label: "Usou uma funcionalidade", valor: resumo.funil.usaramFuncionalidade },
+        { label: "Voltou depois de 7 dias", valor: resumo.funil.voltaramEm7Dias },
+        { label: "Virou recorrente", valor: resumo.funil.recorrentes },
+      ]
+    : [];
+
+  const deltaSemana =
+    resumo && resumo.ativasSemanaAnterior > 0
+      ? Math.round(
+          ((resumo.ativasSemanaAtual - resumo.ativasSemanaAnterior) / resumo.ativasSemanaAnterior) *
+            100,
+        )
+      : null;
 
   return (
     <>
       <h1 className="font-cabinet mb-1 text-[40px] text-[var(--ink)]">Números da Pólia One</h1>
       <p className="mb-8 max-w-[640px] font-sans text-[14px] text-[var(--muted)]">
-        O resumo do dia: uso, negócio, saúde do sistema e o que está pedindo atenção — tudo numa
-        página só, antes de entrar em cada área.
+        Não é o que cada usuária fez — é se a Pólia está sendo usada de verdade: quem ativou, quem
+        sumiu, quem paga e não usa, e o que está pedindo atenção agora.
       </p>
 
-      <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-        Uso
-      </h2>
-      {erroUso && (
-        <div className={`mb-4 ${ALERTA_ERRO_CLASS}`}>
-          Não conseguimos carregar os números de uso agora. Atualiza a página pra tentar de novo.
-        </div>
-      )}
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: "DAU", desc: "sessões ativas hoje", valor: dau },
-          { label: "WAU", desc: "sessões ativas em 7 dias", valor: wau },
-          { label: "MAU", desc: "sessões ativas em 30 dias", valor: mau },
-          { label: "Cadastros 30d", desc: "contas criadas nos últ. 30 dias", valor: cadastros30d },
-        ].map((m) => (
-          <div key={m.label} className={`${CARD_CLASS} p-5`}>
-            <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
-              {m.label}
-            </p>
-            <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoUso ? <SkeletonNumero /> : m.valor}
-            </p>
-            <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">{m.desc}</p>
-          </div>
-        ))}
-      </div>
-
-      <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-        Negócio
-      </h2>
-      {erroMonetizacao ? (
+      {erro && (
         <div className={`mb-8 ${ALERTA_ERRO_CLASS}`}>
-          Não conseguimos buscar os dados do Stripe agora. Atualiza a página pra tentar de novo.
+          Não conseguimos carregar os números agora. Atualiza a página pra tentar de novo.
         </div>
-      ) : (
-        <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className={`${CARD_CLASS} p-5`}>
-            <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
-              MRR
-            </p>
-            <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoMonetizacao ? (
-                <SkeletonNumero className="h-8 w-32" />
-              ) : (
-                formatarBRL(mrrCentavos)
+      )}
+
+      {!erro && (
+        <div className="mb-8 rounded-2xl bg-[var(--ink)] p-8">
+          <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[2px] text-[var(--secondary)]">
+            Pulso da semana
+          </p>
+          {carregando ? (
+            <SkeletonNumero className="h-8 w-64 bg-white/10" />
+          ) : (
+            <p className="font-sans text-[16px] leading-relaxed text-white">
+              <strong className="font-cabinet text-[22px]">{resumo?.ativasSemanaAtual ?? 0}</strong>{" "}
+              usuárias ativas nos últimos 7 dias
+              {deltaSemana !== null && (
+                <span
+                  className={deltaSemana >= 0 ? "text-[var(--secondary)]" : "text-[var(--accent)]"}
+                >
+                  {" "}
+                  ({deltaSemana >= 0 ? "+" : ""}
+                  {deltaSemana}% vs. semana anterior)
+                </span>
               )}
+              . {resumo?.segmentos.emRiscoTotal ?? 0} em risco de sumir,{" "}
+              {resumo?.segmentos.assinantesSemUsoTotal ?? 0} pagando sem usar há 14+ dias.
             </p>
-            <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">valor real via Stripe</p>
-          </div>
-          <div className={`${CARD_CLASS} p-5`}>
-            <p className="mb-1 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
-              Assinantes ativas
-            </p>
-            <p className="font-cabinet text-[32px] leading-none text-[var(--ink)]">
-              {carregandoMonetizacao ? <SkeletonNumero /> : assinantesAtivas}
-            </p>
-            <p className="mt-1 font-sans text-[11px] text-[var(--muted)]">
-              active + trialing + past_due
-            </p>
-          </div>
-          <div className={`${CARD_CLASS} p-5`}>
-            <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
-              Por plano
-            </p>
-            {carregandoMonetizacao && (
-              <div className="space-y-2">
-                <SkeletonBloco className="h-5" />
-                <SkeletonBloco className="h-5" />
-              </div>
-            )}
-            {porPlano.length === 0 && !carregandoMonetizacao && (
-              <p className="font-sans text-[13px] text-[var(--muted)]">Nenhuma assinatura ativa.</p>
-            )}
-            <div className="space-y-1">
-              {porPlano.map((p) => (
-                <div key={p.priceId} className="flex items-center justify-between">
-                  <span className="font-sans text-[13px] capitalize text-[var(--ink-soft)]">
-                    {p.plano}
-                  </span>
-                  <span className="font-sans text-[13px] text-[var(--ink)]">
-                    {p.quantidade} · {formatarBRL(p.valorMensalCentavos)}/mês
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       )}
 
       <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-        Saúde do sistema · 24h
+        Funil de ativação
       </h2>
-      {erroSaude && (
-        <div className={`mb-4 ${ALERTA_ERRO_CLASS}`}>
-          Não conseguimos carregar a saúde do sistema agora.
-        </div>
-      )}
-      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {[
-          {
-            label: "Eventos",
-            valor: saude.eventos24h === null ? "—" : String(saude.eventos24h),
-            cor: "var(--ink)",
-          },
-          {
-            label: "Erros",
-            valor: saude.erros24h === null ? "—" : String(saude.erros24h),
-            cor: (saude.erros24h ?? 0) > 0 ? "var(--danger)" : "var(--secondary-text)",
-          },
-          {
-            label: "Latência média",
-            valor: saude.latencia === null ? "—" : `${saude.latencia} ms`,
-            cor: "var(--ink)",
-          },
-        ].map((m) => (
-          <div key={m.label} className={`${CARD_CLASS} p-5`}>
-            <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
-              {m.label}
-            </p>
-            <p className="font-cabinet text-[32px] leading-none" style={{ color: m.cor }}>
-              {carregandoSaude ? <SkeletonNumero className="h-8 w-20" /> : m.valor}
-            </p>
-          </div>
-        ))}
+      <p className="mb-4 font-sans text-[12px] text-[var(--muted)]">
+        Quantas usuárias, desde sempre, já passaram por cada degrau — não é coorte de um mês.
+      </p>
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        {carregando
+          ? Array.from({ length: 6 }).map((_, i) => <SkeletonBloco key={i} className="h-24" />)
+          : funilPassos.map((p, i) => {
+              const anterior = i === 0 ? resumo!.funil.totalCadastros : funilPassos[i - 1].valor;
+              const pct = anterior > 0 ? Math.round((p.valor / anterior) * 100) : 0;
+              return (
+                <div key={p.label} className={`${CARD_CLASS} p-4`}>
+                  <p className="font-cabinet text-[26px] leading-none text-[var(--ink)]">
+                    {p.valor}
+                  </p>
+                  <p className="mt-1 font-sans text-[11px] text-[var(--ink-soft)]">{p.label}</p>
+                  {i > 0 && (
+                    <p className="mt-1 font-sans text-[10px] text-[var(--muted)]">
+                      {pct}% do anterior
+                    </p>
+                  )}
+                </div>
+              );
+            })}
       </div>
 
+      <h2 className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Segmentos · uso × pagamento
+      </h2>
       <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-              Alertas abertos
-            </h2>
-            <Link to="/alertas" className={`${BTN_LINK} text-[13px]`}>
-              Ver alertas →
-            </Link>
-          </div>
-          {erroAlertas && (
-            <div className={ALERTA_ERRO_CLASS}>Não conseguimos carregar os alertas agora.</div>
-          )}
-          {carregandoAlertas && !erroAlertas && (
-            <div className="space-y-3">
-              <SkeletonBloco className="h-16" />
-              <SkeletonBloco className="h-16" />
-            </div>
-          )}
-          {!carregandoAlertas && !erroAlertas && alertas.length === 0 && (
-            <div className={ALERTA_OK_CLASS}>Nenhum alerta aberto no momento.</div>
-          )}
-          {!carregandoAlertas && !erroAlertas && alertas.length > 0 && (
-            <div className="space-y-3">
-              {alertas.map((a) => (
-                <div
-                  key={a.id}
-                  className="rounded-xl border border-[var(--danger)]/25 bg-[var(--danger-soft)] p-4"
-                >
-                  <p className="font-sans text-[13px] font-medium text-[var(--danger)]">
-                    {a.titulo}
-                  </p>
-                  <p className="font-sans text-[12px] text-[var(--ink-soft)]">
-                    {new Date(a.criado_em).toLocaleString("pt-BR")}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-              Feature Flags
-            </h2>
-            <Link to="/flags" className={`${BTN_LINK} text-[13px]`}>
-              Gerenciar flags →
-            </Link>
-          </div>
-          {erroFlags && (
-            <div className={ALERTA_ERRO_CLASS}>Não conseguimos carregar as flags agora.</div>
-          )}
-          {carregandoFlags && !erroFlags && (
-            <div className="space-y-3">
-              <SkeletonBloco className="h-10" />
-              <SkeletonBloco className="h-10" />
-            </div>
-          )}
-          {!carregandoFlags && !erroFlags && flags.length === 0 && (
-            <div className={`${CARD_CLASS} p-5`}>
-              <p className="font-sans text-[13px] text-[var(--muted)]">
-                Nenhuma flag cadastrada no banco ainda.
-              </p>
-            </div>
-          )}
-          {!carregandoFlags && !erroFlags && flags.length > 0 && (
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-sans text-[13px] font-medium text-[var(--danger)]">
+            Assinantes pagando sem usar
+          </p>
+          <p className="mb-3 font-sans text-[11px] text-[var(--muted)]">
+            Assinatura ativa, sem evento de uso nos últimos 14 dias.
+          </p>
+          {carregando ? (
+            <SkeletonBloco className="h-20" />
+          ) : (
             <>
-              <p className="mb-3 font-sans text-[13px] text-[var(--ink-soft)]">
-                {flagsAtivas} de {flags.length} ligadas
+              <p className="font-cabinet mb-2 text-[28px] leading-none text-[var(--ink)]">
+                {resumo?.segmentos.assinantesSemUsoTotal ?? 0}
               </p>
-              <div className={`${CARD_CLASS} divide-y divide-[var(--line)]`}>
-                {flags.map((f) => (
-                  <div key={f.key} className="flex items-center justify-between px-5 py-3">
-                    <p className="font-mono text-[13px] text-[var(--ink)]">{f.key}</p>
-                    <span
-                      className="font-accent text-[10px] font-bold uppercase tracking-[1px]"
-                      style={{ color: f.enabled ? "var(--secondary-text)" : "var(--muted)" }}
-                    >
-                      {f.enabled ? "ligada" : "desligada"}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <ListaUsuarias
+                lista={resumo?.segmentos.assinantesSemUso ?? []}
+                total={resumo?.segmentos.assinantesSemUsoTotal ?? 0}
+              />
             </>
           )}
         </div>
+
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-sans text-[13px] font-medium text-[var(--danger)]">
+            Em risco de sumir
+          </p>
+          <p className="mb-3 font-sans text-[11px] text-[var(--muted)]">
+            Tinha uso recorrente no mês, sem nenhum evento nos últimos 7 dias.
+          </p>
+          {carregando ? (
+            <SkeletonBloco className="h-20" />
+          ) : (
+            <>
+              <p className="font-cabinet mb-2 text-[28px] leading-none text-[var(--ink)]">
+                {resumo?.segmentos.emRiscoTotal ?? 0}
+              </p>
+              <ListaUsuarias
+                lista={resumo?.segmentos.emRisco ?? []}
+                total={resumo?.segmentos.emRiscoTotal ?? 0}
+              />
+            </>
+          )}
+        </div>
+
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-sans text-[13px] font-medium text-[var(--secondary-text)]">
+            Gratuitas engajadas
+          </p>
+          <p className="mb-3 font-sans text-[11px] text-[var(--muted)]">
+            Sem assinatura, usou em 5+ dias diferentes nos últimos 30 dias.
+          </p>
+          {carregando ? (
+            <SkeletonBloco className="h-20" />
+          ) : (
+            <>
+              <p className="font-cabinet mb-2 text-[28px] leading-none text-[var(--ink)]">
+                {resumo?.segmentos.gratuitasEngajadasTotal ?? 0}
+              </p>
+              <ListaUsuarias
+                lista={resumo?.segmentos.gratuitasEngajadas ?? []}
+                total={resumo?.segmentos.gratuitasEngajadasTotal ?? 0}
+              />
+            </>
+          )}
+        </div>
+
+        <div className={`${CARD_CLASS} p-5`}>
+          <p className="mb-1 font-sans text-[13px] font-medium text-[var(--secondary-text)]">
+            Altamente engajadas
+          </p>
+          <p className="mb-3 font-sans text-[11px] text-[var(--muted)]">
+            Usou em 3+ dias diferentes só na última semana.
+          </p>
+          {carregando ? (
+            <SkeletonBloco className="h-20" />
+          ) : (
+            <>
+              <p className="font-cabinet mb-2 text-[28px] leading-none text-[var(--ink)]">
+                {resumo?.segmentos.altamenteEngajadasTotal ?? 0}
+              </p>
+              <ListaUsuarias
+                lista={resumo?.segmentos.altamenteEngajadas ?? []}
+                total={resumo?.segmentos.altamenteEngajadasTotal ?? 0}
+              />
+            </>
+          )}
+        </div>
+      </div>
+
+      <h2 className="mb-1 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Funcionalidades mais usadas
+      </h2>
+      <p className="mb-4 font-sans text-[12px] text-[var(--muted)]">
+        Últimos 30 dias, por usuárias únicas que dispararam o evento — sem pageview/click.
+      </p>
+      <div className={`mb-8 ${CARD_CLASS} p-6`}>
+        {carregando ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonBloco key={i} className="h-6" />
+            ))}
+          </div>
+        ) : !resumo || resumo.featuresTop.length === 0 ? (
+          <p className="font-sans text-[13px] text-[var(--muted)]">
+            Sem eventos de uso no período.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {resumo.featuresTop.map((f) => {
+              const max = resumo.featuresTop[0].usuariasUnicas || 1;
+              return (
+                <div key={f.evento}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <p className="truncate font-mono text-[12px] text-[var(--ink)]">{f.evento}</p>
+                    <p className="shrink-0 pl-2 font-sans text-[12px] text-[var(--muted)]">
+                      {f.usuariasUnicas} usuárias · {f.total} eventos
+                    </p>
+                  </div>
+                  <div className="h-1.5 w-full rounded-full bg-[var(--line)]">
+                    <div
+                      className="h-1.5 rounded-full bg-[var(--secondary)]"
+                      style={{ width: `${(f.usuariasUnicas / max) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <h2 className="mb-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Panorama rápido
+      </h2>
+      <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Link
+          to="/negocio"
+          className={`${CARD_CLASS} p-4 no-underline hover:border-[var(--secondary)]`}
+        >
+          <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
+            MRR
+          </p>
+          <p className="font-cabinet text-[22px] leading-none text-[var(--ink)]">
+            {carregandoNegocio ? <SkeletonNumero className="h-6 w-20" /> : formatarBRL(mrrCentavos)}
+          </p>
+        </Link>
+        <Link
+          to="/negocio"
+          className={`${CARD_CLASS} p-4 no-underline hover:border-[var(--secondary)]`}
+        >
+          <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
+            Assinantes
+          </p>
+          <p className="font-cabinet text-[22px] leading-none text-[var(--ink)]">
+            {carregandoNegocio ? <SkeletonNumero className="h-6 w-12" /> : assinantesAtivas}
+          </p>
+        </Link>
+        <Link
+          to="/alertas"
+          className={`${CARD_CLASS} p-4 no-underline hover:border-[var(--secondary)]`}
+        >
+          <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
+            Alertas abertos
+          </p>
+          <p
+            className="font-cabinet text-[22px] leading-none"
+            style={{ color: alertasAbertos > 0 ? "var(--danger)" : "var(--ink)" }}
+          >
+            {carregandoPanorama ? <SkeletonNumero className="h-6 w-8" /> : alertasAbertos}
+          </p>
+        </Link>
+        <Link
+          to="/flags"
+          className={`${CARD_CLASS} p-4 no-underline hover:border-[var(--secondary)]`}
+        >
+          <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
+            Feature flags
+          </p>
+          <p className="font-cabinet text-[22px] leading-none text-[var(--ink)]">
+            {carregandoPanorama ? (
+              <SkeletonNumero className="h-6 w-12" />
+            ) : (
+              `${flagsLigadas.ligadas}/${flagsLigadas.total}`
+            )}
+          </p>
+        </Link>
       </div>
 
       <h2 className="mb-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
@@ -405,7 +405,7 @@ function NumerosPolia() {
           <Link
             key={l.to}
             to={l.to}
-            className="rounded-xl border border-[var(--line)] bg-white px-4 py-2 font-sans text-[13px] text-[var(--ink-soft)] no-underline hover:border-[var(--secondary)] hover:text-[var(--ink)]"
+            className={`${BTN_LINK} rounded-xl border border-[var(--line)] bg-white px-4 py-2 no-underline hover:border-[var(--secondary)]`}
           >
             {l.label}
           </Link>
