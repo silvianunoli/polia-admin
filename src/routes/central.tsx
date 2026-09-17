@@ -7,6 +7,7 @@ import {
   Kanban,
   LogOut,
   Newspaper,
+  Radar,
   Sparkles,
   Target,
   Users,
@@ -30,6 +31,13 @@ type Produto = {
 // Ponto único de entrada das admins de todos os produtos dela — a lista
 // existe pra crescer sem mexer no layout da página.
 const PRODUTOS: Produto[] = [
+  {
+    nome: "Founder Dashboard",
+    descricao:
+      "O cockpit: em 30 segundos, se a Pólia está saudável, o que precisa de atenção e os números.",
+    href: "/founder",
+    icone: Radar,
+  },
   {
     nome: "Números da Pólia One",
     descricao: "Uso, negócio, saúde do sistema e alertas — tudo num resumo só.",

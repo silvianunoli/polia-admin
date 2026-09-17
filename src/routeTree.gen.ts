@@ -19,6 +19,7 @@ import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EstrategicoRouteImport } from './routes/estrategico'
 import { Route as FlagsRouteImport } from './routes/flags'
+import { Route as FounderRouteImport } from './routes/founder'
 import { Route as FunilRouteImport } from './routes/funil'
 import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as KanbanRouteImport } from './routes/kanban'
@@ -85,6 +86,11 @@ const EstrategicoRoute = EstrategicoRouteImport.update({
 const FlagsRoute = FlagsRouteImport.update({
   id: '/flags',
   path: '/flags',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FounderRoute = FounderRouteImport.update({
+  id: '/founder',
+  path: '/founder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FunilRoute = FunilRouteImport.update({
@@ -184,6 +190,7 @@ export interface FileRoutesByFullPath {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
+  '/founder': typeof FounderRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -213,6 +220,7 @@ export interface FileRoutesByTo {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
+  '/founder': typeof FounderRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -243,6 +251,7 @@ export interface FileRoutesById {
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/flags': typeof FlagsRoute
+  '/founder': typeof FounderRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
@@ -274,6 +283,7 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/estrategico'
     | '/flags'
+    | '/founder'
     | '/funil'
     | '/governanca'
     | '/kanban'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/estrategico'
     | '/flags'
+    | '/founder'
     | '/funil'
     | '/governanca'
     | '/kanban'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/design-system'
     | '/estrategico'
     | '/flags'
+    | '/founder'
     | '/funil'
     | '/governanca'
     | '/kanban'
@@ -362,6 +374,7 @@ export interface RootRouteChildren {
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
   FlagsRoute: typeof FlagsRoute
+  FounderRoute: typeof FounderRoute
   FunilRoute: typeof FunilRoute
   GovernancaRoute: typeof GovernancaRoute
   KanbanRoute: typeof KanbanRoute
@@ -451,6 +464,13 @@ declare module '@tanstack/react-router' {
       path: '/flags'
       fullPath: '/flags'
       preLoaderRoute: typeof FlagsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/founder': {
+      id: '/founder'
+      path: '/founder'
+      fullPath: '/founder'
+      preLoaderRoute: typeof FounderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/funil': {
@@ -586,6 +606,7 @@ const rootRouteChildren: RootRouteChildren = {
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
   FlagsRoute: FlagsRoute,
+  FounderRoute: FounderRoute,
   FunilRoute: FunilRoute,
   GovernancaRoute: GovernancaRoute,
   KanbanRoute: KanbanRoute,
