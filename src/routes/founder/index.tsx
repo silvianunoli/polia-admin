@@ -8,6 +8,8 @@ import { CARD_CLASS, BTN_SECUNDARIO, ALERTA_ERRO_CLASS, BTN_LINK } from "@/lib/b
 import { SkeletonBloco } from "@/components/Skeleton";
 import { EstadoPill } from "@/components/founder/EstadoPill";
 import { StatCard } from "@/components/founder/StatCard";
+import { useCarregar } from "@/components/founder/useCarregar";
+import { getFounderFlagsResumo } from "@/lib/founder-flags.functions";
 
 export const Route = createFileRoute("/founder/")({
   component: FounderPulse,
@@ -169,7 +171,7 @@ function FounderPulse() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className={`${CARD_CLASS} p-6`}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <p className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
@@ -282,6 +284,48 @@ function FounderPulse() {
           )}
         </div>
       </div>
+
+      <FlagsResumo />
     </>
+  );
+}
+
+function FlagsResumo() {
+  const { dados, carregando } = useCarregar(() => getFounderFlagsResumo(), []);
+  const ligadas = dados?.filter((f) => f.estado !== "off").length ?? 0;
+  return (
+    <div className={`${CARD_CLASS} p-6`}>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <p className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+          Feature flags (prod)
+        </p>
+        <Link
+          to="/founder/features/flags"
+          search={(prev) => prev}
+          className={`${BTN_LINK} text-[13px]`}
+        >
+          {dados ? `${ligadas}/${dados.length} ligadas · gerenciar →` : "gerenciar →"}
+        </Link>
+      </div>
+      {carregando || !dados ? (
+        <SkeletonBloco className="h-16" />
+      ) : dados.length === 0 ? (
+        <p className="font-sans text-[13px] text-[var(--muted)]">Nenhuma flag cadastrada.</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2 lg:grid-cols-3">
+          {dados.map((f) => (
+            <div
+              key={f.key}
+              className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-1.5"
+            >
+              <span className="truncate font-mono text-[12px] text-[var(--ink)]">{f.key}</span>
+              <span className="shrink-0 font-sans text-[12px] text-[var(--ink-soft)]">
+                {f.estado === "off" ? "OFF" : f.estado === "beta" ? "Beta" : "ON"} · {f.rolloutPct}%
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
