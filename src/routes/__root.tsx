@@ -101,6 +101,7 @@ function RootComponent() {
   const semSidebar =
     pathname === "/crm" ||
     pathname === "/numeros" ||
+    pathname === "/founder" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||
     pathname.startsWith("/blog");
