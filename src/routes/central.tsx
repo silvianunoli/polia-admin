@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   ClipboardList,
+  Gauge,
   Inbox,
   Kanban,
   LogOut,
@@ -29,6 +30,12 @@ type Produto = {
 // Ponto único de entrada das admins de todos os produtos dela — a lista
 // existe pra crescer sem mexer no layout da página.
 const PRODUTOS: Produto[] = [
+  {
+    nome: "Números da Pólia One",
+    descricao: "Uso, negócio, saúde do sistema e alertas — tudo num resumo só.",
+    href: "/numeros",
+    icone: Gauge,
+  },
   {
     nome: "Admin da Pólia",
     descricao: "Usuárias, conteúdo, métricas e operação do produto.",

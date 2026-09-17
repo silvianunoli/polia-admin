@@ -100,6 +100,7 @@ function RootComponent() {
   // trocam a Sidebar inteira por um link simples de volta.
   const semSidebar =
     pathname === "/crm" ||
+    pathname === "/numeros" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||
     pathname.startsWith("/blog");

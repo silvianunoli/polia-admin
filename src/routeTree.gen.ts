@@ -24,6 +24,7 @@ import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LogsRouteImport } from './routes/logs'
 import { Route as NegocioRouteImport } from './routes/negocio'
+import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as QualidadeRouteImport } from './routes/qualidade'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
@@ -111,6 +112,11 @@ const NegocioRoute = NegocioRouteImport.update({
   path: '/negocio',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NumerosRoute = NumerosRouteImport.update({
+  id: '/numeros',
+  path: '/numeros',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PainelRoute = PainelRouteImport.update({
   id: '/painel',
   path: '/painel',
@@ -183,6 +189,7 @@ export interface FileRoutesByFullPath {
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
   '/auth/login': typeof AuthLoginRoute
@@ -211,6 +218,7 @@ export interface FileRoutesByTo {
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
   '/auth/login': typeof AuthLoginRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
   '/negocio': typeof NegocioRoute
+  '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
   '/auth/login': typeof AuthLoginRoute
@@ -270,6 +279,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/logs'
     | '/negocio'
+    | '/numeros'
     | '/painel'
     | '/qualidade'
     | '/auth/login'
@@ -298,6 +308,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/logs'
     | '/negocio'
+    | '/numeros'
     | '/painel'
     | '/qualidade'
     | '/auth/login'
@@ -326,6 +337,7 @@ export interface FileRouteTypes {
     | '/kanban'
     | '/logs'
     | '/negocio'
+    | '/numeros'
     | '/painel'
     | '/qualidade'
     | '/auth/login'
@@ -355,6 +367,7 @@ export interface RootRouteChildren {
   KanbanRoute: typeof KanbanRoute
   LogsRoute: typeof LogsRoute
   NegocioRoute: typeof NegocioRoute
+  NumerosRoute: typeof NumerosRoute
   PainelRoute: typeof PainelRoute
   QualidadeRoute: typeof QualidadeRoute
   AuthLoginRoute: typeof AuthLoginRoute
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NegocioRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/numeros': {
+      id: '/numeros'
+      path: '/numeros'
+      fullPath: '/numeros'
+      preLoaderRoute: typeof NumerosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/painel': {
       id: '/painel'
       path: '/painel'
@@ -571,6 +591,7 @@ const rootRouteChildren: RootRouteChildren = {
   KanbanRoute: KanbanRoute,
   LogsRoute: LogsRoute,
   NegocioRoute: NegocioRoute,
+  NumerosRoute: NumerosRoute,
   PainelRoute: PainelRoute,
   QualidadeRoute: QualidadeRoute,
   AuthLoginRoute: AuthLoginRoute,
