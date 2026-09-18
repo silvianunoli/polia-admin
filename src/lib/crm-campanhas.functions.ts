@@ -674,6 +674,32 @@ async function contarRecipientes(broadcastId: string, tipo: string): Promise<num
   return total;
 }
 
+// Abertura e clique só existem se o Resend estiver inserindo o pixel e
+// reescrevendo os links, e isso é uma chave por domínio, desligada por padrão.
+// Sem checar isso, "0 abriram" fica indistinguível de "ninguém abriu" — foi
+// exatamente o que aconteceu em 18/09/2026: a Sil abriu os e-mails, o painel
+// mostrou zero e a conclusão natural foi que o CRM estava quebrado.
+async function rastreioDoDominio(): Promise<{
+  aberturaLigada: boolean;
+  cliqueLigado: boolean;
+} | null> {
+  const lista = await chamarResend<{ data: { id: string; name: string }[] }>("/domains", {
+    method: "GET",
+  });
+  const dominio = lista.dados?.data?.find((d) => d.name === "usepolia.com.br");
+  if (!dominio) return null;
+
+  const detalhe = await chamarResend<{ open_tracking: boolean; click_tracking: boolean }>(
+    `/domains/${dominio.id}`,
+    { method: "GET" },
+  );
+  if (!detalhe.ok || !detalhe.dados) return null;
+  return {
+    aberturaLigada: Boolean(detalhe.dados.open_tracking),
+    cliqueLigado: Boolean(detalhe.dados.click_tracking),
+  };
+}
+
 export const atualizarMetricas = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
@@ -696,12 +722,13 @@ export const atualizarMetricas = createServerFn({ method: "POST" })
       { method: "GET" },
     );
 
-    const [entregues, abertos, cliques, rejeitados, descadastros] = await Promise.all([
+    const [entregues, abertos, cliques, rejeitados, descadastros, rastreio] = await Promise.all([
       contarRecipientes(campanha.resend_broadcast_id, "delivered"),
       contarRecipientes(campanha.resend_broadcast_id, "opened"),
       contarRecipientes(campanha.resend_broadcast_id, "clicked"),
       contarRecipientes(campanha.resend_broadcast_id, "bounced"),
       contarRecipientes(campanha.resend_broadcast_id, "unsubscribed"),
+      rastreioDoDominio(),
     ]);
 
     const statusResend = broadcast.dados?.status;
@@ -729,7 +756,15 @@ export const atualizarMetricas = createServerFn({ method: "POST" })
       })
       .eq("id", campanha.id);
 
-    return { entregues, abertos, cliques, rejeitados, descadastros, status: novoStatus };
+    return {
+      entregues,
+      abertos,
+      cliques,
+      rejeitados,
+      descadastros,
+      status: novoStatus,
+      rastreio,
+    };
   });
 
 // Teste antes de mandar pra lista inteira: um e-mail avulso, com a mesma casca,

@@ -49,6 +49,11 @@ function EditorCampanha() {
   const [verPrevia, setVerPrevia] = useState(false);
   const [emailTeste, setEmailTeste] = useState("");
   const [agendarPara, setAgendarPara] = useState("");
+  const [buscandoMetricas, setBuscandoMetricas] = useState(false);
+  const [rastreio, setRastreio] = useState<{
+    aberturaLigada: boolean;
+    cliqueLigado: boolean;
+  } | null>(null);
   const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
@@ -72,6 +77,31 @@ function EditorCampanha() {
   useEffect(() => {
     carregar();
   }, [id]);
+
+  async function buscarMetricas(avisar: boolean) {
+    setBuscandoMetricas(true);
+    try {
+      const r = await atualizarMetricas({ data: { id } });
+      setRastreio(r.rastreio ?? null);
+      if (avisar) toastSucesso("Números atualizados.");
+      await carregar();
+    } catch (err) {
+      if (avisar) toastErro(err instanceof Error ? err.message : "Não consegui buscar.");
+    } finally {
+      setBuscandoMetricas(false);
+    }
+  }
+
+  // Campanha que já saiu busca os números sozinha ao abrir. Antes só o botão
+  // fazia isso, e quem nunca clicou via zero em tudo achando que era resultado
+  // — e a campanha ficava presa em "enviando" pra sempre, porque é a mesma
+  // chamada que confirma no Resend que o envio terminou.
+  useEffect(() => {
+    if (!campanha?.resend_broadcast_id) return;
+    if (campanha.metricas_em) return;
+    buscarMetricas(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campanha?.id, campanha?.resend_broadcast_id, campanha?.metricas_em]);
 
   const listaEscolhida = listas.find((l) => l.id === listaId) ?? null;
 
@@ -214,29 +244,66 @@ function EditorCampanha() {
             </div>
             <button
               type="button"
-              onClick={async () => {
-                try {
-                  await atualizarMetricas({ data: { id } });
-                  toastSucesso("Números atualizados.");
-                  carregar();
-                } catch (err) {
-                  toastErro(err instanceof Error ? err.message : "Não consegui buscar.");
-                }
-              }}
+              onClick={() => buscarMetricas(true)}
+              disabled={buscandoMetricas}
               className={`inline-flex items-center gap-2 ${btnOutline}`}
             >
               <RefreshCcw size={14} />
-              Atualizar números
+              {buscandoMetricas ? "Buscando..." : "Atualizar números"}
             </button>
           </div>
 
           <div className="mt-4 grid gap-4 sm:grid-cols-5">
             <Metrica rotulo="Enviados" valor={campanha.destinatarios} />
-            <Metrica rotulo="Chegaram" valor={campanha.entregues} base={campanha.destinatarios} />
-            <Metrica rotulo="Abriram" valor={campanha.abertos} base={campanha.entregues} />
-            <Metrica rotulo="Clicaram" valor={campanha.cliques} base={campanha.entregues} />
-            <Metrica rotulo="Saíram da lista" valor={campanha.descadastros} />
+            <Metrica
+              rotulo="Chegaram"
+              valor={campanha.entregues}
+              base={campanha.destinatarios}
+              buscado={Boolean(campanha.metricas_em)}
+            />
+            <Metrica
+              rotulo="Abriram"
+              valor={campanha.abertos}
+              base={campanha.entregues}
+              buscado={Boolean(campanha.metricas_em)}
+              // Zero aqui não quer dizer que ninguém abriu se o Resend não
+              // estiver medindo. Sem isso o número mente com cara de dado.
+              semMedicao={rastreio ? !rastreio.aberturaLigada : false}
+            />
+            <Metrica
+              rotulo="Clicaram"
+              valor={campanha.cliques}
+              base={campanha.entregues}
+              buscado={Boolean(campanha.metricas_em)}
+              semMedicao={rastreio ? !rastreio.cliqueLigado : false}
+            />
+            <Metrica
+              rotulo="Saíram da lista"
+              valor={campanha.descadastros}
+              buscado={Boolean(campanha.metricas_em)}
+            />
           </div>
+
+          {rastreio && (!rastreio.aberturaLigada || !rastreio.cliqueLigado) && (
+            <div className="mt-4 rounded-xl border border-[var(--line)] bg-[var(--surface)] p-4">
+              <p className="font-sans text-[13px] text-[var(--ink-soft)]">
+                O Resend está com{" "}
+                {!rastreio.aberturaLigada && !rastreio.cliqueLigado
+                  ? "o rastreio de abertura e de clique desligados"
+                  : !rastreio.aberturaLigada
+                    ? "o rastreio de abertura desligado"
+                    : "o rastreio de clique desligado"}{" "}
+                no domínio usepolia.com.br. Enquanto estiver assim, esses números ficam em branco
+                mesmo que as pessoas abram e cliquem: o Resend não chega a medir.
+                <span className="mt-2 block text-[var(--muted)]">
+                  Liga em resend.com/domains, no domínio usepolia.com.br. Vale saber o que muda:
+                  abertura funciona por uma imagem invisível no e-mail, e clique reescreve os links
+                  pra passarem pelo Resend antes de chegar no destino.
+                </span>
+              </p>
+            </div>
+          )}
+
           {campanha.rejeitados > 0 && (
             <p className="mt-3 font-sans text-[13px] text-[var(--danger)]">
               {campanha.rejeitados} endereço(s) voltaram. Vale conferir se estão escritos certo.
@@ -419,15 +486,37 @@ function EditorCampanha() {
   );
 }
 
-function Metrica(props: { rotulo: string; valor: number; base?: number }) {
-  const pct = props.base && props.base > 0 ? Math.round((props.valor / props.base) * 100) : null;
+function Metrica(props: {
+  rotulo: string;
+  valor: number;
+  base?: number;
+  /** Falso enquanto os números nunca foram buscados do Resend. */
+  buscado?: boolean;
+  /** O Resend não mede isso hoje (rastreio desligado no domínio). */
+  semMedicao?: boolean;
+}) {
+  // Três estados diferentes que antes viravam o mesmo "0" na tela: ainda não
+  // perguntei, perguntei e o Resend não mede, e perguntei e é zero mesmo.
+  const naoSabe = props.buscado === false || props.semMedicao;
+  const pct =
+    !naoSabe && props.base && props.base > 0 ? Math.round((props.valor / props.base) * 100) : null;
+
   return (
     <div>
       <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
         {props.rotulo}
       </p>
-      <p className="mt-1 font-cabinet text-[24px] leading-none text-[var(--ink)]">{props.valor}</p>
+      <p
+        className={`mt-1 font-cabinet text-[24px] leading-none ${
+          naoSabe ? "text-[var(--muted)]" : "text-[var(--ink)]"
+        }`}
+      >
+        {naoSabe ? "—" : props.valor}
+      </p>
       {pct !== null && <p className="font-sans text-[12px] text-[var(--muted)]">{pct}%</p>}
+      {props.semMedicao && (
+        <p className="font-sans text-[12px] text-[var(--muted)]">Resend não mede</p>
+      )}
     </div>
   );
 }
