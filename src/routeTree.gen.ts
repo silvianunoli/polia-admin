@@ -18,6 +18,7 @@ import { Route as ConteudoRouteImport } from './routes/conteudo'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EstrategicoRouteImport } from './routes/estrategico'
+import { Route as FerramentasRouteImport } from './routes/ferramentas'
 import { Route as FlagsRouteImport } from './routes/flags'
 import { Route as FounderRouteImport } from './routes/founder'
 import { Route as FunilRouteImport } from './routes/funil'
@@ -113,6 +114,11 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
 const EstrategicoRoute = EstrategicoRouteImport.update({
   id: '/estrategico',
   path: '/estrategico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FerramentasRoute = FerramentasRouteImport.update({
+  id: '/ferramentas',
+  path: '/ferramentas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FlagsRoute = FlagsRouteImport.update({
@@ -392,6 +398,7 @@ export interface FileRoutesByFullPath {
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
+  '/ferramentas': typeof FerramentasRoute
   '/flags': typeof FlagsRoute
   '/founder': typeof FounderRouteWithChildren
   '/funil': typeof FunilRoute
@@ -454,6 +461,7 @@ export interface FileRoutesByTo {
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
+  '/ferramentas': typeof FerramentasRoute
   '/flags': typeof FlagsRoute
   '/funil': typeof FunilRoute
   '/governanca': typeof GovernancaRoute
@@ -516,6 +524,7 @@ export interface FileRoutesById {
   '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
+  '/ferramentas': typeof FerramentasRoute
   '/flags': typeof FlagsRoute
   '/founder': typeof FounderRouteWithChildren
   '/funil': typeof FunilRoute
@@ -580,6 +589,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/design-system'
     | '/estrategico'
+    | '/ferramentas'
     | '/flags'
     | '/founder'
     | '/funil'
@@ -642,6 +652,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/design-system'
     | '/estrategico'
+    | '/ferramentas'
     | '/flags'
     | '/funil'
     | '/governanca'
@@ -703,6 +714,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/design-system'
     | '/estrategico'
+    | '/ferramentas'
     | '/flags'
     | '/founder'
     | '/funil'
@@ -766,6 +778,7 @@ export interface RootRouteChildren {
   CrmRoute: typeof CrmRoute
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
+  FerramentasRoute: typeof FerramentasRoute
   FlagsRoute: typeof FlagsRoute
   FounderRoute: typeof FounderRouteWithChildren
   FunilRoute: typeof FunilRoute
@@ -850,6 +863,13 @@ declare module '@tanstack/react-router' {
       path: '/estrategico'
       fullPath: '/estrategico'
       preLoaderRoute: typeof EstrategicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ferramentas': {
+      id: '/ferramentas'
+      path: '/ferramentas'
+      fullPath: '/ferramentas'
+      preLoaderRoute: typeof FerramentasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/flags': {
@@ -1307,6 +1327,7 @@ const rootRouteChildren: RootRouteChildren = {
   CrmRoute: CrmRoute,
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
+  FerramentasRoute: FerramentasRoute,
   FlagsRoute: FlagsRoute,
   FounderRoute: FounderRouteWithChildren,
   FunilRoute: FunilRoute,

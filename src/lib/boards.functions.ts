@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import kanbanHtml from "./boards/kanban-operacional.html?raw";
 import estrategicoHtml from "./boards/gerenciamento-estrategico.html?raw";
 import conteudoHtml from "./boards/conteudo-criacao.html?raw";
+import { FERRAMENTAS_SETUP } from "./ferramentas-setup";
 
 // O conteúdo dos dois boards só existe dentro do bundle do servidor (import
 // ?raw num arquivo consumido só por server functions, nunca por componente
@@ -72,7 +73,12 @@ export const buscarHtmlEstrategico = createServerFn({ method: "GET" })
     const { data } = await supabaseAdmin.from("office_tarefas_catalogo").select("*");
     const catalogo = Array.isArray(data) ? data.map(linhaCatalogoParaFrontend) : [];
     const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
-    const script = `<script>window.__CATALOGO_SUPABASE__=${json};</script>`;
+    // O runbook das ferramentas mora em ferramentas-setup.ts, a mesma fonte
+    // que a página /ferramentas lê -- antes eram duas cópias do mesmo texto,
+    // uma aqui dentro do HTML e outra na página, que divergiriam na primeira
+    // vez que uma armadilha nova fosse registrada só de um lado.
+    const jsonFerramentas = JSON.stringify(FERRAMENTAS_SETUP).replace(/<\/script/gi, "<\\/script");
+    const script = `<script>window.__CATALOGO_SUPABASE__=${json};window.__FERRAMENTAS_SETUP__=${jsonFerramentas};</script>`;
     return estrategicoHtml.replace("<body>", `<body>${script}`);
   });
 
@@ -286,7 +292,10 @@ export const removerTarefaLocalKanban = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => removerTarefaLocalInput.parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const { error } = await supabaseAdmin.from("office_tarefas_catalogo").delete().eq("id", data.id);
+    const { error } = await supabaseAdmin
+      .from("office_tarefas_catalogo")
+      .delete()
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });

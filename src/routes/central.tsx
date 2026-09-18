@@ -10,6 +10,7 @@ import {
   Sparkles,
   Target,
   Users,
+  Wrench,
 } from "lucide-react";
 import type { ComponentType } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -47,6 +48,12 @@ const PRODUTOS: Produto[] = [
     descricao: "Board estratégico: planejamento, decisões e roadmap.",
     href: "/estrategico",
     icone: Target,
+  },
+  {
+    nome: "Setup de ferramentas",
+    descricao: "Runbook das 14 ferramentas externas: passo a passo e as armadilhas já encontradas.",
+    href: "/ferramentas",
+    icone: Wrench,
   },
   {
     nome: "Criação de Conteúdo",
