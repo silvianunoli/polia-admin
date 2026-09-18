@@ -16,6 +16,7 @@ import {
   type Lista,
   type FiltroLista,
 } from "@/lib/crm-campanhas.functions";
+import { useConfirmacao } from "@/components/crm/Confirmar";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   btnOutline,
@@ -56,6 +57,7 @@ function CrmCampanhas() {
   const [listaAberta, setListaAberta] = useState(false);
   const [listaEditando, setListaEditando] = useState<Lista | null>(null);
   const [sincronizando, setSincronizando] = useState<string | null>(null);
+  const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
     setCarregando(true);
@@ -166,7 +168,19 @@ function CrmCampanhas() {
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!window.confirm(`Apagar a lista ${l.nome}?`)) return;
+                      const ok = await confirmar({
+                        titulo: "Apagar esta lista",
+                        perigo: true,
+                        rotuloConfirmar: "Apagar lista",
+                        descricao: (
+                          <>
+                            <strong className="text-[var(--ink)]">{l.nome}</strong> sai do CRM. As
+                            campanhas que já saíram por ela continuam no histórico, e ninguém é
+                            apagado do CRM nem descadastrado.
+                          </>
+                        ),
+                      });
+                      if (!ok) return;
                       await excluirLista({ data: { id: l.id } });
                       carregar();
                     }}
@@ -291,7 +305,24 @@ function CrmCampanhas() {
                         <button
                           type="button"
                           onClick={async () => {
-                            if (!window.confirm(`Apagar a campanha ${c.nome}?`)) return;
+                            const ok = await confirmar({
+                              titulo: "Apagar esta campanha",
+                              perigo: true,
+                              rotuloConfirmar: "Apagar campanha",
+                              descricao: (
+                                <>
+                                  <strong className="text-[var(--ink)]">{c.nome}</strong> some da
+                                  lista, junto com os números de quem abriu e clicou.
+                                  {c.status === "enviada" && (
+                                    <span className="mt-2 block text-[var(--muted)]">
+                                      Essa já foi enviada. Apagar aqui não desfaz o envio, só apaga
+                                      o registro dele.
+                                    </span>
+                                  )}
+                                </>
+                              ),
+                            });
+                            if (!ok) return;
                             await excluirCampanha({ data: { id: c.id } });
                             carregar();
                           }}
@@ -319,6 +350,7 @@ function CrmCampanhas() {
           </table>
         </div>
       </section>
+      {dialogo}
     </div>
   );
 }

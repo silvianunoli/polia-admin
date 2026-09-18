@@ -4,6 +4,7 @@ import { Trash2, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useConfirmacao } from "@/components/crm/Confirmar";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   listarConvites,
@@ -96,6 +97,7 @@ function CrmUsuarias() {
   const [enviando, setEnviando] = useState(false);
   const [removendo, setRemovendo] = useState<string | null>(null);
   const [enviandoConvite, setEnviandoConvite] = useState<string | null>(null);
+  const { confirmar, dialogo } = useConfirmacao();
 
   useEffect(() => {
     (async () => {
@@ -171,13 +173,18 @@ function CrmUsuarias() {
   }
 
   async function handleRemoverConvite(email: string) {
-    if (
-      !window.confirm(
-        `Remover o convite de ${email}? Ela não vai conseguir se cadastrar até você liberar de novo.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmar({
+      titulo: "Remover este convite",
+      perigo: true,
+      rotuloConfirmar: "Remover convite",
+      descricao: (
+        <>
+          <strong className="text-[var(--ink)]">{email}</strong> sai da lista de quem pode criar
+          conta. Ela só consegue se cadastrar se você liberar de novo.
+        </>
+      ),
+    });
+    if (!ok) return;
     setRemovendo(email);
     try {
       await removerConvite({ data: { email } });
@@ -517,6 +524,7 @@ function CrmUsuarias() {
           </div>
         </TabsContent>
       </Tabs>
+      {dialogo}
     </>
   );
 }

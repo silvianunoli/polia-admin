@@ -30,6 +30,7 @@ import {
   type Modelo,
 } from "@/lib/crm.functions";
 import { FormularioContato } from "@/components/crm/FormularioContato";
+import { useConfirmacao } from "@/components/crm/Confirmar";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   aplicarVariaveis,
@@ -72,6 +73,7 @@ function PerfilContato() {
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState(false);
   const [aba, setAba] = useState<Aba>("timeline");
+  const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
     setCarregando(true);
@@ -97,13 +99,21 @@ function PerfilContato() {
 
   async function handleExcluir() {
     if (!contato) return;
-    if (
-      !window.confirm(
-        `Apagar ${contato.nome} e todo o histórico dessa pessoa? Isso não volta atrás.`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmar({
+      titulo: "Apagar este contato",
+      perigo: true,
+      rotuloConfirmar: "Apagar contato",
+      descricao: (
+        <>
+          <strong className="text-[var(--ink)]">{contato.nome}</strong> some do CRM junto com todo o
+          histórico: conversas registradas, negociações e lembretes dessa pessoa.
+          <span className="mt-2 block text-[var(--muted)]">
+            Se ela veio de uma isca, volta no próximo Puxar das iscas, mas sem o histórico.
+          </span>
+        </>
+      ),
+    });
+    if (!ok) return;
     try {
       await excluirContato({ data: { id } });
       toastSucesso("Contato apagado.");
@@ -306,6 +316,7 @@ function PerfilContato() {
       {aba === "lembretes" && (
         <AbaLembretes contato={contato} tarefas={tarefas} onMudou={carregar} />
       )}
+      {dialogo}
     </div>
   );
 }
@@ -599,6 +610,7 @@ function AbaNegocios(props: { contato: Contato; negocios: Negocio[]; onMudou: ()
   const [produto, setProduto] = useState("");
   const [dataPrevista, setDataPrevista] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const { confirmar, dialogo } = useConfirmacao();
 
   async function criar(e: FormEvent) {
     e.preventDefault();
@@ -628,7 +640,13 @@ function AbaNegocios(props: { contato: Contato; negocios: Negocio[]; onMudou: ()
   }
 
   async function remover(id: string) {
-    if (!window.confirm("Apagar essa negociação?")) return;
+    const ok = await confirmar({
+      titulo: "Apagar esta negociação",
+      perigo: true,
+      rotuloConfirmar: "Apagar",
+      descricao: "Ela sai do quadro de negociações e do total que você já fechou.",
+    });
+    if (!ok) return;
     try {
       await excluirNegocio({ data: { id } });
       props.onMudou();
@@ -744,6 +762,7 @@ function AbaNegocios(props: { contato: Contato; negocios: Negocio[]; onMudou: ()
             Nenhuma negociação com essa pessoa.
           </li>
         )}
+        {dialogo}
       </ul>
     </div>
   );

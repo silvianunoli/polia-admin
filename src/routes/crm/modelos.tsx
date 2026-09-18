@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { Plus, Trash2, Pencil } from "lucide-react";
 import { listarModelos, salvarModelo, excluirModelo, type Modelo } from "@/lib/crm.functions";
+import { useConfirmacao } from "@/components/crm/Confirmar";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { btnOutline, btnPrimary, cardClass, inputClass, labelClass } from "@/lib/crm-ui";
 
@@ -35,6 +36,7 @@ function CrmModelos() {
   const [modelos, setModelos] = useState<Modelo[]>([]);
   const [editando, setEditando] = useState<Modelo | null>(null);
   const [aberto, setAberto] = useState(false);
+  const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
     try {
@@ -50,7 +52,19 @@ function CrmModelos() {
   }, []);
 
   async function remover(id: string) {
-    if (!window.confirm("Apagar esse modelo?")) return;
+    const modelo = modelos.find((m) => m.id === id);
+    const ok = await confirmar({
+      titulo: "Apagar este modelo",
+      perigo: true,
+      rotuloConfirmar: "Apagar modelo",
+      descricao: (
+        <>
+          <strong className="text-[var(--ink)]">{modelo?.nome ?? "O modelo"}</strong> sai da lista.
+          As mensagens que você já mandou usando ele continuam no histórico de cada pessoa.
+        </>
+      ),
+    });
+    if (!ok) return;
     try {
       await excluirModelo({ data: { id } });
       carregar();
@@ -183,6 +197,7 @@ function CrmModelos() {
             </section>
           ),
       )}
+      {dialogo}
     </div>
   );
 }

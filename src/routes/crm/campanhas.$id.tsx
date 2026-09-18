@@ -12,6 +12,7 @@ import {
   type Lista,
 } from "@/lib/crm-campanhas.functions";
 import { EditorEmail } from "@/components/crm/EditorEmail";
+import { useConfirmacao } from "@/components/crm/Confirmar";
 import { montarHtmlCampanha } from "@/lib/crm-email-html";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
@@ -48,6 +49,7 @@ function EditorCampanha() {
   const [verPrevia, setVerPrevia] = useState(false);
   const [emailTeste, setEmailTeste] = useState("");
   const [agendarPara, setAgendarPara] = useState("");
+  const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
     setCarregando(true);
@@ -130,14 +132,23 @@ function EditorCampanha() {
       return;
     }
     const quantos = previa ?? listaEscolhida.total_sincronizado;
-    const quando = agendarPara ? `agendada para ${formatarDataHora(agendarPara)}` : "enviada agora";
-    if (
-      !window.confirm(
-        `A campanha "${nome}" vai ser ${quando} para cerca de ${quantos} pessoa(s). Isso não tem como desfazer. Confirma?`,
-      )
-    ) {
-      return;
-    }
+    const ok = await confirmar({
+      titulo: agendarPara ? "Agendar esta campanha" : "Enviar esta campanha agora",
+      rotuloConfirmar: agendarPara ? "Agendar" : "Enviar agora",
+      descricao: (
+        <>
+          <strong className="text-[var(--ink)]">{nome}</strong> vai{" "}
+          {agendarPara ? `sair em ${formatarDataHora(agendarPara)}` : "sair agora"} para{" "}
+          <strong className="text-[var(--ink)]">{quantos} pessoa(s)</strong> da lista{" "}
+          {listaEscolhida.nome}.
+          <span className="mt-2 block text-[var(--muted)]">
+            E-mail enviado não volta atrás. Se ainda não mandou um teste pra você mesma, vale fechar
+            aqui e mandar antes.
+          </span>
+        </>
+      ),
+    });
+    if (!ok) return;
 
     setEnviando(true);
     try {
@@ -403,6 +414,7 @@ function EditorCampanha() {
           </div>
         </>
       )}
+      {dialogo}
     </div>
   );
 }
