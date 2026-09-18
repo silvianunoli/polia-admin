@@ -21,7 +21,7 @@ const LINKS_PROFUNDIDADE = [
   { to: "/analytics", label: "Analytics" },
   { to: "/funil", label: "Funil de módulos" },
   { to: "/alertas", label: "Alertas" },
-  { to: "/flags", label: "Feature Flags" },
+  { to: "/founder/features/flags", label: "Feature Flags" },
 ] as const;
 
 function formatarBRL(centavos: number) {
@@ -104,13 +104,16 @@ function NumerosPolia() {
             .from("alertas_abertos")
             .select("*", { count: "exact", head: true })
             .eq("status", "aberto"),
-          supabase.from("feature_flags").select("enabled"),
+          supabase.from("founder_flags").select("estado").eq("ambiente", "prod"),
         ]);
         setAlertasAbertos(alertas ?? 0);
-        const linhas = (flags ?? []) as { enabled: boolean }[];
-        setFlagsLigadas({ ligadas: linhas.filter((f) => f.enabled).length, total: linhas.length });
+        const linhas = (flags ?? []) as { estado: string }[];
+        setFlagsLigadas({
+          ligadas: linhas.filter((f) => f.estado !== "off").length,
+          total: linhas.length,
+        });
       } catch {
-        // idem — detalhe fica em /alertas e /flags.
+        // idem — detalhe fica em /alertas e /founder/features/flags.
       } finally {
         setCarregandoPanorama(false);
       }
@@ -381,7 +384,8 @@ function NumerosPolia() {
           </p>
         </Link>
         <Link
-          to="/flags"
+          to="/founder/features/flags"
+          search={{ periodo: "7" }}
           className={`${CARD_CLASS} p-4 no-underline hover:border-[var(--secondary)]`}
         >
           <p className="font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">

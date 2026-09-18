@@ -15,7 +15,7 @@ const ITENS = [
   { to: "/auditoria", label: "Auditoria" },
   { to: "/alertas", label: "Alertas" },
   { to: "/logs", label: "Logs do sistema" },
-  { to: "/flags", label: "Feature Flags" },
+  { to: "/founder/features/flags", label: "Feature Flags" },
   { to: "/design-system", label: "Design System" },
 ] as const;
 
