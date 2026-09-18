@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
-import { Plus, RefreshCcw, Trash2, Copy, Users } from "lucide-react";
+import { Plus, RefreshCcw, Trash2, Copy, Users, Pencil } from "lucide-react";
 import {
   listarCampanhas,
   salvarCampanha,
@@ -10,11 +10,12 @@ import {
   excluirLista,
   sincronizarLista,
   previaPublico,
+  opcoesDeFiltro,
+  type OpcaoFiltro,
   type Campanha,
   type Lista,
   type FiltroLista,
 } from "@/lib/crm-campanhas.functions";
-import { STATUS_CONTATO } from "@/lib/crm.functions";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   btnOutline,
@@ -53,6 +54,7 @@ function CrmCampanhas() {
   const [carregando, setCarregando] = useState(true);
   const [novaAberta, setNovaAberta] = useState(false);
   const [listaAberta, setListaAberta] = useState(false);
+  const [listaEditando, setListaEditando] = useState<Lista | null>(null);
   const [sincronizando, setSincronizando] = useState<string | null>(null);
 
   async function carregar() {
@@ -83,7 +85,16 @@ function CrmCampanhas() {
       ]
         .filter(Boolean)
         .join(", ");
-      toastSucesso(`${r.total} pessoa(s) na lista${extras ? `. ${extras}` : ""}.`);
+      if (r.total === 0) {
+        // Sincronizou sem erro e mesmo assim veio vazia: o filtro não bate com
+        // ninguém. Dizer "0 pessoas" e mais nada mandava ela procurar erro onde
+        // não tinha.
+        toastErro(
+          "A lista sincronizou vazia: ninguém se encaixa nesses filtros. Abra Editar pra ver quanta gente cada escolha alcança.",
+        );
+      } else {
+        toastSucesso(`${r.total} pessoa(s) na lista${extras ? `. ${extras}` : ""}.`);
+      }
       if (r.falhas.length > 0) {
         toastErro(`O Resend recusou ${r.falhas.length} endereço(s).`);
       }
@@ -120,13 +131,18 @@ function CrmCampanhas() {
           </button>
         </div>
 
-        {listaAberta && (
+        {(listaAberta || listaEditando) && (
           <FormularioLista
+            lista={listaEditando}
             onSalvo={() => {
               setListaAberta(false);
+              setListaEditando(null);
               carregar();
             }}
-            onCancelar={() => setListaAberta(false)}
+            onCancelar={() => {
+              setListaAberta(false);
+              setListaEditando(null);
+            }}
           />
         )}
 
@@ -135,18 +151,31 @@ function CrmCampanhas() {
             <article key={l.id} className={`${cardClass} p-4`}>
               <div className="flex items-start justify-between gap-2">
                 <p className="font-sans text-[15px] font-medium text-[var(--ink)]">{l.nome}</p>
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (!window.confirm(`Apagar a lista ${l.nome}?`)) return;
-                    await excluirLista({ data: { id: l.id } });
-                    carregar();
-                  }}
-                  aria-label="Apagar lista"
-                  className="text-[var(--muted)] hover:text-[var(--danger)]"
-                >
-                  <Trash2 size={15} />
-                </button>
+                <div className="flex shrink-0 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setListaAberta(false);
+                      setListaEditando(l);
+                    }}
+                    aria-label={`Editar a lista ${l.nome}`}
+                    className="text-[var(--muted)] hover:text-[var(--ink)]"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!window.confirm(`Apagar a lista ${l.nome}?`)) return;
+                      await excluirLista({ data: { id: l.id } });
+                      carregar();
+                    }}
+                    aria-label="Apagar lista"
+                    className="text-[var(--muted)] hover:text-[var(--danger)]"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
               </div>
               {l.descricao && (
                 <p className="mt-1 font-sans text-[12px] text-[var(--muted)]">{l.descricao}</p>
@@ -294,18 +323,32 @@ function CrmCampanhas() {
   );
 }
 
-function FormularioLista(props: { onSalvo: () => void; onCancelar: () => void }) {
-  const [nome, setNome] = useState("");
-  const [descricao, setDescricao] = useState("");
-  const [status, setStatus] = useState<string[]>([]);
-  const [origem, setOrigem] = useState<string[]>([]);
+function FormularioLista(props: {
+  lista?: Lista | null;
+  onSalvo: () => void;
+  onCancelar: () => void;
+}) {
+  const l = props.lista ?? null;
+  const [nome, setNome] = useState(l?.nome ?? "");
+  const [descricao, setDescricao] = useState(l?.descricao ?? "");
+  const [status, setStatus] = useState<string[]>(l?.filtro?.status ?? []);
+  const [origem, setOrigem] = useState<string[]>(l?.filtro?.origem ?? []);
+  const [tags, setTags] = useState<string[]>(l?.filtro?.tags ?? []);
+  const [opcoes, setOpcoes] = useState<Awaited<ReturnType<typeof opcoesDeFiltro>> | null>(null);
   const [previa, setPrevia] = useState<{ total: number } | null>(null);
   const [salvando, setSalvando] = useState(false);
 
   const filtro: FiltroLista = {
     ...(status.length ? { status } : {}),
     ...(origem.length ? { origem } : {}),
+    ...(tags.length ? { tags } : {}),
   };
+
+  useEffect(() => {
+    opcoesDeFiltro()
+      .then(setOpcoes)
+      .catch(() => setOpcoes(null));
+  }, []);
 
   useEffect(() => {
     let vivo = true;
@@ -316,7 +359,7 @@ function FormularioLista(props: { onSalvo: () => void; onCancelar: () => void })
       vivo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status.join(","), origem.join(",")]);
+  }, [status.join(","), origem.join(","), tags.join(",")]);
 
   function alternar(lista: string[], set: (v: string[]) => void, valor: string) {
     set(lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor]);
@@ -326,15 +369,58 @@ function FormularioLista(props: { onSalvo: () => void; onCancelar: () => void })
     e.preventDefault();
     setSalvando(true);
     try {
-      await salvarLista({ data: { nome, descricao, filtro } });
-      toastSucesso("Lista criada. Sincronize pra ela existir no Resend.");
+      await salvarLista({ data: { ...(l ? { id: l.id } : {}), nome, descricao, filtro } });
+      toastSucesso(
+        l ? "Lista salva. Sincronize pra valer no Resend." : "Lista criada. Agora sincronize.",
+      );
       props.onSalvo();
     } catch (err) {
-      toastErro(err instanceof Error ? err.message : "Não consegui criar.");
+      toastErro(err instanceof Error ? err.message : "Não consegui salvar.");
     } finally {
       setSalvando(false);
     }
   }
+
+  // Só o que existe em crm_contatos, com quantas pessoas cada escolha alcança.
+  // Escolha que alcança zero fica visível, mas avisada.
+  function Grupo(props: {
+    titulo: string;
+    itens: OpcaoFiltro[] | undefined;
+    rotulos: Record<string, string>;
+    selecionados: string[];
+    set: (v: string[]) => void;
+    classeAtiva?: (chave: string) => string;
+  }) {
+    if (!props.itens || props.itens.length === 0) return null;
+    return (
+      <div>
+        <span className={labelClass}>{props.titulo}</span>
+        <div className="flex flex-wrap gap-2">
+          {props.itens.map((o) => {
+            const ativo = props.selecionados.includes(o.chave);
+            return (
+              <button
+                key={o.chave}
+                type="button"
+                onClick={() => alternar(props.selecionados, props.set, o.chave)}
+                className={`rounded-full px-3 py-1.5 font-sans text-[13px] ${
+                  ativo
+                    ? (props.classeAtiva?.(o.chave) ??
+                      "bg-[var(--secondary-light)] text-[var(--secondary-text)]")
+                    : "border border-[var(--line)] bg-white text-[var(--muted)]"
+                }`}
+              >
+                {props.rotulos[o.chave] ?? o.chave}
+                <span className={ativo ? "" : "text-[var(--muted)]"}> · {o.elegiveis}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const vazia = previa !== null && previa.total === 0;
 
   return (
     <form onSubmit={salvar} className={`${cardClass} p-5`}>
@@ -359,59 +445,53 @@ function FormularioLista(props: { onSalvo: () => void; onCancelar: () => void })
         </label>
       </div>
 
-      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <div>
-          <span className={labelClass}>Onde estão</span>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_CONTATO.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => alternar(status, setStatus, s)}
-                className={`rounded-full px-3 py-1.5 font-sans text-[13px] ${
-                  status.includes(s)
-                    ? STATUS_META[s].className
-                    : "border border-[var(--line)] bg-white text-[var(--muted)]"
-                }`}
-              >
-                {STATUS_META[s].label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div>
-          <span className={labelClass}>De onde vieram</span>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(ORIGEM_LABEL).map(([chave, label]) => (
-              <button
-                key={chave}
-                type="button"
-                onClick={() => alternar(origem, setOrigem, chave)}
-                className={`rounded-full px-3 py-1.5 font-sans text-[13px] ${
-                  origem.includes(chave)
-                    ? "bg-[var(--secondary-light)] text-[var(--secondary-text)]"
-                    : "border border-[var(--line)] bg-white text-[var(--muted)]"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
+      <p className="mt-4 font-sans text-[12px] text-[var(--muted)]">
+        O número ao lado de cada escolha é quanta gente ela alcança hoje, já descontando quem não
+        autorizou receber e-mail.
+      </p>
+
+      <div className="mt-2 grid gap-4 sm:grid-cols-2">
+        <Grupo
+          titulo="Onde estão"
+          itens={opcoes?.status}
+          rotulos={Object.fromEntries(Object.entries(STATUS_META).map(([k, v]) => [k, v.label]))}
+          selecionados={status}
+          set={setStatus}
+          classeAtiva={(c) => STATUS_META[c]?.className ?? ""}
+        />
+        <Grupo
+          titulo="De onde vieram"
+          itens={opcoes?.origem}
+          rotulos={ORIGEM_LABEL}
+          selecionados={origem}
+          set={setOrigem}
+        />
+        <Grupo
+          titulo="Com o marcador"
+          itens={opcoes?.tags}
+          rotulos={{}}
+          selecionados={tags}
+          set={setTags}
+        />
       </div>
 
-      <p className="mt-4 font-sans text-[13px] text-[var(--ink-soft)]">
+      <p
+        className={`mt-4 font-sans text-[13px] ${vazia ? "text-[var(--danger)]" : "text-[var(--ink-soft)]"}`}
+      >
         {previa === null
           ? "Calculando o público..."
-          : `${previa.total} pessoa(s) se encaixam agora.`}
+          : vazia
+            ? "Ninguém se encaixa nesses filtros. Do jeito que está, a lista sincroniza vazia."
+            : `${previa.total} pessoa(s) se encaixam agora.`}
         <span className="block font-sans text-[12px] text-[var(--muted)]">
-          Sem filtro nenhum, a lista pega todo mundo que autorizou receber e-mail.
+          Sem filtro nenhum, a lista pega todo mundo que autorizou receber e-mail
+          {opcoes ? ` (${opcoes.totalElegiveis} hoje)` : ""}.
         </span>
       </p>
 
       <div className="mt-5 flex gap-2">
         <button type="submit" disabled={salvando} className={btnPrimary}>
-          {salvando ? "Criando..." : "Criar lista"}
+          {salvando ? "Salvando..." : l ? "Salvar lista" : "Criar lista"}
         </button>
         <button type="button" onClick={props.onCancelar} className={btnOutline}>
           Cancelar

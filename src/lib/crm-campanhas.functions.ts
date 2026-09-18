@@ -220,6 +220,67 @@ export const previaPublico = createServerFn({ method: "POST" })
     };
   });
 
+export interface OpcaoFiltro {
+  chave: string;
+  pessoas: number;
+  elegiveis: number;
+}
+
+// Só as origens, situações e marcadores que existem de verdade, com quantas
+// pessoas cada um alcança. Oferecer as nove origens possíveis deixava montar
+// um filtro que garantidamente traz zero (foi o que aconteceu com a primeira
+// lista criada, em 18/09/2026: filtrou por "Cadastrei à mão", que não tinha
+// ninguém).
+export const opcoesDeFiltro = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+
+    const { data } = await supabaseAdmin
+      .from("crm_contatos")
+      .select("status, origem, tags, email, consent_marketing, descadastrado_em")
+      .limit(5000);
+
+    const linhas = (data ?? []) as unknown as {
+      status: string;
+      origem: string;
+      tags: string[];
+      email: string | null;
+      consent_marketing: boolean;
+      descadastrado_em: string | null;
+    }[];
+
+    const conta = (mapa: Map<string, OpcaoFiltro>, chave: string, elegivel: boolean) => {
+      const atual = mapa.get(chave) ?? { chave, pessoas: 0, elegiveis: 0 };
+      atual.pessoas += 1;
+      if (elegivel) atual.elegiveis += 1;
+      mapa.set(chave, atual);
+    };
+
+    const porStatus = new Map<string, OpcaoFiltro>();
+    const porOrigem = new Map<string, OpcaoFiltro>();
+    const porTag = new Map<string, OpcaoFiltro>();
+
+    for (const l of linhas) {
+      const elegivel = Boolean(l.email) && l.consent_marketing && !l.descadastrado_em;
+      conta(porStatus, l.status, elegivel);
+      conta(porOrigem, l.origem, elegivel);
+      for (const t of l.tags ?? []) conta(porTag, t, elegivel);
+    }
+
+    const ordenar = (m: Map<string, OpcaoFiltro>) =>
+      [...m.values()].sort((a, b) => b.elegiveis - a.elegiveis || b.pessoas - a.pessoas);
+
+    return {
+      status: ordenar(porStatus),
+      origem: ordenar(porOrigem),
+      tags: ordenar(porTag),
+      totalElegiveis: linhas.filter(
+        (l) => Boolean(l.email) && l.consent_marketing && !l.descadastrado_em,
+      ).length,
+    };
+  });
+
 function partesDoNome(nome: string): { first_name: string; last_name: string } {
   const partes = nome.trim().split(/\s+/);
   return {
