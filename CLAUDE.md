@@ -59,17 +59,20 @@ pré-v3 (título em **Georgia serifada** e rodapé em **#9E9E9E**, que reprova A
 produto já tinha virado. Resultado: o e-mail do convite e a primeira campanha chegaram com
 outra cara dos e-mails que as usuárias recebem.
 
-**Regra: mexeu na casca no polia-app, copie pra cá no mesmo dia.** O app tem teste de regressão
-(`src/lib/email-template.test.ts`) travando cor e tipografia; o admin ainda **não tem test
-runner**, então aqui a conferência é manual. Roteiro rápido, sem precisar deployar:
+**Regra: mexeu na casca no polia-app, copie pra cá no mesmo dia.** Isso não depende mais de
+alguém lembrar: desde 18/09/2026 o repo tem Vitest e `src/lib/email-casca.test.ts` trava, nas
+três variantes, cor fora da paleta v3, `#9E9E9E`/`#767676` e serifada em título. O CI roda
+`npm test` **antes** do build, então regressão de e-mail derruba o deploy em vez de chegar na
+caixa de entrada de alguém.
 
 ```bash
-npx esbuild ARQUIVO_DE_TESTE.ts --bundle --format=esm --alias:@=./src --outfile=saida.mjs && node saida.mjs
+npm test
 ```
 
-O que checar no HTML gerado: nenhum hex fora da paleta v3, nada de `#9E9E9E`/`#767676`,
-nada de `Georgia`/`Times New Roman` (título é **Cabinet Grotesk**, uma grotesca) e a moldura
-idêntica à de um `emailPolia()` transacional.
+Um dos casos compara este arquivo com o do polia-app e falha se os blocos compartilhados
+divergirem. Ele se pula sozinho quando o outro repo não está ao lado (é o caso do CI, que só
+clona este). Quer dizer: **a checagem de divergência só acontece na máquina da Sil**, com os
+dois repos na mesma pasta. Rode `npm test` local depois de mexer em e-mail.
 
 Três variantes, mesma base de blocos: `emailPolia` (transacional), `emailPoliaEditorial`
 (material, botão amarelo) e `emailPoliaCampanha` (newsletter, corpo em HTML vindo do editor

@@ -13,6 +13,10 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+      # Antes do build de propósito: é aqui que a casca de e-mail é conferida
+      # (cor fora da paleta, serifada em título). Falhou, o deploy não sai --
+      # que é melhor do que o e-mail errado chegar na caixa de entrada.
+      - run: npm test
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
