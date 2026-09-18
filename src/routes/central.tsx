@@ -8,7 +8,6 @@ import {
   Newspaper,
   Radar,
   Sparkles,
-  Target,
   Users,
   Wrench,
 } from "lucide-react";
@@ -42,12 +41,6 @@ const PRODUTOS: Produto[] = [
     descricao: "Tarefas do dia a dia, por pessoa e por área.",
     href: "/kanban",
     icone: Kanban,
-  },
-  {
-    nome: "Gerenciamento Pólia",
-    descricao: "Board estratégico: planejamento, decisões e roadmap.",
-    href: "/estrategico",
-    icone: Target,
   },
   {
     nome: "Setup de ferramentas",
