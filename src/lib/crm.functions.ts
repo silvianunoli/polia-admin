@@ -619,6 +619,7 @@ interface Candidato {
   nome: string;
   origem: string;
   tipo_negocio?: string | null;
+  telefone?: string | null;
   consent_marketing: boolean;
   consent_texto?: string | null;
   descadastrado_em?: string | null;
@@ -637,14 +638,14 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
 
     const [espera, quiz, manual, contatosForm, profiles, usuarios] = await Promise.all([
-      supabaseAdmin.from("lista_espera").select("nome, email, tipo_negocio, criado_em, novidades"),
+      supabaseAdmin.from("lista_espera").select("nome, email, telefone, tipo_negocio, criado_em, novidades"),
       supabaseAdmin
         .from("quiz_leads")
-        .select("email, consentimento, consent_texto, descadastrado_em, created_at"),
+        .select("email, telefone, consentimento, consent_texto, descadastrado_em, created_at"),
       supabaseAdmin
         .from("manual_leads")
-        .select("email, consentimento, consent_texto, descadastrado_em, created_at"),
-      supabaseAdmin.from("contatos").select("nome, email, created_at"),
+        .select("email, telefone, consentimento, consent_texto, descadastrado_em, created_at"),
+      supabaseAdmin.from("contatos").select("nome, email, telefone, created_at"),
       supabaseAdmin
         .from("profiles")
         .select("id, full_name, business_name, business_type, notif_novidades, created_at"),
@@ -662,6 +663,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
       const linha = l as {
         nome: string;
         email: string;
+        telefone: string | null;
         tipo_negocio: string | null;
         criado_em: string;
         novidades: boolean;
@@ -670,6 +672,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
         email: linha.email.toLowerCase(),
         nome: linha.nome,
         origem: "lista_espera",
+        telefone: linha.telefone,
         tipo_negocio: linha.tipo_negocio,
         consent_marketing: linha.novidades,
         criado_em: linha.criado_em,
@@ -679,6 +682,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
     for (const q of quiz.data ?? []) {
       const linha = q as {
         email: string;
+        telefone: string | null;
         consentimento: boolean;
         consent_texto: string | null;
         descadastrado_em: string | null;
@@ -688,6 +692,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
         email: linha.email.toLowerCase(),
         nome: nomeDoEmail(linha.email),
         origem: "quiz",
+        telefone: linha.telefone,
         consent_marketing: linha.consentimento,
         consent_texto: linha.consent_texto,
         descadastrado_em: linha.descadastrado_em,
@@ -698,6 +703,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
     for (const m of manual.data ?? []) {
       const linha = m as {
         email: string;
+        telefone: string | null;
         consentimento: boolean;
         consent_texto: string | null;
         descadastrado_em: string | null;
@@ -707,6 +713,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
         email: linha.email.toLowerCase(),
         nome: nomeDoEmail(linha.email),
         origem: "manual_gratuito",
+        telefone: linha.telefone,
         consent_marketing: linha.consentimento,
         consent_texto: linha.consent_texto,
         descadastrado_em: linha.descadastrado_em,
@@ -715,11 +722,12 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
     }
 
     for (const c of contatosForm.data ?? []) {
-      const linha = c as { nome: string; email: string; created_at: string };
+      const linha = c as { nome: string; email: string; telefone: string | null; created_at: string };
       candidatos.push({
         email: linha.email.toLowerCase(),
         nome: linha.nome,
         origem: "formulario_contato",
+        telefone: linha.telefone,
         consent_marketing: false,
         criado_em: linha.created_at,
       });
@@ -750,7 +758,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
 
     const { data: existentesRaw } = await supabaseAdmin
       .from("crm_contatos")
-      .select("id, email, nome, tipo_negocio, user_id, consent_marketing, descadastrado_em");
+      .select("id, email, nome, telefone, tipo_negocio, user_id, consent_marketing, descadastrado_em");
     const existentes = new Map<string, Record<string, unknown>>();
     for (const e of (existentesRaw ?? []) as Record<string, unknown>[]) {
       const email = e.email as string | null;
@@ -779,6 +787,7 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
           origem: c.origem,
           status: c.status ?? "lead",
           tipo_negocio: c.tipo_negocio ?? null,
+          telefone: c.telefone ?? null,
           user_id: c.user_id ?? null,
           consent_marketing: c.consent_marketing,
           consent_texto: c.consent_texto ?? null,
@@ -792,6 +801,9 @@ export const sincronizarFontes = createServerFn({ method: "POST" })
       // Só preenche buraco. Nome, status e tags que ela ajustou ficam como estão.
       const patch: Record<string, unknown> = {};
       if (!atual.tipo_negocio && c.tipo_negocio) patch.tipo_negocio = c.tipo_negocio;
+      // Telefone novo só entra se o contato ainda não tinha: o que ela digitou
+      // à mão no CRM manda sobre o que veio do formulário.
+      if (!atual.telefone && c.telefone) patch.telefone = c.telefone;
       if (!atual.user_id && c.user_id) patch.user_id = c.user_id;
       if (c.descadastrado_em && !atual.descadastrado_em) {
         patch.descadastrado_em = c.descadastrado_em;
@@ -828,6 +840,7 @@ function mesclarCandidatos(a: Candidato, b: Candidato): Candidato {
     nome: b.nome && b.nome !== nomeDoEmail(b.email) ? b.nome : a.nome,
     origem: b.origem === "app" ? "app" : a.origem,
     tipo_negocio: b.tipo_negocio ?? a.tipo_negocio,
+    telefone: b.telefone ?? a.telefone,
     consent_marketing: a.consent_marketing || b.consent_marketing,
     consent_texto: b.consent_texto ?? a.consent_texto,
     descadastrado_em: b.descadastrado_em ?? a.descadastrado_em,

@@ -157,13 +157,16 @@ describe("escapeHtml", () => {
 });
 
 describe("sincronia com o produto", () => {
-  // O caminho é relativo ao workspace da Sil, onde os dois repos ficam lado a
-  // lado. Em CI (só este repo é clonado) o arquivo não existe e o teste some,
-  // porque falhar ali não diria nada sobre este commit.
-  const fonteDaVerdade = path.resolve(
-    __dirname,
-    "../../../polia-app/supabase/functions/_shared/email-polia.ts",
-  );
+  // Dois caminhos possíveis, e é de propósito:
+  //   - CASCA_DO_APP: o CI define isso depois de clonar o polia-app ao lado
+  //     (ver .github/workflows/deploy.yml). Só existe se o secret de leitura
+  //     do outro repo estiver configurado.
+  //   - fallback: o workspace da Sil, onde os dois repos ficam lado a lado.
+  // Não achando nenhum dos dois, o caso se pula em vez de falhar: a ausência
+  // do outro repo não diz nada sobre este commit.
+  const fonteDaVerdade =
+    process.env.CASCA_DO_APP ||
+    path.resolve(__dirname, "../../../polia-app/supabase/functions/_shared/email-polia.ts");
 
   it.skipIf(!existsSync(fonteDaVerdade))(
     "não divergiu da casca do polia-app nos blocos compartilhados",

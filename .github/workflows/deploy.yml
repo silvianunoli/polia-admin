@@ -13,10 +13,30 @@ jobs:
         with:
           node-version: 22
       - run: npm install
+
+      # A casca de e-mail daqui é cópia da do produto, e o teste sabe comparar
+      # as duas -- mas só se o outro repo estiver por perto. Sem o secret
+      # POLIA_APP_TOKEN (um token de leitura do silvianunoli/polia-app), este
+      # passo é pulado e o teste de divergência se pula junto: o resto da
+      # suíte continua rodando normal.
+      - name: Clonar o polia-app pra comparar a casca de e-mail
+        if: ${{ secrets.POLIA_APP_TOKEN != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: silvianunoli/polia-app
+          token: ${{ secrets.POLIA_APP_TOKEN }}
+          path: _polia-app
+          sparse-checkout: supabase/functions/_shared
+          sparse-checkout-cone-mode: false
+
       # Antes do build de propósito: é aqui que a casca de e-mail é conferida
-      # (cor fora da paleta, serifada em título). Falhou, o deploy não sai --
-      # que é melhor do que o e-mail errado chegar na caixa de entrada.
+      # (cor fora da paleta, serifada em título, divergência com o produto).
+      # Falhou, o deploy não sai -- que é melhor do que o e-mail errado chegar
+      # na caixa de entrada.
       - run: npm test
+        env:
+          CASCA_DO_APP: ${{ secrets.POLIA_APP_TOKEN != '' && '_polia-app/supabase/functions/_shared/email-polia.ts' || '' }}
+
       - run: npm run build
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
