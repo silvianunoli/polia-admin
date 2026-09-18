@@ -5,6 +5,7 @@ import {
   Inbox,
   Kanban,
   LogOut,
+  Mail,
   Newspaper,
   Radar,
   Sparkles,
@@ -62,10 +63,17 @@ const PRODUTOS: Produto[] = [
   },
   {
     nome: "CRM",
-    descricao:
-      "Contatos, negociações, lembretes, WhatsApp e campanhas de e-mail, do primeiro contato ao pós-venda.",
+    descricao: "Contatos, negociações, lembretes e WhatsApp, do primeiro contato ao pós-venda.",
     href: "/crm",
     icone: Users,
+  },
+  {
+    // Entrada direta pra newsletter, sem passar pelo CRM. É o mesmo módulo,
+    // mas na cabeça dela é outra frente de trabalho.
+    nome: "E-mail e campanhas",
+    descricao: "Listas, newsletter e campanhas de e-mail, com quem abriu e quem clicou.",
+    href: "/crm/campanhas",
+    icone: Mail,
   },
   {
     nome: "Chamados",
