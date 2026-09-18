@@ -422,14 +422,51 @@ export function emailPoliaEditorial({
 }
 
 // ── Variante campanha (newsletter escrita no editor do CRM) ─────────────────
-// Difere da transacional em uma coisa só: o corpo não vem como lista de
-// parágrafos, vem como HTML já montado pelo Tiptap (negrito, lista, link,
-// subtítulo). Cabeçalho, cartão, filete, tipografia e rodapé são os MESMOS
-// blocos compartilhados — é a mesma marca, só a origem do corpo muda.
+// Duas diferenças em relação às variantes acima, e as duas são de propósito.
 //
-// O descadastro aqui é obrigatório na prática: campanha é e-mail de lista, e
-// o Resend troca {{{RESEND_UNSUBSCRIBE_URL}}} pelo link real de cada pessoa,
-// que é o que também alimenta o cabeçalho List-Unsubscribe.
+// 1. O corpo não vem como lista de parágrafos, vem como HTML já montado pelo
+//    Tiptap (negrito, lista, link, subtítulo).
+//
+// 2. A MARCA é outra, e por isso esta variante não usa blocoLogo/blocoRodape.
+//    Os e-mails transacionais saem do produto e assinam como One
+//    (one.usepolia.com.br, logo do wordmark "one"). A campanha sai da Pólia:
+//    quem recebe pode nunca ter entrado na One, pode ter vindo do quiz, do
+//    manual ou de um serviço avulso. Assinar como One ali seria falar de um
+//    produto que a pessoa talvez não use. Então o cabeçalho leva o wordmark
+//    "pólia" e o rodapé aponta pro biolink (usepolia.com.br), que é o ponto de
+//    entrada pra qualquer um dos serviços. Decisão da Sil em 18/09/2026.
+//
+//    A estrutura HTML abaixo é a mesma dos blocos compartilhados (mesma
+//    tabela, mesmos paddings, mesmos tokens) -- o que muda é só o conteúdo da
+//    marca. Se mexer no visual lá, olhe aqui também.
+//
+// O descadastro é obrigatório na prática: campanha é e-mail de lista, e o
+// Resend troca {{{RESEND_UNSUBSCRIBE_URL}}} pelo link real de cada pessoa, que
+// é o que também alimenta o cabeçalho List-Unsubscribe.
+
+// Wordmark "pólia" (o do site, com o acento amarelo e os três pontos), servido
+// pelo biolink e não pelo produto -- mesma razão do rodapé. Gerado de
+// polia-app/public/marketing/logo.svg com a mesma receita do logo-email.png
+// (3x do tamanho de exibição, achatado sobre o --bg, paleta reduzida):
+//
+//   node -e "const s=require('sharp'),f=require('fs');s(f.readFileSync('public/marketing/logo.svg'),{density:600}).resize({width:309,height:120,fit:'fill'}).flatten({background:'#F2F0ED'}).png({compressionLevel:9,palette:true}).toFile('../polia-biolink/public/marketing/logo-email-polia.png')"
+//
+// A URL só existe depois que o polia-biolink for deployado. Imagem remota vem
+// bloqueada por padrão em boa parte dos clientes, e aí o alt estilizado cai no
+// wordmark de texto -- nenhum cenário fica pior do que texto.
+const LOGO_POLIA_URL = "https://usepolia.com.br/marketing/logo-email-polia.png";
+// 103x40 é a proporção exata do SVG (4742x1833): mudar só um dos dois achata.
+const LOGO_POLIA_LARGURA = 103;
+const LOGO_POLIA_ALTURA = 40;
+
+// Biolink da marca. Leva pro produto, pros serviços e pro que mais existir
+// depois -- por isso é ele no rodapé da campanha, e não o domínio do produto.
+const DOMINIO_MARCA = "usepolia.com.br";
+// Na campanha, "fale com a gente" vai pro e-mail que já é o reply-to da
+// própria campanha: funciona pra quem não tem conta, e a resposta cai no mesmo
+// lugar de quem simplesmente responde a mensagem.
+const CONTATO_MARCA = "mailto:oi@usepolia.com.br";
+
 export function emailPoliaCampanha({
   preheader,
   rotulo,
@@ -454,9 +491,41 @@ export function emailPoliaCampanha({
                 </table>`
     : "";
 
-  return (
-    aberturaPagina({ preheader, headline }) +
-    `
+  const linhaDescadastro = descadastroUrl
+    ? `
+                <p style="margin:8px 0 0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.06em;color:${COR_MUTED};">
+                  <a href="${descadastroUrl}" style="color:${COR_MUTED};text-decoration:underline;">Não quero mais receber</a>
+                </p>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>${headline}</title>
+    <style>
+      @media only screen and (max-width: 600px) {
+        .polia-cartao { padding: 24px !important; }
+        .polia-h1 { font-size: 26px !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background-color:${COR_BG};">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${COR_BG};">
+      <tr>
+        <td align="center" style="padding:40px 16px 48px;">
+          <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;">
+            <tr>
+              <td style="padding:0 0 28px;text-align:center;">
+                <img src="${LOGO_POLIA_URL}" width="${LOGO_POLIA_LARGURA}" height="${LOGO_POLIA_ALTURA}" alt="Pólia" style="display:block;margin:0 auto;border:0;outline:none;text-decoration:none;width:${LOGO_POLIA_LARGURA}px;height:${LOGO_POLIA_ALTURA}px;font-family:${FONTE_TITULO};font-size:20px;font-weight:700;letter-spacing:-0.02em;color:${COR_INK};" />
+              </td>
+            </tr>
+            <tr>
+              <td class="polia-cartao" style="background-color:${COR_CARTAO};border:1px solid ${COR_BORDA};border-radius:${RAIO_CARTAO}px;padding:32px;">
                 ${blocoRotulo}
                 <h1 class="polia-h1" style="margin:0 0 28px;font-family:${FONTE_TITULO};font-size:32px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;color:${COR_INK};">
                   ${headline}
@@ -464,7 +533,27 @@ export function emailPoliaCampanha({
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 28px;">
                   <tr><td style="height:1px;background-color:${COR_BORDA};font-size:0;line-height:0;">&nbsp;</td></tr>
                 </table>
-                ${corpoHtml}` +
-    fechamentoPagina({ descadastroUrl })
-  );
+                ${corpoHtml}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding-top:24px;text-align:left;">
+                <p style="margin:0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.06em;color:${COR_MUTED};">
+                  ${DOMINIO_MARCA}
+                </p>
+                <p style="margin:4px 0 0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${COR_MUTED};">
+                  Pequenas marcas. Grandes sonhos.
+                </p>
+                <p style="margin:8px 0 0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.06em;color:${COR_MUTED};">
+                  Alguma dúvida? <a href="${CONTATO_MARCA}" style="color:${COR_MUTED};text-decoration:underline;">Fale com a gente</a>
+                </p>
+                ${linhaDescadastro}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
 }

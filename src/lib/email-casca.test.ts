@@ -111,24 +111,40 @@ describe("campanha", () => {
     expect(html).toMatch(/<h2 style="[^"]*'Cabinet Grotesk'/);
   });
 
-  it("mantém a mesma moldura do transacional", () => {
-    // O que pode diferir é o miolo: título, preheader e a linha de descadastro
-    // (que o transacional não tem). Cabeçalho, cartão e rodapé são os mesmos.
+  // A campanha assina como Pólia, não como One: quem recebe pode nunca ter
+  // entrado no produto (veio do quiz, do manual, de um serviço avulso).
+  // Decisão da Sil em 18/09/2026.
+  it("assina como Pólia, nunca como One", () => {
+    expect(html).toContain("logo-email-polia.png");
+    expect(html).not.toContain("logo-email.png");
+    expect(html).toMatch(/>\s*usepolia\.com\.br\s*</);
+    expect(html).not.toContain("one.usepolia.com.br");
+  });
+
+  it("o logo vem do biolink, que é o domínio da marca", () => {
+    expect(html).toContain("https://usepolia.com.br/marketing/logo-email-polia.png");
+    // alt de verdade: imagem remota vem bloqueada em boa parte dos clientes.
+    expect(html).toMatch(/<img[^>]*alt="Pólia"/);
+  });
+
+  it("mantém a estrutura do transacional fora a marca", () => {
+    // Mesma tabela, mesmo cartão, mesmo filete, mesmos paddings. Se isso
+    // divergir, os dois e-mails deixam de parecer da mesma casa.
     const transacional = emailPolia({
       preheader: "O que mudou",
       headline: "Novidades de outubro",
       paragrafos: ["Oi."],
     });
-    const linhas = (h: string) =>
-      h
-        .split("\n")
-        .map((l) => l.trim())
-        .filter(Boolean);
-    const soNaCampanha = linhas(html).filter((l) => !linhas(transacional).includes(l));
-    const foraDoEsperado = soNaCampanha.filter(
-      (l) => !/RESEND_UNSUBSCRIBE_URL|<p style|<h2 style|<ul style|<li style|<\/ul>/.test(l),
-    );
-    expect(foraDoEsperado).toEqual([]);
+    for (const marca of [
+      'style="padding:40px 16px 48px;"',
+      'class="polia-cartao"',
+      `border-radius:12px;padding:32px;`,
+      "Pequenas marcas. Grandes sonhos.",
+      "polia-h1",
+    ]) {
+      expect(html, `campanha perdeu: ${marca}`).toContain(marca);
+      expect(transacional, `transacional perdeu: ${marca}`).toContain(marca);
+    }
   });
 });
 
