@@ -61,7 +61,7 @@ function AdminUsuarioPerfil() {
     return (
       <p className="font-sans text-[15px] text-[var(--ink-soft)]">
         Não achei essa usuária.{" "}
-        <Link to="/crm" className="text-[var(--secondary-text)] hover:underline">
+        <Link to="/crm/usuarias" className="text-[var(--secondary-text)] hover:underline">
           ← Voltar pro CRM
         </Link>
         .
@@ -72,7 +72,7 @@ function AdminUsuarioPerfil() {
   return (
     <>
       <Link
-        to="/crm"
+        to="/crm/usuarias"
         className="mb-3 inline-block font-sans text-[13px] text-[var(--secondary-text)] hover:underline"
       >
         ← CRM

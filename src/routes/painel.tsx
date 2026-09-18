@@ -33,8 +33,12 @@ function AdminHome() {
     lista_espera_total: 0,
   });
   const [alertasVermelhos, setAlertasVermelhos] = useState<AlertaParada[]>([]);
-  const [saude, setSaude] = useState({ eventos24h: 0, erros24h: 0, latencia: 0 });
-  const [censo, setCenso] = useState<{ label: string; valor: number }[]>([]);
+  const [saude, setSaude] = useState<{
+    eventos24h: number | null;
+    erros24h: number | null;
+    latencia: number | null;
+  }>({ eventos24h: null, erros24h: null, latencia: null });
+  const [censo, setCenso] = useState<{ label: string; valor: number | null }[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState(false);
 
@@ -148,14 +152,7 @@ function AdminHome() {
         });
 
         const dias1 = new Date(Date.now() - 86400000).toISOString();
-        const [
-          { data: logs24 },
-          { count: cTickets },
-          { count: cFeedback },
-          { count: cContatos },
-          { count: cPosts },
-          { count: cLogs },
-        ] = await Promise.all([
+        const contagens = await Promise.all([
           supabase
             .from("edge_function_logs")
             .select("latency_ms, error_message")
@@ -166,25 +163,43 @@ function AdminHome() {
           supabase.from("blog_posts").select("*", { count: "exact", head: true }),
           supabase.from("edge_function_logs").select("*", { count: "exact", head: true }),
         ]);
+        // Mesma armadilha do lote de cima: erro vem dentro do objeto, não lançado.
+        // Sem esta checagem, uma contagem que falha virava `count: null` e caía no
+        // `?? 0` logo abaixo — o Censo mostrava "0 chamados" com a mesma cara de um
+        // zero verdadeiro, e a Saúde do sistema mostrava 0 evento e 0 erro em 24h.
+        if (contagens.some((r) => r.error)) setErro(true);
+        const [
+          { data: logs24, error: erroLogs24 },
+          { count: cTickets },
+          { count: cFeedback },
+          { count: cContatos },
+          { count: cPosts },
+          { count: cLogs },
+        ] = contagens;
+
         const eventos = (logs24 ?? []) as {
           latency_ms: number | null;
           error_message: string | null;
         }[];
         const comLat = eventos.filter((l) => typeof l.latency_ms === "number");
-        setSaude({
-          eventos24h: eventos.length,
-          erros24h: eventos.filter((l) => l.error_message).length,
-          latencia: comLat.length
-            ? Math.round(comLat.reduce((s, l) => s + (l.latency_ms ?? 0), 0) / comLat.length)
-            : 0,
-        });
+        setSaude(
+          erroLogs24
+            ? { eventos24h: null, erros24h: null, latencia: null }
+            : {
+                eventos24h: eventos.length,
+                erros24h: eventos.filter((l) => l.error_message).length,
+                latencia: comLat.length
+                  ? Math.round(comLat.reduce((s, l) => s + (l.latency_ms ?? 0), 0) / comLat.length)
+                  : 0,
+              },
+        );
         setCenso([
-          { label: "Usuárias", valor: totalCadastros ?? 0 },
-          { label: "Chamados", valor: cTickets ?? 0 },
-          { label: "Feedbacks", valor: cFeedback ?? 0 },
-          { label: "Contatos", valor: cContatos ?? 0 },
-          { label: "Posts", valor: cPosts ?? 0 },
-          { label: "Eventos (log)", valor: cLogs ?? 0 },
+          { label: "Usuárias", valor: totalCadastros ?? null },
+          { label: "Chamados", valor: cTickets ?? null },
+          { label: "Feedbacks", valor: cFeedback ?? null },
+          { label: "Contatos", valor: cContatos ?? null },
+          { label: "Posts", valor: cPosts ?? null },
+          { label: "Eventos (log)", valor: cLogs ?? null },
         ]);
       } catch {
         setErro(true);
@@ -362,13 +377,21 @@ function AdminHome() {
       </h2>
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         {[
-          { label: "Eventos", valor: String(saude.eventos24h), cor: "var(--ink)" },
+          {
+            label: "Eventos",
+            valor: saude.eventos24h === null ? "—" : String(saude.eventos24h),
+            cor: "var(--ink)",
+          },
           {
             label: "Erros",
-            valor: String(saude.erros24h),
-            cor: saude.erros24h > 0 ? "var(--danger)" : "var(--secondary-text)",
+            valor: saude.erros24h === null ? "—" : String(saude.erros24h),
+            cor: (saude.erros24h ?? 0) > 0 ? "var(--danger)" : "var(--secondary-text)",
           },
-          { label: "Latência média", valor: `${saude.latencia} ms`, cor: "var(--ink)" },
+          {
+            label: "Latência média",
+            valor: saude.latencia === null ? "—" : `${saude.latencia} ms`,
+            cor: "var(--ink)",
+          },
         ].map((m) => (
           <div key={m.label} className={`${CARD_CLASS} p-5`}>
             <p className="mb-2 font-accent text-[10px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]">
@@ -397,7 +420,9 @@ function AdminHome() {
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
             {censo.map((c) => (
               <div key={c.label}>
-                <p className="font-cabinet text-[28px] leading-none text-[var(--ink)]">{c.valor}</p>
+                <p className="font-cabinet text-[28px] leading-none text-[var(--ink)]">
+                  {c.valor === null ? "—" : c.valor}
+                </p>
                 <p className="mt-1 font-sans text-[12px] text-[var(--muted)]">{c.label}</p>
               </div>
             ))}
@@ -415,7 +440,7 @@ function AdminHome() {
               {carregando ? <SkeletonNumero /> : stats.lista_espera_total}
             </p>
           </div>
-          <Link to="/crm" className={cn(BTN_LINK, "text-[13px]")}>
+          <Link to="/crm/usuarias" className={cn(BTN_LINK, "text-[13px]")}>
             Gerenciar →
           </Link>
         </div>

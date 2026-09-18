@@ -35,6 +35,11 @@ import { Route as BlogIdRouteImport } from './routes/blog.$id'
 import { Route as BlogNovoRouteImport } from './routes/blog.novo'
 import { Route as ChamadosIndexRouteImport } from './routes/chamados.index'
 import { Route as ChamadosIdRouteImport } from './routes/chamados.$id'
+import { Route as CrmIndexRouteImport } from './routes/crm/index'
+import { Route as CrmModelosRouteImport } from './routes/crm/modelos'
+import { Route as CrmNegociosRouteImport } from './routes/crm/negocios'
+import { Route as CrmTarefasRouteImport } from './routes/crm/tarefas'
+import { Route as CrmUsuariasRouteImport } from './routes/crm/usuarias'
 import { Route as FounderIndexRouteImport } from './routes/founder/index'
 import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
 import { Route as FounderNumerosRouteImport } from './routes/founder/numeros'
@@ -42,6 +47,10 @@ import { Route as FounderSaudeRouteImport } from './routes/founder/saude'
 import { Route as PesquisasIndexRouteImport } from './routes/pesquisas.index'
 import { Route as PesquisasSlugRouteImport } from './routes/pesquisas.$slug'
 import { Route as UsuariosIdRouteImport } from './routes/usuarios.$id'
+import { Route as CrmCampanhasIndexRouteImport } from './routes/crm/campanhas.index'
+import { Route as CrmCampanhasIdRouteImport } from './routes/crm/campanhas.$id'
+import { Route as CrmContatosIndexRouteImport } from './routes/crm/contatos.index'
+import { Route as CrmContatosIdRouteImport } from './routes/crm/contatos.$id'
 import { Route as FounderAnalyticsIndexRouteImport } from './routes/founder/analytics.index'
 import { Route as FounderAnalyticsComportamentoRouteImport } from './routes/founder/analytics.comportamento'
 import { Route as FounderAnalyticsFuncionalidadesRouteImport } from './routes/founder/analytics.funcionalidades'
@@ -201,6 +210,31 @@ const ChamadosIdRoute = ChamadosIdRouteImport.update({
   path: '/chamados/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CrmIndexRoute = CrmIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmModelosRoute = CrmModelosRouteImport.update({
+  id: '/modelos',
+  path: '/modelos',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmNegociosRoute = CrmNegociosRouteImport.update({
+  id: '/negocios',
+  path: '/negocios',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmTarefasRoute = CrmTarefasRouteImport.update({
+  id: '/tarefas',
+  path: '/tarefas',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmUsuariasRoute = CrmUsuariasRouteImport.update({
+  id: '/usuarias',
+  path: '/usuarias',
+  getParentRoute: () => CrmRoute,
+} as any)
 const FounderIndexRoute = FounderIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -235,6 +269,26 @@ const UsuariosIdRoute = UsuariosIdRouteImport.update({
   id: '/usuarios/$id',
   path: '/usuarios/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const CrmCampanhasIndexRoute = CrmCampanhasIndexRouteImport.update({
+  id: '/campanhas/',
+  path: '/campanhas/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmCampanhasIdRoute = CrmCampanhasIdRouteImport.update({
+  id: '/campanhas/$id',
+  path: '/campanhas/$id',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmContatosIndexRoute = CrmContatosIndexRouteImport.update({
+  id: '/contatos/',
+  path: '/contatos/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmContatosIdRoute = CrmContatosIdRouteImport.update({
+  id: '/contatos/$id',
+  path: '/contatos/$id',
+  getParentRoute: () => CrmRoute,
 } as any)
 const FounderAnalyticsIndexRoute = FounderAnalyticsIndexRouteImport.update({
   id: '/analytics/',
@@ -395,7 +449,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/crm': typeof CrmRoute
+  '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/ferramentas': typeof FerramentasRoute
@@ -413,6 +467,10 @@ export interface FileRoutesByFullPath {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/crm/modelos': typeof CrmModelosRoute
+  '/crm/negocios': typeof CrmNegociosRoute
+  '/crm/tarefas': typeof CrmTarefasRoute
+  '/crm/usuarias': typeof CrmUsuariasRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -420,8 +478,11 @@ export interface FileRoutesByFullPath {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
+  '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -448,6 +509,8 @@ export interface FileRoutesByFullPath {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/crm/campanhas/': typeof CrmCampanhasIndexRoute
+  '/crm/contatos/': typeof CrmContatosIndexRoute
   '/founder/analytics/': typeof FounderAnalyticsIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
@@ -458,7 +521,6 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/crm': typeof CrmRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/ferramentas': typeof FerramentasRoute
@@ -475,6 +537,10 @@ export interface FileRoutesByTo {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/crm/modelos': typeof CrmModelosRoute
+  '/crm/negocios': typeof CrmNegociosRoute
+  '/crm/tarefas': typeof CrmTarefasRoute
+  '/crm/usuarias': typeof CrmUsuariasRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -482,8 +548,11 @@ export interface FileRoutesByTo {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog': typeof BlogIndexRoute
   '/chamados': typeof ChamadosIndexRoute
+  '/crm': typeof CrmIndexRoute
   '/founder': typeof FounderIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
+  '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
+  '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -510,6 +579,8 @@ export interface FileRoutesByTo {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/crm/campanhas': typeof CrmCampanhasIndexRoute
+  '/crm/contatos': typeof CrmContatosIndexRoute
   '/founder/analytics': typeof FounderAnalyticsIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
@@ -521,7 +592,7 @@ export interface FileRoutesById {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/crm': typeof CrmRoute
+  '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/ferramentas': typeof FerramentasRoute
@@ -539,6 +610,10 @@ export interface FileRoutesById {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/crm/modelos': typeof CrmModelosRoute
+  '/crm/negocios': typeof CrmNegociosRoute
+  '/crm/tarefas': typeof CrmTarefasRoute
+  '/crm/usuarias': typeof CrmUsuariasRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -546,8 +621,11 @@ export interface FileRoutesById {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/crm/': typeof CrmIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
+  '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -574,6 +652,8 @@ export interface FileRoutesById {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/crm/campanhas/': typeof CrmCampanhasIndexRoute
+  '/crm/contatos/': typeof CrmContatosIndexRoute
   '/founder/analytics/': typeof FounderAnalyticsIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
@@ -604,6 +684,10 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/crm/modelos'
+    | '/crm/negocios'
+    | '/crm/tarefas'
+    | '/crm/usuarias'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -611,8 +695,11 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/crm/'
     | '/founder/'
     | '/pesquisas/'
+    | '/crm/campanhas/$id'
+    | '/crm/contatos/$id'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -639,6 +726,8 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/crm/campanhas/'
+    | '/crm/contatos/'
     | '/founder/analytics/'
     | '/founder/analytics/usuarias/$id'
   fileRoutesByTo: FileRoutesByTo
@@ -649,7 +738,6 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
-    | '/crm'
     | '/design-system'
     | '/estrategico'
     | '/ferramentas'
@@ -666,6 +754,10 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/crm/modelos'
+    | '/crm/negocios'
+    | '/crm/tarefas'
+    | '/crm/usuarias'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -673,8 +765,11 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog'
     | '/chamados'
+    | '/crm'
     | '/founder'
     | '/pesquisas'
+    | '/crm/campanhas/$id'
+    | '/crm/contatos/$id'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -701,6 +796,8 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/crm/campanhas'
+    | '/crm/contatos'
     | '/founder/analytics'
     | '/founder/analytics/usuarias/$id'
   id:
@@ -729,6 +826,10 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/crm/modelos'
+    | '/crm/negocios'
+    | '/crm/tarefas'
+    | '/crm/usuarias'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -736,8 +837,11 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/crm/'
     | '/founder/'
     | '/pesquisas/'
+    | '/crm/campanhas/$id'
+    | '/crm/contatos/$id'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -764,6 +868,8 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/crm/campanhas/'
+    | '/crm/contatos/'
     | '/founder/analytics/'
     | '/founder/analytics/usuarias/$id'
   fileRoutesById: FileRoutesById
@@ -775,7 +881,7 @@ export interface RootRouteChildren {
   AuditoriaRoute: typeof AuditoriaRoute
   CentralRoute: typeof CentralRoute
   ConteudoRoute: typeof ConteudoRoute
-  CrmRoute: typeof CrmRoute
+  CrmRoute: typeof CrmRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
   FerramentasRoute: typeof FerramentasRoute
@@ -984,6 +1090,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChamadosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/crm/': {
+      id: '/crm/'
+      path: '/'
+      fullPath: '/crm/'
+      preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/modelos': {
+      id: '/crm/modelos'
+      path: '/modelos'
+      fullPath: '/crm/modelos'
+      preLoaderRoute: typeof CrmModelosRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/negocios': {
+      id: '/crm/negocios'
+      path: '/negocios'
+      fullPath: '/crm/negocios'
+      preLoaderRoute: typeof CrmNegociosRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/tarefas': {
+      id: '/crm/tarefas'
+      path: '/tarefas'
+      fullPath: '/crm/tarefas'
+      preLoaderRoute: typeof CrmTarefasRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/usuarias': {
+      id: '/crm/usuarias'
+      path: '/usuarias'
+      fullPath: '/crm/usuarias'
+      preLoaderRoute: typeof CrmUsuariasRouteImport
+      parentRoute: typeof CrmRoute
+    }
     '/founder/': {
       id: '/founder/'
       path: '/'
@@ -1032,6 +1173,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/usuarios/$id'
       preLoaderRoute: typeof UsuariosIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/crm/campanhas/': {
+      id: '/crm/campanhas/'
+      path: '/campanhas'
+      fullPath: '/crm/campanhas/'
+      preLoaderRoute: typeof CrmCampanhasIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/campanhas/$id': {
+      id: '/crm/campanhas/$id'
+      path: '/campanhas/$id'
+      fullPath: '/crm/campanhas/$id'
+      preLoaderRoute: typeof CrmCampanhasIdRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/contatos/': {
+      id: '/crm/contatos/'
+      path: '/contatos'
+      fullPath: '/crm/contatos/'
+      preLoaderRoute: typeof CrmContatosIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/contatos/$id': {
+      id: '/crm/contatos/$id'
+      path: '/contatos/$id'
+      fullPath: '/crm/contatos/$id'
+      preLoaderRoute: typeof CrmContatosIdRouteImport
+      parentRoute: typeof CrmRoute
     }
     '/founder/analytics/': {
       id: '/founder/analytics/'
@@ -1232,6 +1401,32 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface CrmRouteChildren {
+  CrmModelosRoute: typeof CrmModelosRoute
+  CrmNegociosRoute: typeof CrmNegociosRoute
+  CrmTarefasRoute: typeof CrmTarefasRoute
+  CrmUsuariasRoute: typeof CrmUsuariasRoute
+  CrmIndexRoute: typeof CrmIndexRoute
+  CrmCampanhasIdRoute: typeof CrmCampanhasIdRoute
+  CrmContatosIdRoute: typeof CrmContatosIdRoute
+  CrmCampanhasIndexRoute: typeof CrmCampanhasIndexRoute
+  CrmContatosIndexRoute: typeof CrmContatosIndexRoute
+}
+
+const CrmRouteChildren: CrmRouteChildren = {
+  CrmModelosRoute: CrmModelosRoute,
+  CrmNegociosRoute: CrmNegociosRoute,
+  CrmTarefasRoute: CrmTarefasRoute,
+  CrmUsuariasRoute: CrmUsuariasRoute,
+  CrmIndexRoute: CrmIndexRoute,
+  CrmCampanhasIdRoute: CrmCampanhasIdRoute,
+  CrmContatosIdRoute: CrmContatosIdRoute,
+  CrmCampanhasIndexRoute: CrmCampanhasIndexRoute,
+  CrmContatosIndexRoute: CrmContatosIndexRoute,
+}
+
+const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
+
 interface FounderAnalyticsUsuariasRouteChildren {
   FounderAnalyticsUsuariasIdRoute: typeof FounderAnalyticsUsuariasIdRoute
 }
@@ -1324,7 +1519,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriaRoute: AuditoriaRoute,
   CentralRoute: CentralRoute,
   ConteudoRoute: ConteudoRoute,
-  CrmRoute: CrmRoute,
+  CrmRoute: CrmRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
   FerramentasRoute: FerramentasRoute,

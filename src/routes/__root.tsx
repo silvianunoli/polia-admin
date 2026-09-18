@@ -102,10 +102,15 @@ function RootComponent() {
   // trocam a Sidebar inteira por um link simples de volta.
   // /founder tem layout próprio (sidebar do Founder Dashboard + header com o
   // filtro de período), definido em src/routes/founder.tsx.
-  const layoutProprio = pathname === "/founder" || pathname.startsWith("/founder/");
+  // /crm entrou aqui em 18/09/2026: virou módulo com sidebar própria
+  // (src/routes/crm.tsx), como o Founder.
+  const layoutProprio =
+    pathname === "/founder" ||
+    pathname.startsWith("/founder/") ||
+    pathname === "/crm" ||
+    pathname.startsWith("/crm/");
 
   const semSidebar =
-    pathname === "/crm" ||
     pathname === "/numeros" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||

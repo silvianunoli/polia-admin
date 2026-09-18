@@ -62,7 +62,8 @@ const PRODUTOS: Produto[] = [
   },
   {
     nome: "CRM",
-    descricao: "Usuárias e clientes, do primeiro contato ao pós-venda.",
+    descricao:
+      "Contatos, negociações, lembretes, WhatsApp e campanhas de e-mail, do primeiro contato ao pós-venda.",
     href: "/crm",
     icone: Users,
   },
