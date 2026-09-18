@@ -1,9 +1,9 @@
 // Envio de e-mail pelo Resend. A casca HTML (escapeHtml/emailPolia) mora em
 // email-casca.ts, sem dependência de servidor, e é reexportada aqui pra todos
 // os imports antigos continuarem valendo.
-import { escapeHtml, emailPolia } from "@/lib/email-casca";
+import { escapeHtml, emailPolia, emailPoliaEditorial } from "@/lib/email-casca";
 
-export { escapeHtml, emailPolia };
+export { escapeHtml, emailPolia, emailPoliaEditorial };
 
 export function resendApiKey(): string {
   const key = process.env.RESEND_API_KEY;

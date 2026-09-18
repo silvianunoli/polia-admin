@@ -47,3 +47,30 @@ errado.
 ### Como ela pode pedir
 
 "Sobe esse post no blog: título [X], categoria [Y], agenda pra [17/09 às 08h]. Conteúdo: [markdown]."
+
+## E-mail — a casca daqui é CÓPIA da do produto
+
+`src/lib/email-casca.ts` (convite, e-mail avulso do CRM, campanha) é cópia de
+**`polia-app/supabase/functions/_shared/email-polia.ts`**, que é a fonte da verdade.
+Repositórios separados não compartilham import, então a cópia é inevitável; divergir não é.
+
+Foi exatamente isso que aconteceu entre 17/08 e 18/09/2026: o admin ficou parado na versão
+pré-v3 (título em **Georgia serifada** e rodapé em **#9E9E9E**, que reprova AA) enquanto o
+produto já tinha virado. Resultado: o e-mail do convite e a primeira campanha chegaram com
+outra cara dos e-mails que as usuárias recebem.
+
+**Regra: mexeu na casca no polia-app, copie pra cá no mesmo dia.** O app tem teste de regressão
+(`src/lib/email-template.test.ts`) travando cor e tipografia; o admin ainda **não tem test
+runner**, então aqui a conferência é manual. Roteiro rápido, sem precisar deployar:
+
+```bash
+npx esbuild ARQUIVO_DE_TESTE.ts --bundle --format=esm --alias:@=./src --outfile=saida.mjs && node saida.mjs
+```
+
+O que checar no HTML gerado: nenhum hex fora da paleta v3, nada de `#9E9E9E`/`#767676`,
+nada de `Georgia`/`Times New Roman` (título é **Cabinet Grotesk**, uma grotesca) e a moldura
+idêntica à de um `emailPolia()` transacional.
+
+Três variantes, mesma base de blocos: `emailPolia` (transacional), `emailPoliaEditorial`
+(material, botão amarelo) e `emailPoliaCampanha` (newsletter, corpo em HTML vindo do editor
+do CRM). Variação nova entra como **parâmetro**, nunca como segunda cópia do HTML.
