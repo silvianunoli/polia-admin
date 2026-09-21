@@ -25,6 +25,7 @@ import { Route as FunilRouteImport } from './routes/funil'
 import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LogsRouteImport } from './routes/logs'
+import { Route as ManualDaMarcaRouteImport } from './routes/manual-da-marca'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PainelRouteImport } from './routes/painel'
@@ -158,6 +159,11 @@ const KanbanRoute = KanbanRouteImport.update({
 const LogsRoute = LogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ManualDaMarcaRoute = ManualDaMarcaRouteImport.update({
+  id: '/manual-da-marca',
+  path: '/manual-da-marca',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NegocioRoute = NegocioRouteImport.update({
@@ -459,6 +465,7 @@ export interface FileRoutesByFullPath {
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
+  '/manual-da-marca': typeof ManualDaMarcaRoute
   '/negocio': typeof NegocioRoute
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
@@ -529,6 +536,7 @@ export interface FileRoutesByTo {
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
+  '/manual-da-marca': typeof ManualDaMarcaRoute
   '/negocio': typeof NegocioRoute
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
@@ -602,6 +610,7 @@ export interface FileRoutesById {
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
+  '/manual-da-marca': typeof ManualDaMarcaRoute
   '/negocio': typeof NegocioRoute
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
@@ -676,6 +685,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/kanban'
     | '/logs'
+    | '/manual-da-marca'
     | '/negocio'
     | '/numeros'
     | '/painel'
@@ -746,6 +756,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/kanban'
     | '/logs'
+    | '/manual-da-marca'
     | '/negocio'
     | '/numeros'
     | '/painel'
@@ -818,6 +829,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/kanban'
     | '/logs'
+    | '/manual-da-marca'
     | '/negocio'
     | '/numeros'
     | '/painel'
@@ -891,6 +903,7 @@ export interface RootRouteChildren {
   GovernancaRoute: typeof GovernancaRoute
   KanbanRoute: typeof KanbanRoute
   LogsRoute: typeof LogsRoute
+  ManualDaMarcaRoute: typeof ManualDaMarcaRoute
   NegocioRoute: typeof NegocioRoute
   NumerosRoute: typeof NumerosRoute
   PainelRoute: typeof PainelRoute
@@ -1018,6 +1031,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/logs'
       preLoaderRoute: typeof LogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/manual-da-marca': {
+      id: '/manual-da-marca'
+      path: '/manual-da-marca'
+      fullPath: '/manual-da-marca'
+      preLoaderRoute: typeof ManualDaMarcaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/negocio': {
@@ -1529,6 +1549,7 @@ const rootRouteChildren: RootRouteChildren = {
   GovernancaRoute: GovernancaRoute,
   KanbanRoute: KanbanRoute,
   LogsRoute: LogsRoute,
+  ManualDaMarcaRoute: ManualDaMarcaRoute,
   NegocioRoute: NegocioRoute,
   NumerosRoute: NumerosRoute,
   PainelRoute: PainelRoute,

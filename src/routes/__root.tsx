@@ -90,12 +90,14 @@ function RootComponent() {
   // de página inteira, com o próprio header) não têm chrome de admin — não
   // faz sentido com a Sidebar do painel ao lado. /ferramentas segue a mesma
   // regra: é leitura de página inteira, com header próprio de volta à Central.
+  // /manual-da-marca também: iframe do documento, header próprio.
   const semChrome =
     pathname === "/central" ||
     pathname === "/kanban" ||
     pathname === "/estrategico" ||
     pathname === "/conteudo" ||
-    pathname === "/ferramentas";
+    pathname === "/ferramentas" ||
+    pathname === "/manual-da-marca";
 
   // Páginas que ganharam entrada direta na Central (não passam mais pela
   // Sidebar pra serem alcançadas) -- mantêm o padding do layout padrão, só

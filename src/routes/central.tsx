@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
+  BookOpen,
   ClipboardList,
   Inbox,
   Kanban,
@@ -48,6 +49,13 @@ const PRODUTOS: Produto[] = [
     descricao: "Runbook das 14 ferramentas externas: passo a passo e as armadilhas já encontradas.",
     href: "/ferramentas",
     icone: Wrench,
+  },
+  {
+    nome: "Manual da Marca",
+    descricao:
+      "A régua de decisão: eixo, voz, palavras proibidas, cores e tipografia, num documento só.",
+    href: "/manual-da-marca",
+    icone: BookOpen,
   },
   {
     nome: "Criação de Conteúdo",

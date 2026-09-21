@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import kanbanHtml from "./boards/kanban-operacional.html?raw";
 import estrategicoHtml from "./boards/gerenciamento-estrategico.html?raw";
 import conteudoHtml from "./boards/conteudo-criacao.html?raw";
+import manualMarcaHtml from "./boards/manual-da-marca.html?raw";
 import { FERRAMENTAS_SETUP } from "./ferramentas-setup";
 
 // O conteúdo dos dois boards só existe dentro do bundle do servidor (import
@@ -103,6 +104,18 @@ function linhaConteudoParaFrontend(row: ConteudoRow) {
     nota: row.nota,
   };
 }
+
+// Manual da Marca: documento de leitura, sem catálogo vivo pra injetar -- só
+// devolve o HTML. Vem por RPC autenticado pelo mesmo motivo dos boards: em
+// public/ o ASSETS binding entregaria o arquivo sem passar pelo guard de auth,
+// e este HTML embute a Anzylna (fonte paga, licença de uso próprio) em data:
+// URI -- atrás do login ela não vira download público.
+export const buscarHtmlManualMarca = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    return manualMarcaHtml;
+  });
 
 export const buscarHtmlConteudo = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
