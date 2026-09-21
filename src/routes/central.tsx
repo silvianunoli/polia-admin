@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   ClipboardList,
+  Images,
   Inbox,
   Kanban,
   LogOut,
@@ -62,6 +63,13 @@ const PRODUTOS: Produto[] = [
     descricao: "Instagram e blog, da ideia até o post no ar.",
     href: "/conteudo",
     icone: Sparkles,
+  },
+  {
+    nome: "Conteúdo Pólia",
+    descricao:
+      "Os carrosséis do feed: ver prancha por prancha, ajustar o HTML e baixar os PNG prontos para postar.",
+    href: "/conteudo-polia",
+    icone: Images,
   },
   {
     nome: "CMS do Blog",

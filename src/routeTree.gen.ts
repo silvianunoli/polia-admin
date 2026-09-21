@@ -15,6 +15,7 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as ConteudoRouteImport } from './routes/conteudo'
+import { Route as ConteudoPoliaRouteImport } from './routes/conteudo-polia'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EstrategicoRouteImport } from './routes/estrategico'
@@ -109,6 +110,11 @@ const CentralRoute = CentralRouteImport.update({
 const ConteudoRoute = ConteudoRouteImport.update({
   id: '/conteudo',
   path: '/conteudo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConteudoPoliaRoute = ConteudoPoliaRouteImport.update({
+  id: '/conteudo-polia',
+  path: '/conteudo-polia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmRoute = CrmRouteImport.update({
@@ -455,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
+  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
@@ -528,6 +535,7 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
+  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/ferramentas': typeof FerramentasRoute
@@ -600,6 +608,7 @@ export interface FileRoutesById {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
+  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
@@ -675,6 +684,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
+    | '/conteudo-polia'
     | '/crm'
     | '/design-system'
     | '/estrategico'
@@ -748,6 +758,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
+    | '/conteudo-polia'
     | '/design-system'
     | '/estrategico'
     | '/ferramentas'
@@ -819,6 +830,7 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
+    | '/conteudo-polia'
     | '/crm'
     | '/design-system'
     | '/estrategico'
@@ -893,6 +905,7 @@ export interface RootRouteChildren {
   AuditoriaRoute: typeof AuditoriaRoute
   CentralRoute: typeof CentralRoute
   ConteudoRoute: typeof ConteudoRoute
+  ConteudoPoliaRoute: typeof ConteudoPoliaRoute
   CrmRoute: typeof CrmRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
@@ -961,6 +974,13 @@ declare module '@tanstack/react-router' {
       path: '/conteudo'
       fullPath: '/conteudo'
       preLoaderRoute: typeof ConteudoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conteudo-polia': {
+      id: '/conteudo-polia'
+      path: '/conteudo-polia'
+      fullPath: '/conteudo-polia'
+      preLoaderRoute: typeof ConteudoPoliaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm': {
@@ -1539,6 +1559,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriaRoute: AuditoriaRoute,
   CentralRoute: CentralRoute,
   ConteudoRoute: ConteudoRoute,
+  ConteudoPoliaRoute: ConteudoPoliaRoute,
   CrmRoute: CrmRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
