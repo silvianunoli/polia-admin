@@ -1015,10 +1015,10 @@
       <div class="sw"><div class="chip" style="background:#F6DAD4"></div><div class="info"><b>Superfície rosada</b><code>--surface-pink #F6DAD4</code><span class="use">Destaque pontual</span></div></div>
       <div class="sw"><div class="chip" style="background:#0A0A0A"></div><div class="info"><b>Tinta</b><code>--ink #0A0A0A</code><span class="use">Texto principal</span></div></div>
       <div class="sw"><div class="chip" style="background:#2C2C2C"></div><div class="info"><b>Tinta suave</b><code>--ink-soft #2C2C2C</code><span class="use">Texto secundário</span></div></div>
-      <div class="sw"><div class="chip" style="background:#767676"></div><div class="info"><b>Apagado</b><code>--muted #767676</code><span class="use">Metadado. Ver Seção 17</span></div></div>
+      <div class="sw"><div class="chip" style="background:#6B6B6B"></div><div class="info"><b>Apagado</b><code>--muted #6B6B6B</code><span class="use">Metadado. Ver Seção 17</span></div></div>
       <div class="sw"><div class="chip" style="background:#7CCBCD"></div><div class="info"><b>Turquesa</b><code>--secondary #7CCBCD</code><span class="use">Ação principal, só fundo</span></div></div>
       <div class="sw"><div class="chip" style="background:#BFE9EB"></div><div class="info"><b>Turquesa clara</b><code>--secondary-light #BFE9EB</code><span class="use">Fundo de destaque leve</span></div></div>
-      <div class="sw"><div class="chip" style="background:#2C7E80"></div><div class="info"><b>Turquesa escura</b><code>--secondary-text #2C7E80</code><span class="use">Texto de link e CTA</span></div></div>
+      <div class="sw"><div class="chip" style="background:#24696B"></div><div class="info"><b>Turquesa escura</b><code>--secondary-text #24696B</code><span class="use">Texto de link e CTA</span></div></div>
       <div class="sw"><div class="chip" style="background:#F3B9A9"></div><div class="info"><b>Pêssego</b><code>--accent #F3B9A9</code><span class="use">Fundo, borda, gráfico</span></div></div>
       <div class="sw"><div class="chip" style="background:#FFC629"></div><div class="info"><b>Amarelo</b><code>--highlight #FFC629</code><span class="use">Um indicador por tela</span></div></div>
       <div class="sw"><div class="chip" style="background:#C0392B"></div><div class="info"><b>Tijolo</b><code>--danger #C0392B</code><span class="use">Erro, ação destrutiva</span></div></div>
@@ -1191,7 +1191,7 @@
   <section id="s17">
     <span class="sec-num">Seção 17</span>
     <h2>Acessibilidade</h2>
-    <p class="sub">O piso já está implementado. O que não está é o contraste que a documentação declarava.</p>
+    <p class="sub">O piso já está implementado. O contraste que a documentação declarava foi medido, reprovou em dois tokens e foi corrigido. Sobrou um par.</p>
 
     <ul>
       <li><code>:focus-visible</code> global: contorno de 2px em turquesa, deslocamento de 2px.</li>
@@ -1200,19 +1200,19 @@
       <li>Toda tela nova mantém foco visível, teclado e contraste AA.</li>
     </ul>
 
-    <div class="callout stop">
-      <h4>Dois tokens reprovam em AA nos fundos reais (medido em 30/07/2026)</h4>
-      <p>O <code>DESIGN.md</code> afirmava contraste AA garantido, mas a medida do <code>--muted</code> era contra branco puro, e nenhuma tela usa branco puro como fundo de página. O fundo real é <code>--bg</code>.</p>
+    <div class="callout warn">
+      <h4>Os dois tokens que reprovavam foram escurecidos (medido em 30/07/2026, corrigido em 08/2026)</h4>
+      <p>O <code>DESIGN.md</code> afirmava contraste AA garantido, mas a medida do <code>--muted</code> era contra branco puro, e nenhuma tela usa branco puro como fundo de página. O fundo real é <code>--bg</code>. Medido contra ele, <code>--muted</code> #767676 (3,99:1) e <code>--secondary-text</code> #2C7E80 (4,19:1) reprovavam. Os valores atuais são <code>--muted</code> #6B6B6B e <code>--secondary-text</code> #24696B. Os hex antigos estão mortos: não voltam nem como fallback.</p>
       <table style="margin-bottom:10px">
         <tr><th>Par</th><th style="width:18%">Contraste</th><th style="width:22%">AA texto pequeno</th></tr>
-        <tr><td><code>--muted</code> #767676 sobre <code>--bg</code> #F2F0ED</td><td>3,99:1</td><td class="no">reprova</td></tr>
-        <tr><td><code>--muted</code> sobre <code>--surface</code> #F9EFEE</td><td>4,03:1</td><td class="no">reprova</td></tr>
-        <tr><td><code>--muted</code> sobre <code>--surface-pink</code> #F6DAD4</td><td>3,44:1</td><td class="no">reprova</td></tr>
-        <tr><td><code>--secondary-text</code> #2C7E80 sobre <code>--bg</code></td><td>4,19:1</td><td class="no">reprova</td></tr>
-        <tr><td><code>--secondary-text</code> sobre <code>--secondary-light</code> #BFE9EB</td><td>3,65:1</td><td class="no">reprova</td></tr>
+        <tr><td><code>--muted</code> #6B6B6B sobre <code>--bg</code> #F2F0ED</td><td>4,69:1</td><td>passa</td></tr>
+        <tr><td><code>--muted</code> sobre <code>--surface</code> #F9EFEE</td><td>4,72:1</td><td>passa</td></tr>
+        <tr><td><code>--muted</code> sobre <code>--surface-pink</code> #F6DAD4</td><td>4,03:1</td><td class="no">reprova</td></tr>
+        <tr><td><code>--secondary-text</code> #24696B sobre <code>--bg</code></td><td>5,58:1</td><td>passa</td></tr>
+        <tr><td><code>--secondary-text</code> sobre <code>--secondary-light</code> #BFE9EB</td><td>4,86:1</td><td>passa</td></tr>
       </table>
       <p><b>Passam com folga:</b> <code>--ink</code> sobre qualquer fundo claro (15:1 a 17,5:1), <code>--ink-soft</code> sobre <code>--secondary-light</code> (10,7:1) e sobre <code>--accent</code> (8,2:1), <code>--ink</code> sobre <code>--highlight</code> (12,6:1) e sobre <code>--secondary</code> (10,6:1).</p>
-      <p style="margin-bottom:0"><b>O que fazer:</b> em texto grande (24px, ou 18,66px em negrito) o piso é 3:1 e os dois passam. O problema é metadado, label e link em tamanho de corpo. Duas saídas: escurecer <code>--muted</code> para perto de #6B6B6B e <code>--secondary-text</code> para perto de #24696B, ou restringir esses tokens a texto grande. Enquanto não resolver, use <code>--ink</code> e <code>--ink-soft</code> para texto pequeno em peça nova.</p>
+      <p style="margin-bottom:0"><b>O que sobrou:</b> <code>--muted</code> sobre <code>--surface-pink</code> ainda fica em 4,03:1, abaixo do piso de 4,5:1 para texto pequeno. Em texto grande (24px, ou 18,66px em negrito) o piso é 3:1 e esse par passa. Em metadado, label e link sobre o rosa, o texto vai em <code>--ink</code> ou <code>--ink-soft</code>.</p>
     </div>
   </section>
 
