@@ -1,16 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, Download, Loader2 } from "lucide-react";
-import {
-  buscarAtivosCarrossel,
-  buscarCarrossel,
-  listarCarrosseis,
-  salvarSlide,
-} from "@/lib/carrosseis.functions";
+import { buscarAtivosCarrossel, buscarCarrossel, salvarSlide } from "@/lib/carrosseis.functions";
 
-export const Route = createFileRoute("/conteudo-polia")({
+export const Route = createFileRoute("/conteudo-polia/$slug")({
   head: () => ({ meta: [{ title: "Conteúdo Pólia" }] }),
-  component: ConteudoPoliaPage,
+  component: EditorDeCarrossel,
 });
 
 type Ativos = { fonte: string; imagens: Record<string, string> };
@@ -19,13 +14,12 @@ type Carrossel = {
   id: string;
   slug: string;
   titulo: string;
-  descricao: string;
   largura: number;
   altura: number;
   cssBase: string;
   slides: Slide[];
 };
-type ItemLista = { slug: string; titulo: string; pranchas: number };
+type Campo = { indice: number; tipo: "texto" | "imagem"; rotulo: string; valor: string };
 
 // A prancha é desenhada dentro de um iframe: o CSS dela é da marca, com
 // regras em body e em h1-h6, e brigaria com o .polia-v3 do admin se fosse
@@ -92,17 +86,54 @@ function montarDocumento(cssBase: string, html: string, ativos: Ativos, comExpor
   );
 }
 
-// Erro de RPC chega aqui como Error com a mensagem do servidor. Mostrar só
-// "não consegui" esconderia a causa real (falta de variável de ambiente,
-// sessão expirada) e faria parecer bug do código -- o mesmo tipo de engano
-// que o painel do censo já causou ao mostrar falha como se fosse zero.
-function mensagemDoErro(e: unknown) {
-  const bruta = e instanceof Error ? e.message : String(e);
-  if (/SUPABASE_SERVICE_ROLE_KEY|environment variable/i.test(bruta)) {
-    return "Falta a SUPABASE_SERVICE_ROLE_KEY no ambiente. Em desenvolvimento ela vem do .dev.vars; em produção, do secret do Worker.";
+// ── campos ──────────────────────────────────────────────────────────────────
+// A prancha continua sendo HTML no banco, mas os pedaços que valem a pena
+// mexer estão marcados com data-campo. O editor lê esses nós e monta um
+// formulário; o HTML cru fica na aba de cima, para quando precisar.
+
+function analisar(html: string) {
+  const doc = new DOMParser().parseFromString(`<div id="raiz">${html}</div>`, "text/html");
+  const raiz = doc.getElementById("raiz");
+  return { doc, raiz, nos: raiz ? Array.from(raiz.querySelectorAll("[data-campo]")) : [] };
+}
+
+function lerTexto(no: Element) {
+  const bruto = no.innerHTML.replace(/<br\s*\/?>/gi, "\n");
+  const caixa = no.ownerDocument.createElement("textarea");
+  caixa.innerHTML = bruto;
+  return caixa.value;
+}
+
+function lerCampos(html: string): Campo[] {
+  const { nos } = analisar(html);
+  return nos.map((no, indice) => {
+    const tipo = no.getAttribute("data-campo") === "imagem" ? "imagem" : "texto";
+    return {
+      indice,
+      tipo,
+      rotulo: no.getAttribute("data-rotulo") ?? `Campo ${indice + 1}`,
+      valor: tipo === "imagem" ? (no.getAttribute("src") ?? "") : lerTexto(no),
+    };
+  });
+}
+
+function escreverCampo(html: string, indice: number, valor: string) {
+  const { raiz, nos } = analisar(html);
+  const no = nos[indice];
+  if (!raiz || !no) return html;
+  if (no.getAttribute("data-campo") === "imagem") {
+    no.setAttribute("src", valor);
+  } else {
+    // O que ela digita entra como texto, nunca como marcação: digitar um
+    // sinal de menor não pode virar tag e quebrar a prancha.
+    const seguro = valor
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\n/g, "<br>");
+    no.innerHTML = seguro;
   }
-  if (/Forbidden/i.test(bruta)) return "Esta conta não está marcada como admin.";
-  return bruta;
+  return raiz.innerHTML;
 }
 
 function baixar(url: string, nome: string) {
@@ -114,14 +145,23 @@ function baixar(url: string, nome: string) {
   a.remove();
 }
 
-function ConteudoPoliaPage() {
-  const [lista, setLista] = useState<ItemLista[]>([]);
-  const [slugAtivo, setSlugAtivo] = useState<string | null>(null);
+function mensagemDoErro(e: unknown) {
+  const bruta = e instanceof Error ? e.message : String(e);
+  if (/SUPABASE_SERVICE_ROLE_KEY|environment variable/i.test(bruta)) {
+    return "Falta a SUPABASE_SERVICE_ROLE_KEY no ambiente do worker. Em desenvolvimento ela vem do .dev.vars; em produção, do secret do Worker.";
+  }
+  if (/Forbidden/i.test(bruta)) return "Esta conta não está marcada como admin.";
+  return bruta;
+}
+
+function EditorDeCarrossel() {
+  const { slug } = Route.useParams();
   const [carrossel, setCarrossel] = useState<Carrossel | null>(null);
   const [ativos, setAtivos] = useState<Ativos | null>(null);
   const [indice, setIndice] = useState(0);
   const [rascunho, setRascunho] = useState("");
   const [htmlPreview, setHtmlPreview] = useState("");
+  const [modo, setModo] = useState<"campos" | "html">("campos");
   const [salvando, setSalvando] = useState(false);
   const [exportando, setExportando] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -135,29 +175,15 @@ function ConteudoPoliaPage() {
 
   const slide = carrossel?.slides[indice] ?? null;
   const mudou = slide ? rascunho !== slide.html : false;
+  const campos = useMemo(() => (rascunho ? lerCampos(rascunho) : []), [rascunho]);
 
   useEffect(() => {
     let vivo = true;
-    Promise.all([listarCarrosseis(), buscarAtivosCarrossel()])
-      .then(([itens, ats]) => {
-        if (!vivo) return;
-        setLista(itens.map((i) => ({ slug: i.slug, titulo: i.titulo, pranchas: i.pranchas })));
-        setAtivos(ats);
-        setSlugAtivo((atual) => atual ?? itens[0]?.slug ?? null);
-      })
-      .catch((e) => vivo && setErro(`Não consegui carregar os carrosséis. ${mensagemDoErro(e)}`));
-    return () => {
-      vivo = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!slugAtivo) return;
-    let vivo = true;
-    buscarCarrossel({ data: { slug: slugAtivo } })
-      .then((c) => {
+    Promise.all([buscarCarrossel({ data: { slug } }), buscarAtivosCarrossel()])
+      .then(([c, ats]) => {
         if (!vivo) return;
         setCarrossel(c as Carrossel);
+        setAtivos(ats);
         setIndice(0);
         setRascunho(c.slides[0]?.html ?? "");
       })
@@ -165,7 +191,7 @@ function ConteudoPoliaPage() {
     return () => {
       vivo = false;
     };
-  }, [slugAtivo]);
+  }, [slug]);
 
   // O preview só redesenha meio segundo depois da última tecla: redesenhar a
   // cada caractere recarregaria a fonte e piscaria a prancha inteira.
@@ -254,8 +280,10 @@ function ConteudoPoliaPage() {
       });
       setAviso("Prancha salva.");
       setTimeout(() => setAviso(null), 2500);
-    } catch {
-      setErro("Não consegui salvar. Nada foi perdido: o texto continua aqui.");
+    } catch (e) {
+      setErro(
+        `Não consegui salvar, e nada foi perdido: o texto continua aqui. ${mensagemDoErro(e)}`,
+      );
     } finally {
       setSalvando(false);
     }
@@ -269,7 +297,7 @@ function ConteudoPoliaPage() {
       const url = await gerarPng(rascunho);
       baixar(url, `${carrossel.slug}-${String(slide.ordem).padStart(2, "0")}.png`);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : "Não consegui gerar o PNG.");
+      setErro(mensagemDoErro(e));
     } finally {
       setExportando(null);
     }
@@ -289,7 +317,7 @@ function ConteudoPoliaPage() {
       setAviso("Todas as pranchas baixadas.");
       setTimeout(() => setAviso(null), 2500);
     } catch (e) {
-      setErro(e instanceof Error ? e.message : "Não consegui gerar os PNG.");
+      setErro(mensagemDoErro(e));
     } finally {
       setExportando(null);
     }
@@ -302,49 +330,37 @@ function ConteudoPoliaPage() {
     setRascunho(carrossel.slides[i]?.html ?? "");
   }
 
+  const nomesDeImagem = Object.keys(ativos?.imagens ?? {});
+
   return (
     <div className="polia-v3 flex h-screen flex-col bg-[var(--bg)]">
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--line)] px-6 py-4 md:px-10">
         <div className="flex items-center gap-6">
           <Link
-            to="/central"
+            to="/conteudo-polia"
             className="flex items-center gap-2 font-sans text-[14px] text-[var(--ink-soft)] no-underline hover:text-[var(--ink)]"
           >
             <ArrowLeft size={18} aria-hidden="true" />
-            Central
+            Carrosséis
           </Link>
-          <span className="font-sans text-[14px] text-[var(--muted)]">Conteúdo Pólia</span>
+          <span className="font-sans text-[14px] text-[var(--muted)]">
+            {carrossel?.titulo ?? "Carregando…"}
+          </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          {lista.length > 1 ? (
-            <select
-              aria-label="Carrossel"
-              value={slugAtivo ?? ""}
-              onChange={(e) => setSlugAtivo(e.target.value)}
-              className="rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[14px] text-[var(--ink)]"
-            >
-              {lista.map((c) => (
-                <option key={c.slug} value={c.slug}>
-                  {c.titulo}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <button
-            type="button"
-            onClick={baixarTodas}
-            disabled={!carrossel || exportando !== null}
-            className="flex items-center gap-2 rounded-lg bg-[var(--secondary)] px-4 py-2 font-sans text-[14px] font-medium text-[var(--secondary-ink)] disabled:opacity-50"
-          >
-            {exportando ? (
-              <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-            ) : (
-              <Download size={16} aria-hidden="true" />
-            )}
-            Baixar as {carrossel?.slides.length ?? 0} pranchas
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={baixarTodas}
+          disabled={!carrossel || exportando !== null}
+          className="flex items-center gap-2 rounded-lg bg-[var(--secondary)] px-4 py-2 font-sans text-[14px] font-medium text-[var(--secondary-ink)] disabled:opacity-50"
+        >
+          {exportando ? (
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+          ) : (
+            <Download size={16} aria-hidden="true" />
+          )}
+          Baixar as {carrossel?.slides.length ?? 0} pranchas
+        </button>
       </header>
 
       {erro ? (
@@ -383,7 +399,7 @@ function ConteudoPoliaPage() {
         <section className="flex shrink-0 flex-col items-center gap-3 overflow-y-auto border-r border-[var(--line)] p-6">
           <div
             className="overflow-hidden rounded-lg border border-[var(--line)]"
-            style={{ width: 486, height: 608 }}
+            style={{ width: 432, height: 540 }}
           >
             <iframe
               title="Prancha"
@@ -392,7 +408,7 @@ function ConteudoPoliaPage() {
                 width: 1080,
                 height: 1350,
                 border: "none",
-                transform: "scale(0.45)",
+                transform: "scale(0.4)",
                 transformOrigin: "top left",
                 display: "block",
               }}
@@ -407,19 +423,29 @@ function ConteudoPoliaPage() {
             <Download size={16} aria-hidden="true" />
             Baixar esta prancha em PNG
           </button>
-          <p className="max-w-[486px] text-center font-sans text-[12px] text-[var(--muted)]">
+          <p className="max-w-[432px] text-center font-sans text-[12px] text-[var(--muted)]">
             1080 &times; 1350, que é o tamanho que o Instagram pede no feed.
           </p>
         </section>
 
-        <section className="flex min-w-0 flex-1 flex-col p-6">
-          <div className="mb-3 flex items-center justify-between gap-4">
-            <label
-              htmlFor="html-prancha"
-              className="font-sans text-[12px] tracking-[0.12em] text-[var(--muted)] uppercase"
-            >
-              HTML da prancha
-            </label>
+        <section className="flex min-w-0 flex-1 flex-col overflow-hidden p-6">
+          <div className="mb-4 flex items-center justify-between gap-4">
+            <div className="flex gap-1 rounded-lg bg-[var(--surface)] p-1">
+              {(["campos", "html"] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setModo(m)}
+                  className={`rounded-md px-3 py-1.5 font-sans text-[13px] ${
+                    modo === m
+                      ? "bg-white text-[var(--ink)]"
+                      : "text-[var(--ink-soft)] hover:text-[var(--ink)]"
+                  }`}
+                >
+                  {m === "campos" ? "Conteúdo" : "HTML"}
+                </button>
+              ))}
+            </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
@@ -440,21 +466,86 @@ function ConteudoPoliaPage() {
             </div>
           </div>
 
-          <textarea
-            id="html-prancha"
-            value={rascunho}
-            onChange={(e) => setRascunho(e.target.value)}
-            spellCheck={false}
-            autoComplete="off"
-            className="min-h-0 flex-1 resize-none rounded-lg border border-[var(--line)] bg-white p-4 font-mono text-[12.5px] leading-[1.6] text-[var(--ink)]"
-            style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
-          />
+          {modo === "campos" ? (
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              {campos.length === 0 ? (
+                <p className="font-sans text-[14px] text-[var(--muted)]">
+                  Esta prancha não tem campo marcado. Use a aba HTML.
+                </p>
+              ) : (
+                campos.map((campo) => (
+                  <div key={campo.indice} className="mb-5">
+                    <label
+                      htmlFor={`campo-${campo.indice}`}
+                      className="mb-2 block font-sans text-[12px] tracking-[0.12em] text-[var(--muted)] uppercase"
+                    >
+                      {campo.rotulo}
+                    </label>
 
-          <p className="mt-3 font-sans text-[12px] text-[var(--muted)]">
-            A fonte entra por <code>{"{{fonte}}"}</code> e as ilustrações por{" "}
-            <code>{"{{img:nome}}"}</code>. Os nomes disponíveis:{" "}
-            {Object.keys(ativos?.imagens ?? {}).join(", ") || "carregando"}.
-          </p>
+                    {campo.tipo === "imagem" ? (
+                      <div className="flex items-center gap-4">
+                        <select
+                          id={`campo-${campo.indice}`}
+                          value={campo.valor}
+                          onChange={(e) =>
+                            setRascunho(escreverCampo(rascunho, campo.indice, e.target.value))
+                          }
+                          className="flex-1 rounded-lg border border-[var(--line)] bg-white px-3 py-2 font-sans text-[14px] text-[var(--ink)]"
+                        >
+                          {nomesDeImagem.map((nome) => (
+                            <option key={nome} value={`{{img:${nome}}}`}>
+                              {nome}
+                            </option>
+                          ))}
+                          {nomesDeImagem.every((n) => `{{img:${n}}}` !== campo.valor) ? (
+                            <option value={campo.valor}>(a que está lá)</option>
+                          ) : null}
+                        </select>
+                        {ativos?.imagens[campo.valor.replace(/^\{\{img:|\}\}$/g, "")] ? (
+                          <img
+                            src={ativos.imagens[campo.valor.replace(/^\{\{img:|\}\}$/g, "")]}
+                            alt=""
+                            className="h-14 w-24 rounded border border-[var(--line)] bg-white object-contain"
+                          />
+                        ) : null}
+                      </div>
+                    ) : (
+                      <textarea
+                        id={`campo-${campo.indice}`}
+                        value={campo.valor}
+                        rows={Math.min(6, campo.valor.split("\n").length + 1)}
+                        onChange={(e) =>
+                          setRascunho(escreverCampo(rascunho, campo.indice, e.target.value))
+                        }
+                        className="w-full resize-y rounded-lg border border-[var(--line)] bg-white p-3 font-sans text-[15px] leading-[1.5] text-[var(--ink)]"
+                      />
+                    )}
+                  </div>
+                ))
+              )}
+              <p className="pb-2 font-sans text-[12px] text-[var(--muted)]">
+                Cada linha aqui é uma linha na prancha. Enter quebra a linha no mesmo lugar em que
+                ela quebra no desenho.
+              </p>
+            </div>
+          ) : (
+            <>
+              <textarea
+                aria-label="HTML da prancha"
+                value={rascunho}
+                onChange={(e) => setRascunho(e.target.value)}
+                spellCheck={false}
+                autoComplete="off"
+                className="min-h-0 flex-1 resize-none rounded-lg border border-[var(--line)] bg-white p-4 text-[12.5px] leading-[1.6] text-[var(--ink)]"
+                style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace" }}
+              />
+              <p className="mt-3 font-sans text-[12px] text-[var(--muted)]">
+                A fonte entra por <code>{"{{fonte}}"}</code> e as ilustrações por{" "}
+                <code>{"{{img:nome}}"}</code>. Disponíveis:{" "}
+                {nomesDeImagem.join(", ") || "carregando"}.
+              </p>
+            </>
+          )}
         </section>
       </div>
 

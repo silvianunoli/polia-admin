@@ -15,7 +15,6 @@ import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as ConteudoRouteImport } from './routes/conteudo'
-import { Route as ConteudoPoliaRouteImport } from './routes/conteudo-polia'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EstrategicoRouteImport } from './routes/estrategico'
@@ -37,6 +36,8 @@ import { Route as BlogIdRouteImport } from './routes/blog.$id'
 import { Route as BlogNovoRouteImport } from './routes/blog.novo'
 import { Route as ChamadosIndexRouteImport } from './routes/chamados.index'
 import { Route as ChamadosIdRouteImport } from './routes/chamados.$id'
+import { Route as ConteudoPoliaIndexRouteImport } from './routes/conteudo-polia.index'
+import { Route as ConteudoPoliaSlugRouteImport } from './routes/conteudo-polia.$slug'
 import { Route as CrmIndexRouteImport } from './routes/crm/index'
 import { Route as CrmModelosRouteImport } from './routes/crm/modelos'
 import { Route as CrmNegociosRouteImport } from './routes/crm/negocios'
@@ -110,11 +111,6 @@ const CentralRoute = CentralRouteImport.update({
 const ConteudoRoute = ConteudoRouteImport.update({
   id: '/conteudo',
   path: '/conteudo',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ConteudoPoliaRoute = ConteudoPoliaRouteImport.update({
-  id: '/conteudo-polia',
-  path: '/conteudo-polia',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CrmRoute = CrmRouteImport.update({
@@ -221,6 +217,16 @@ const ChamadosIdRoute = ChamadosIdRouteImport.update({
   id: '/chamados/$id',
   path: '/chamados/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ConteudoPoliaIndexRoute = ConteudoPoliaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ConteudoPoliaRoute,
+} as any)
+const ConteudoPoliaSlugRoute = ConteudoPoliaSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ConteudoPoliaRoute,
 } as any)
 const CrmIndexRoute = CrmIndexRouteImport.update({
   id: '/',
@@ -461,7 +467,6 @@ export interface FileRoutesByFullPath {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
@@ -481,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -492,6 +498,7 @@ export interface FileRoutesByFullPath {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/conteudo-polia/': typeof ConteudoPoliaIndexRoute
   '/crm/': typeof CrmIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
@@ -535,7 +542,6 @@ export interface FileRoutesByTo {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
   '/ferramentas': typeof FerramentasRoute
@@ -553,6 +559,7 @@ export interface FileRoutesByTo {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -564,6 +571,7 @@ export interface FileRoutesByTo {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog': typeof BlogIndexRoute
   '/chamados': typeof ChamadosIndexRoute
+  '/conteudo-polia': typeof ConteudoPoliaIndexRoute
   '/crm': typeof CrmIndexRoute
   '/founder': typeof FounderIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
@@ -608,7 +616,6 @@ export interface FileRoutesById {
   '/auditoria': typeof AuditoriaRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
-  '/conteudo-polia': typeof ConteudoPoliaRoute
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
@@ -628,6 +635,7 @@ export interface FileRoutesById {
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
+  '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -639,6 +647,7 @@ export interface FileRoutesById {
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
   '/chamados/': typeof ChamadosIndexRoute
+  '/conteudo-polia/': typeof ConteudoPoliaIndexRoute
   '/crm/': typeof CrmIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
@@ -684,7 +693,6 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
-    | '/conteudo-polia'
     | '/crm'
     | '/design-system'
     | '/estrategico'
@@ -704,6 +712,7 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/conteudo-polia/$slug'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -715,6 +724,7 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/conteudo-polia/'
     | '/crm/'
     | '/founder/'
     | '/pesquisas/'
@@ -758,7 +768,6 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
-    | '/conteudo-polia'
     | '/design-system'
     | '/estrategico'
     | '/ferramentas'
@@ -776,6 +785,7 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/conteudo-polia/$slug'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -787,6 +797,7 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog'
     | '/chamados'
+    | '/conteudo-polia'
     | '/crm'
     | '/founder'
     | '/pesquisas'
@@ -830,7 +841,6 @@ export interface FileRouteTypes {
     | '/auditoria'
     | '/central'
     | '/conteudo'
-    | '/conteudo-polia'
     | '/crm'
     | '/design-system'
     | '/estrategico'
@@ -850,6 +860,7 @@ export interface FileRouteTypes {
     | '/blog/$id'
     | '/blog/novo'
     | '/chamados/$id'
+    | '/conteudo-polia/$slug'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -861,6 +872,7 @@ export interface FileRouteTypes {
     | '/usuarios/$id'
     | '/blog/'
     | '/chamados/'
+    | '/conteudo-polia/'
     | '/crm/'
     | '/founder/'
     | '/pesquisas/'
@@ -905,7 +917,6 @@ export interface RootRouteChildren {
   AuditoriaRoute: typeof AuditoriaRoute
   CentralRoute: typeof CentralRoute
   ConteudoRoute: typeof ConteudoRoute
-  ConteudoPoliaRoute: typeof ConteudoPoliaRoute
   CrmRoute: typeof CrmRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
@@ -974,13 +985,6 @@ declare module '@tanstack/react-router' {
       path: '/conteudo'
       fullPath: '/conteudo'
       preLoaderRoute: typeof ConteudoRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/conteudo-polia': {
-      id: '/conteudo-polia'
-      path: '/conteudo-polia'
-      fullPath: '/conteudo-polia'
-      preLoaderRoute: typeof ConteudoPoliaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/crm': {
@@ -1129,6 +1133,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/chamados/$id'
       preLoaderRoute: typeof ChamadosIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/conteudo-polia/': {
+      id: '/conteudo-polia/'
+      path: '/'
+      fullPath: '/conteudo-polia/'
+      preLoaderRoute: typeof ConteudoPoliaIndexRouteImport
+      parentRoute: typeof ConteudoPoliaRoute
+    }
+    '/conteudo-polia/$slug': {
+      id: '/conteudo-polia/$slug'
+      path: '/$slug'
+      fullPath: '/conteudo-polia/$slug'
+      preLoaderRoute: typeof ConteudoPoliaSlugRouteImport
+      parentRoute: typeof ConteudoPoliaRoute
     }
     '/crm/': {
       id: '/crm/'
@@ -1559,7 +1577,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuditoriaRoute: AuditoriaRoute,
   CentralRoute: CentralRoute,
   ConteudoRoute: ConteudoRoute,
-  ConteudoPoliaRoute: ConteudoPoliaRoute,
   CrmRoute: CrmRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,

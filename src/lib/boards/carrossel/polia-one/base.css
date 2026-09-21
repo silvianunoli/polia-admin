@@ -15,10 +15,18 @@ body {
   padding: 0;
 }
 
-body {
-  /* cinza de fundo só do preview: a prancha cobre os 1080x1350 inteiros */
-  background: #E6E6E6;
+/* #prancha aparece aqui de propósito: na exportação a prancha é copiada para
+   dentro de um <foreignObject> de SVG, onde não existe body. Sem esta linha
+   a regra de fonte não casaria com nada lá dentro e o PNG sairia na fonte
+   padrão, mesmo com o preview certo. */
+body,
+#prancha {
   font-family: "Anzylna", "Inter", ui-sans-serif, system-ui, sans-serif;
   color: #0A0A0A;
   -webkit-font-smoothing: antialiased;
+}
+
+body {
+  /* cinza de fundo só do preview: a prancha cobre os 1080x1350 inteiros */
+  background: #E6E6E6;
 }
