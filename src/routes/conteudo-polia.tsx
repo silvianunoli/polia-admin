@@ -92,6 +92,19 @@ function montarDocumento(cssBase: string, html: string, ativos: Ativos, comExpor
   );
 }
 
+// Erro de RPC chega aqui como Error com a mensagem do servidor. Mostrar só
+// "não consegui" esconderia a causa real (falta de variável de ambiente,
+// sessão expirada) e faria parecer bug do código -- o mesmo tipo de engano
+// que o painel do censo já causou ao mostrar falha como se fosse zero.
+function mensagemDoErro(e: unknown) {
+  const bruta = e instanceof Error ? e.message : String(e);
+  if (/SUPABASE_SERVICE_ROLE_KEY|environment variable/i.test(bruta)) {
+    return "Falta a SUPABASE_SERVICE_ROLE_KEY no ambiente. Em desenvolvimento ela vem do .dev.vars; em produção, do secret do Worker.";
+  }
+  if (/Forbidden/i.test(bruta)) return "Esta conta não está marcada como admin.";
+  return bruta;
+}
+
 function baixar(url: string, nome: string) {
   const a = document.createElement("a");
   a.href = url;
@@ -132,7 +145,7 @@ function ConteudoPoliaPage() {
         setAtivos(ats);
         setSlugAtivo((atual) => atual ?? itens[0]?.slug ?? null);
       })
-      .catch(() => vivo && setErro("Não consegui carregar os carrosséis."));
+      .catch((e) => vivo && setErro(`Não consegui carregar os carrosséis. ${mensagemDoErro(e)}`));
     return () => {
       vivo = false;
     };
@@ -148,7 +161,7 @@ function ConteudoPoliaPage() {
         setIndice(0);
         setRascunho(c.slides[0]?.html ?? "");
       })
-      .catch(() => vivo && setErro("Não consegui abrir este carrossel."));
+      .catch((e) => vivo && setErro(`Não consegui abrir este carrossel. ${mensagemDoErro(e)}`));
     return () => {
       vivo = false;
     };

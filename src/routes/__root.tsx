@@ -91,11 +91,14 @@ function RootComponent() {
   // faz sentido com a Sidebar do painel ao lado. /ferramentas segue a mesma
   // regra: é leitura de página inteira, com header próprio de volta à Central.
   // /manual-da-marca também: iframe do documento, header próprio.
+  // /conteudo-polia idem: editor de tela cheia (lista de pranchas, preview e
+  // HTML lado a lado), com header próprio de volta à Central.
   const semChrome =
     pathname === "/central" ||
     pathname === "/kanban" ||
     pathname === "/estrategico" ||
     pathname === "/conteudo" ||
+    pathname === "/conteudo-polia" ||
     pathname === "/ferramentas" ||
     pathname === "/manual-da-marca";
 
