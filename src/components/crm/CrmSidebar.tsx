@@ -7,6 +7,7 @@ import {
   Mail,
   MessageSquareText,
   UserCheck,
+  KeyRound,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -22,6 +23,7 @@ export const CRM_ITENS: Item[] = [
   { to: "/crm/campanhas", label: "E-mail e campanhas", icone: Mail },
   { to: "/crm/modelos", label: "Modelos de mensagem", icone: MessageSquareText },
   { to: "/crm/usuarias", label: "Usuárias da Pólia", icone: UserCheck },
+  { to: "/crm/convites", label: "Convites e acesso", icone: KeyRound },
 ];
 
 export function tituloDaRota(pathname: string): string {

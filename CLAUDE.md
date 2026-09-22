@@ -77,3 +77,30 @@ dois repos na mesma pasta. Rode `npm test` local depois de mexer em e-mail.
 Três variantes, mesma base de blocos: `emailPolia` (transacional), `emailPoliaEditorial`
 (material, botão amarelo) e `emailPoliaCampanha` (newsletter, corpo em HTML vindo do editor
 do CRM). Variação nova entra como **parâmetro**, nunca como segunda cópia do HTML.
+
+## Convites — quem pode criar conta, e com qual acesso
+
+Tela: `/crm/convites` (era uma aba de `/crm/usuarias` até 21/09/2026). Tabela
+`public.convites_cadastro`. O cadastro do produto é **fechado**: só e-mail que está nessa tabela
+consegue criar conta, e o Auth Hook `hook_checar_convite_cadastro` barra até a criação pelo
+Admin API.
+
+O convite carrega **o tipo de acesso**: `plano` (`confere`/`controle`/`projete`/`beta`) e
+`is_admin`. Quem aplica é o gatilho `aplicar_convite_no_perfil()`, **BEFORE INSERT em
+`public.profiles`**.
+
+Três coisas que não são óbvias e já custaram raciocínio:
+
+1. **O convite só vale no nascimento da conta.** Editar o convite depois que a pessoa se
+   cadastrou não muda nada — o gatilho não roda mais. A tela recusa essa edição de propósito, em
+   vez de aceitar em silêncio. Mudar plano de quem já tem conta **não tem tela ainda** (CRM-10).
+2. **A ordem alfabética dos gatilhos é intencional.** `aplicar_convite_no_perfil` roda antes de
+   `tmp_plano_beta_conta_teste` porque gatilhos do mesmo timing disparam em ordem de nome — é
+   assim que a conta de teste continua ganhando `beta` por cima do convite. Renomear qualquer um
+   dos dois pra algo que inverta a ordem quebra isso sem erro nenhum.
+3. **Plano concedido na mão não é permanente.** O webhook do Stripe escreve `profiles.plano`
+   (inclusive `'cancelada'`), então quem assinar e cancelar perde a concessão manual.
+
+Nunca dar `is_admin` sem a Sil pedir nominalmente: abre o `office.usepolia.com.br` inteiro pra
+quem tiver acesso àquela caixa de e-mail. A ação tem log de auditoria próprio
+(`criar_convite_admin` / `convite_acesso_admin`), separado do convite comum.

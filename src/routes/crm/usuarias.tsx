@@ -1,18 +1,11 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { Trash2, Send } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { useConfirmacao } from "@/components/crm/Confirmar";
-import { toastErro, toastSucesso } from "@/lib/toast";
-import {
-  listarConvites,
-  criarConvite,
-  enviarConvite,
-  removerConvite,
-  type ConviteListItem,
-} from "@/lib/convites.functions";
+
+// A aba "Convites" saiu daqui em 21/09/2026: virou /crm/convites, porque passou
+// a decidir plano e acesso de administradora e não cabia mais numa aba.
 
 export const Route = createFileRoute("/crm/usuarias")({
   head: () => ({
@@ -71,8 +64,6 @@ const PLANO_LABEL: Record<string, string> = {
 
 const inputClass =
   "rounded-xl border border-[var(--line)] bg-white px-4 py-2 font-sans text-[14px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--secondary)] focus:outline-none";
-const btnPrimary =
-  "rounded-xl bg-[var(--secondary)] px-5 py-2.5 font-sans text-[14px] font-semibold text-[var(--secondary-ink)] transition-opacity hover:opacity-90 disabled:opacity-50";
 const btnOutline =
   "rounded-xl border border-[var(--line)] bg-white px-4 py-2 font-sans text-[13px] text-[var(--ink-soft)] transition-colors hover:border-[var(--secondary)] hover:text-[var(--ink)] disabled:opacity-40";
 const cardClass = "overflow-hidden rounded-2xl border border-[var(--line)] bg-white";
@@ -90,14 +81,6 @@ function CrmUsuarias() {
   const [espera, setEspera] = useState<EsperaItem[]>([]);
   const [filtroStatus, setFiltroStatus] = useState("");
   const [busca, setBusca] = useState("");
-
-  const [convites, setConvites] = useState<ConviteListItem[]>([]);
-  const [carregandoConvites, setCarregandoConvites] = useState(true);
-  const [novoEmail, setNovoEmail] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [removendo, setRemovendo] = useState<string | null>(null);
-  const [enviandoConvite, setEnviandoConvite] = useState<string | null>(null);
-  const { confirmar, dialogo } = useConfirmacao();
 
   useEffect(() => {
     (async () => {
@@ -125,79 +108,6 @@ function CrmUsuarias() {
       setModuloPorUsuaria(maxModuloPorUsuaria);
     })();
   }, []);
-
-  const carregarConvites = async () => {
-    setCarregandoConvites(true);
-    try {
-      const { convites: lista } = await listarConvites();
-      setConvites(lista);
-    } catch {
-      toastErro("Não consegui carregar os convites.");
-    } finally {
-      setCarregandoConvites(false);
-    }
-  };
-
-  useEffect(() => {
-    carregarConvites();
-  }, []);
-
-  async function handleAdicionarConvite(e: FormEvent) {
-    e.preventDefault();
-    const email = novoEmail.trim();
-    if (!email) return;
-    setEnviando(true);
-    try {
-      await criarConvite({ data: { email } });
-      setNovoEmail("");
-      toastSucesso("Convite criado.");
-      carregarConvites();
-    } catch (err) {
-      toastErro(err instanceof Error ? err.message : "Não consegui criar o convite.");
-    } finally {
-      setEnviando(false);
-    }
-  }
-
-  async function handleEnviarConvite(email: string) {
-    setEnviandoConvite(email);
-    try {
-      await enviarConvite({ data: { email } });
-      toastSucesso("Convite enviado.");
-      carregarConvites();
-    } catch (err) {
-      toastErro(err instanceof Error ? err.message : "Não consegui enviar o convite.");
-    } finally {
-      setEnviandoConvite(null);
-    }
-  }
-
-  async function handleRemoverConvite(email: string) {
-    const ok = await confirmar({
-      titulo: "Remover este convite",
-      perigo: true,
-      rotuloConfirmar: "Remover convite",
-      descricao: (
-        <>
-          <strong className="text-[var(--ink)]">{email}</strong> sai da lista de quem pode criar
-          conta. Ela só consegue se cadastrar se você liberar de novo.
-        </>
-      ),
-    });
-    if (!ok) return;
-    setRemovendo(email);
-    try {
-      await removerConvite({ data: { email } });
-      toastSucesso("Convite removido.");
-      setConvites((c) => c.filter((item) => item.email !== email));
-    } catch {
-      toastErro("Não consegui remover o convite.");
-    } finally {
-      setRemovendo(null);
-    }
-  }
-
-  const pendentesConvites = convites.filter((c) => !c.usado_em).length;
 
   const exportarCsvEspera = () => {
     const linhas = [["nome", "email", "tipo_negocio", "data"]];
@@ -248,12 +158,6 @@ function CrmUsuarias() {
             className="rounded-lg px-4 py-1.5 text-[var(--muted)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none"
           >
             Lista de espera · {espera.length}
-          </TabsTrigger>
-          <TabsTrigger
-            value="convites"
-            className="rounded-lg px-4 py-1.5 text-[var(--muted)] data-[state=active]:bg-[var(--secondary-light)] data-[state=active]:text-[var(--secondary-text)] data-[state=active]:shadow-none"
-          >
-            Convites · {convites.length}
           </TabsTrigger>
         </TabsList>
 
@@ -415,116 +319,7 @@ function CrmUsuarias() {
             </table>
           </div>
         </TabsContent>
-
-        {/* CONVITES (allowlist de e-mails liberados pro cadastro) */}
-        <TabsContent value="convites">
-          <p className="mb-4 font-sans text-[13px] text-[var(--muted)]">
-            {convites.length} e-mails liberados · {pendentesConvites} ainda não usaram o convite. O
-            cadastro é fechado: só quem está aqui consegue criar conta.
-          </p>
-
-          <form onSubmit={handleAdicionarConvite} className="mb-6 flex gap-3">
-            <input
-              type="email"
-              placeholder="email@dominio.com"
-              value={novoEmail}
-              onChange={(e) => setNovoEmail(e.target.value)}
-              disabled={enviando}
-              className={`min-w-[220px] flex-1 ${inputClass}`}
-            />
-            <button type="submit" disabled={enviando || !novoEmail.trim()} className={btnPrimary}>
-              {enviando ? "Adicionando..." : "Liberar e-mail"}
-            </button>
-          </form>
-
-          <div className={`overflow-x-auto ${cardClass}`}>
-            <table className="w-full min-w-[560px]">
-              <thead>
-                <tr className="border-b border-[var(--line)]">
-                  {["E-mail", "Status", "Criado em", "Usado em", ""].map((h) => (
-                    <th key={h} className={thClass}>
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {convites.map((c) => (
-                  <tr
-                    key={c.email}
-                    className="border-b border-[var(--line)] hover:bg-[var(--surface)]"
-                  >
-                    <td className="px-5 py-3 font-sans text-[14px] text-[var(--ink)]">{c.email}</td>
-                    <td className="px-5 py-3">
-                      <span
-                        className={`rounded-full px-2.5 py-1 font-sans text-[11px] font-medium ${
-                          c.usado_em
-                            ? "bg-[var(--secondary-light)] text-[var(--secondary-text)]"
-                            : c.enviado_em
-                              ? "bg-[var(--line)] text-[var(--ink-soft)]"
-                              : "bg-[var(--highlight)] text-[var(--highlight-ink)]"
-                        }`}
-                      >
-                        {c.usado_em ? "Usado" : c.enviado_em ? "Convite enviado" : "Pendente"}
-                      </span>
-                    </td>
-                    <td className={tdMuted}>{new Date(c.criado_em).toLocaleDateString("pt-BR")}</td>
-                    <td className={tdMuted}>
-                      {c.usado_em ? new Date(c.usado_em).toLocaleDateString("pt-BR") : "—"}
-                    </td>
-                    <td className="px-5 py-3 text-right">
-                      <div className="flex items-center justify-end gap-3">
-                        {!c.usado_em && (
-                          <button
-                            type="button"
-                            onClick={() => handleEnviarConvite(c.email)}
-                            disabled={enviandoConvite === c.email}
-                            aria-label={`Enviar convite por e-mail pra ${c.email}`}
-                            title={c.enviado_em ? "Reenviar convite" : "Enviar convite"}
-                            className="text-[var(--muted)] hover:text-[var(--secondary-text)] disabled:opacity-30"
-                          >
-                            <Send size={16} />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemoverConvite(c.email)}
-                          disabled={removendo === c.email}
-                          aria-label={`Remover convite de ${c.email}`}
-                          className="text-[var(--muted)] hover:text-[var(--danger)] disabled:opacity-30"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {!carregandoConvites && convites.length === 0 && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
-                    >
-                      Nenhum convite ainda.
-                    </td>
-                  </tr>
-                )}
-                {carregandoConvites && (
-                  <tr>
-                    <td
-                      colSpan={5}
-                      className="px-5 py-8 text-center font-sans text-[13px] text-[var(--muted)]"
-                    >
-                      Carregando...
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </TabsContent>
       </Tabs>
-      {dialogo}
     </>
   );
 }

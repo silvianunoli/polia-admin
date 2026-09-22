@@ -39,6 +39,7 @@ import { Route as ChamadosIdRouteImport } from './routes/chamados.$id'
 import { Route as ConteudoPoliaIndexRouteImport } from './routes/conteudo-polia.index'
 import { Route as ConteudoPoliaSlugRouteImport } from './routes/conteudo-polia.$slug'
 import { Route as CrmIndexRouteImport } from './routes/crm/index'
+import { Route as CrmConvitesRouteImport } from './routes/crm/convites'
 import { Route as CrmModelosRouteImport } from './routes/crm/modelos'
 import { Route as CrmNegociosRouteImport } from './routes/crm/negocios'
 import { Route as CrmTarefasRouteImport } from './routes/crm/tarefas'
@@ -219,18 +220,23 @@ const ChamadosIdRoute = ChamadosIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConteudoPoliaIndexRoute = ConteudoPoliaIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => ConteudoPoliaRoute,
+  id: '/conteudo-polia/',
+  path: '/conteudo-polia/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ConteudoPoliaSlugRoute = ConteudoPoliaSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ConteudoPoliaRoute,
+  id: '/conteudo-polia/$slug',
+  path: '/conteudo-polia/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const CrmIndexRoute = CrmIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmConvitesRoute = CrmConvitesRouteImport.update({
+  id: '/convites',
+  path: '/convites',
   getParentRoute: () => CrmRoute,
 } as any)
 const CrmModelosRoute = CrmModelosRouteImport.update({
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
+  '/crm/convites': typeof CrmConvitesRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -560,6 +567,7 @@ export interface FileRoutesByTo {
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
+  '/crm/convites': typeof CrmConvitesRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -636,6 +644,7 @@ export interface FileRoutesById {
   '/blog/novo': typeof BlogNovoRoute
   '/chamados/$id': typeof ChamadosIdRoute
   '/conteudo-polia/$slug': typeof ConteudoPoliaSlugRoute
+  '/crm/convites': typeof CrmConvitesRoute
   '/crm/modelos': typeof CrmModelosRoute
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
@@ -713,6 +722,7 @@ export interface FileRouteTypes {
     | '/blog/novo'
     | '/chamados/$id'
     | '/conteudo-polia/$slug'
+    | '/crm/convites'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -786,6 +796,7 @@ export interface FileRouteTypes {
     | '/blog/novo'
     | '/chamados/$id'
     | '/conteudo-polia/$slug'
+    | '/crm/convites'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -861,6 +872,7 @@ export interface FileRouteTypes {
     | '/blog/novo'
     | '/chamados/$id'
     | '/conteudo-polia/$slug'
+    | '/crm/convites'
     | '/crm/modelos'
     | '/crm/negocios'
     | '/crm/tarefas'
@@ -936,10 +948,12 @@ export interface RootRouteChildren {
   BlogIdRoute: typeof BlogIdRoute
   BlogNovoRoute: typeof BlogNovoRoute
   ChamadosIdRoute: typeof ChamadosIdRoute
+  ConteudoPoliaSlugRoute: typeof ConteudoPoliaSlugRoute
   PesquisasSlugRoute: typeof PesquisasSlugRoute
   UsuariosIdRoute: typeof UsuariosIdRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ChamadosIndexRoute: typeof ChamadosIndexRoute
+  ConteudoPoliaIndexRoute: typeof ConteudoPoliaIndexRoute
   PesquisasIndexRoute: typeof PesquisasIndexRoute
 }
 
@@ -1136,23 +1150,30 @@ declare module '@tanstack/react-router' {
     }
     '/conteudo-polia/': {
       id: '/conteudo-polia/'
-      path: '/'
+      path: '/conteudo-polia'
       fullPath: '/conteudo-polia/'
       preLoaderRoute: typeof ConteudoPoliaIndexRouteImport
-      parentRoute: typeof ConteudoPoliaRoute
+      parentRoute: typeof rootRouteImport
     }
     '/conteudo-polia/$slug': {
       id: '/conteudo-polia/$slug'
-      path: '/$slug'
+      path: '/conteudo-polia/$slug'
       fullPath: '/conteudo-polia/$slug'
       preLoaderRoute: typeof ConteudoPoliaSlugRouteImport
-      parentRoute: typeof ConteudoPoliaRoute
+      parentRoute: typeof rootRouteImport
     }
     '/crm/': {
       id: '/crm/'
       path: '/'
       fullPath: '/crm/'
       preLoaderRoute: typeof CrmIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/convites': {
+      id: '/crm/convites'
+      path: '/convites'
+      fullPath: '/crm/convites'
+      preLoaderRoute: typeof CrmConvitesRouteImport
       parentRoute: typeof CrmRoute
     }
     '/crm/modelos': {
@@ -1460,6 +1481,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface CrmRouteChildren {
+  CrmConvitesRoute: typeof CrmConvitesRoute
   CrmModelosRoute: typeof CrmModelosRoute
   CrmNegociosRoute: typeof CrmNegociosRoute
   CrmTarefasRoute: typeof CrmTarefasRoute
@@ -1472,6 +1494,7 @@ interface CrmRouteChildren {
 }
 
 const CrmRouteChildren: CrmRouteChildren = {
+  CrmConvitesRoute: CrmConvitesRoute,
   CrmModelosRoute: CrmModelosRoute,
   CrmNegociosRoute: CrmNegociosRoute,
   CrmTarefasRoute: CrmTarefasRoute,
@@ -1596,10 +1619,12 @@ const rootRouteChildren: RootRouteChildren = {
   BlogIdRoute: BlogIdRoute,
   BlogNovoRoute: BlogNovoRoute,
   ChamadosIdRoute: ChamadosIdRoute,
+  ConteudoPoliaSlugRoute: ConteudoPoliaSlugRoute,
   PesquisasSlugRoute: PesquisasSlugRoute,
   UsuariosIdRoute: UsuariosIdRoute,
   BlogIndexRoute: BlogIndexRoute,
   ChamadosIndexRoute: ChamadosIndexRoute,
+  ConteudoPoliaIndexRoute: ConteudoPoliaIndexRoute,
   PesquisasIndexRoute: PesquisasIndexRoute,
 }
 export const routeTree = rootRouteImport
