@@ -534,6 +534,29 @@ export async function fetchConnections(brandId: string): Promise<SocialConnectio
   }));
 }
 
+/*
+  Apaga a conexão salva, pra reconectar do zero.
+
+  Existe porque "Reconectar" nem sempre reabre a tela de autorização — o
+  TikTok (e às vezes a Meta) pode pular o consentimento silenciosamente
+  quando a pessoa já está logada e já autorizou esse app antes com os mesmos
+  escopos, e aí o token não é trocado de verdade. Desconectar e conectar de
+  novo do zero é o caminho confiável: sem conexão salva, o botão vira
+  "Conectar" — que é o fluxo já testado e funcionando.
+*/
+export async function disconnectSocial(
+  brandId: string,
+  platform: "instagram" | "tiktok",
+): Promise<void> {
+  if (!supabase) throw new Error("backend não configurado");
+  const { error } = await supabase
+    .from("fs_social_connections")
+    .delete()
+    .eq("brand_id", brandId)
+    .eq("platform", platform);
+  if (error) throw error;
+}
+
 // ===== Publicação TikTok =====
 
 /*

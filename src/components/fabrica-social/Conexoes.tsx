@@ -8,12 +8,14 @@ import {
   RefreshCw,
   Music2,
   ExternalLink,
+  Unlink,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   metaCallback,
   tiktokCallback,
   fetchConnections,
+  disconnectSocial,
   buildMetaOAuthUrl,
   buildTikTokOAuthUrl,
   tiktokConfigurado,
@@ -60,6 +62,53 @@ function decodificarBrand(rawState: string | null): string {
   }
 }
 
+/*
+  Desconectar existe porque "Reconectar" nem sempre reabre a tela de
+  autorização — o TikTok (e às vezes a Meta) pode pular o consentimento
+  silenciosamente quando a pessoa já está logada e já autorizou esse app
+  antes com os mesmos escopos, e aí nada muda. Apagar a conexão e clicar em
+  "Conectar" (não "Reconectar") é o caminho confiável: sem conexão salva, o
+  fluxo é o mesmo de uma conexão nova — já testado, já funciona.
+*/
+function BotaoDesconectar({
+  brandId,
+  platform,
+}: {
+  brandId: string;
+  platform: "instagram" | "tiktok";
+}) {
+  const queryClient = useQueryClient();
+  const desconectar = useMutation({
+    mutationFn: () => disconnectSocial(brandId, platform),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["connections", brandId] }),
+  });
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (
+          window.confirm(
+            "Desconectar? Você vai precisar autorizar de novo pra publicar nesta rede.",
+          )
+        ) {
+          desconectar.mutate();
+        }
+      }}
+      disabled={desconectar.isPending}
+      title="Desconectar"
+      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive disabled:opacity-50"
+    >
+      {desconectar.isPending ? (
+        <Loader2 className="h-3 w-3 animate-spin" />
+      ) : (
+        <Unlink className="h-3 w-3" />
+      )}
+      desconectar
+    </button>
+  );
+}
+
 function LinhaInstagram({ brand, ig }: { brand: Brand; ig?: SocialConnection }) {
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -75,6 +124,7 @@ function LinhaInstagram({ brand, ig }: { brand: Brand; ig?: SocialConnection }) 
           </p>
         )}
       </div>
+      {ig && <BotaoDesconectar brandId={brand.id} platform="instagram" />}
       <a href={buildMetaOAuthUrl(brand.id)}>
         <Button variant="outline">
           {ig ? <RefreshCw className="h-4 w-4" /> : <Instagram className="h-4 w-4" />}
@@ -112,6 +162,7 @@ function LinhaTikTok({ brand, tt }: { brand: Brand; tt?: SocialConnection }) {
           </p>
         )}
       </div>
+      {tt && <BotaoDesconectar brandId={brand.id} platform="tiktok" />}
       {tiktokConfigurado ? (
         <a href={buildTikTokOAuthUrl(brand.id)}>
           <Button variant="outline">
