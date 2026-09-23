@@ -1,0 +1,19 @@
+name: Testes
+
+# O deploy.yml já roda a suíte antes de publicar em main. Este workflow cobre
+# o resto: pull request (pra ver o resultado antes de mesclar) e disparo
+# manual pela aba Actions, sem publicar nada.
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install
+      - run: npm test
