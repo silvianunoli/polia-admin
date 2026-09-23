@@ -16,6 +16,7 @@ import {
 import { currentUser as mockUser, type CurrentUser } from "@/lib/fabrica-social/mock";
 import type { PlanKey } from "@/lib/fabrica-social/credits";
 import { iniciarSessaoFabricaSocial } from "@/lib/fabrica-social-auth.functions";
+import { supabase as centralSupabase } from "@/integrations/supabase/client";
 
 /*
   Versão da autenticação do Fábrica Social adaptada pra viver dentro da
@@ -37,6 +38,18 @@ interface AuthState {
   profile: CurrentUser | null;
   loading: boolean;
   bridgeError: string | null;
+  signOut: () => Promise<void>;
+}
+
+/*
+  "Sair" aqui encerra a sessão DA CENTRAL (mesmo cliente que o botão "Sair"
+  do header da Central usa), não só a sessão-ponte do Fábrica Social. Sair só
+  da ponte não faria sentido pra quem está olhando: na próxima visita a
+  ponte autenticaria nela de novo sozinha, e o botão pareceria não fazer nada.
+*/
+async function signOut() {
+  await centralSupabase.auth.signOut();
+  window.location.href = "/auth/login";
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -129,6 +142,7 @@ export function AuthProviderFabricaSocial({ children }: { children: ReactNode })
       profile: fabricaSocialNaoConfigurado ? mockUser : (profile ?? null),
       loading,
       bridgeError,
+      signOut,
     }),
     [session, profile, loading, bridgeError],
   );

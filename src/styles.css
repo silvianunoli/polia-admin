@@ -53,6 +53,10 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  /* Só usados dentro de .fabrica-social (ver bloco abaixo) — o resto do
+     polia-admin não tem hover/active de sidebar como token à parte. */
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
 
   /* Tipografia: font-sans, font-accent, font-handwritten */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -60,29 +64,91 @@
   --font-handwritten: "Caveat", cursive;
 }
 
+/*
+  Paleta do Fábrica Social (repo separado), transplantada tal e qual — não a
+  paleta da Pólia. A Sil pediu réplica exata da tela original, não uma versão
+  "traduzida" pras cores da Central. Por isso os valores aqui são hsl() puro
+  (o app original guarda o triplo H S% L% cru e embrulha em hsl() no
+  Tailwind config dele; aqui o embrulho vai direto no valor da variável,
+  porque o @theme deste projeto usa a cor como veio, sem hsl() por fora).
+
+  Escopado em `.fabrica-social` (a classe na raiz de src/routes/fabrica-social.tsx)
+  para não vazar pro resto do admin: essas variáveis SOMBREIAM as da Pólia só
+  dentro dela. `.fabrica-social.dark` é o tema escuro, ligado pelo próprio
+  botão de tema da barra lateral (estado local, não mexe no <html> nem afeta
+  o resto do polia-admin).
+*/
+.fabrica-social {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(45 8% 20%);
+  --muted: hsl(45 13% 94%);
+  --muted-foreground: hsl(45 3% 47%);
+  --border: hsl(45 6% 91%);
+  --input: hsl(45 6% 91%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(45 8% 20%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(45 8% 20%);
+  --primary: hsl(208 78% 51%);
+  --primary-foreground: hsl(0 0% 100%);
+  --accent: hsl(45 13% 94%);
+  --accent-foreground: hsl(45 8% 20%);
+  --destructive: hsl(4 72% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --ring: hsl(208 78% 51%);
+  --sidebar: hsl(40 14% 96%);
+  --sidebar-foreground: hsl(45 4% 38%);
+  --sidebar-hover: hsl(45 8% 90%);
+  --sidebar-active: hsl(45 8% 87%);
+}
+
+.fabrica-social.dark {
+  --background: hsl(0 0% 10%);
+  --foreground: hsl(0 0% 83%);
+  --muted: hsl(0 0% 15%);
+  --muted-foreground: hsl(0 0% 55%);
+  --border: hsl(0 0% 18%);
+  --input: hsl(0 0% 18%);
+  --card: hsl(0 0% 12%);
+  --card-foreground: hsl(0 0% 83%);
+  --popover: hsl(0 0% 12%);
+  --popover-foreground: hsl(0 0% 83%);
+  --primary: hsl(208 78% 55%);
+  --primary-foreground: hsl(0 0% 100%);
+  --accent: hsl(0 0% 16%);
+  --accent-foreground: hsl(0 0% 83%);
+  --destructive: hsl(4 72% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+  --ring: hsl(208 78% 55%);
+  --sidebar: hsl(0 0% 13%);
+  --sidebar-foreground: hsl(0 0% 62%);
+  --sidebar-hover: hsl(0 0% 18%);
+  --sidebar-active: hsl(0 0% 21%);
+}
+
 /* ── Paleta Pólia v3 (pedra/turquesa/pêssego/amarelo/tinta) ──────────────────
    Regra de contraste: pêssego e turquesa-claro SÓ em fundo/borda/gráfico,
    nunca em texto. Texto sempre --ink / --ink-soft / --muted (ou --secondary-text). */
 .polia-v3 {
-  --bg: #F2F0ED;
-  --surface: #F9EFEE;
-  --surface-pink: #F6DAD4;
-  --line: #E6E6E6;
-  --ink: #0A0A0A;
-  --ink-soft: #2C2C2C;
-  --muted: #6B6B6B;             /* AA sobre --bg, mesmo valor do polia-app (era #767676, desatualizado) */
-  --accent: #F3B9A9;
-  --accent-ink: #2C2C2C;
-  --secondary: #7CCBCD;
-  --secondary-light: #BFE9EB;
-  --secondary-ink: #0A0A0A;
-  --secondary-text: #24696B;    /* turquesa escuro AA, mesmo valor do polia-app (era #2C7E80, desatualizado) */
-  --highlight: #FFC629;
-  --highlight-ink: #0A0A0A;
-  --danger: #C0392B;
-  --danger-soft: #FBEAE7;
-  --cat-vendas: #E0A8C0;
-  --cat-admin: #B9B2A6;
+  --bg: #f2f0ed;
+  --surface: #f9efee;
+  --surface-pink: #f6dad4;
+  --line: #e6e6e6;
+  --ink: #0a0a0a;
+  --ink-soft: #2c2c2c;
+  --muted: #6b6b6b; /* AA sobre --bg, mesmo valor do polia-app (era #767676, desatualizado) */
+  --accent: #f3b9a9;
+  --accent-ink: #2c2c2c;
+  --secondary: #7ccbcd;
+  --secondary-light: #bfe9eb;
+  --secondary-ink: #0a0a0a;
+  --secondary-text: #24696b; /* turquesa escuro AA, mesmo valor do polia-app (era #2C7E80, desatualizado) */
+  --highlight: #ffc629;
+  --highlight-ink: #0a0a0a;
+  --danger: #c0392b;
+  --danger-soft: #fbeae7;
+  --cat-vendas: #e0a8c0;
+  --cat-admin: #b9b2a6;
 
   --primary: var(--secondary);
   --primary-foreground: var(--secondary-ink);
@@ -108,40 +174,40 @@
 :root {
   --radius: 0.75rem;
 
-  --background: #F2F0ED;
-  --foreground: #0A0A0A;
+  --background: #f2f0ed;
+  --foreground: #0a0a0a;
   --card: #ffffff;
-  --card-foreground: #0A0A0A;
+  --card-foreground: #0a0a0a;
   --popover: #ffffff;
-  --popover-foreground: #0A0A0A;
-  --primary: #7CCBCD;
-  --primary-foreground: #0A0A0A;
-  --secondary: #7CCBCD;
-  --secondary-foreground: #0A0A0A;
-  --muted: #F9EFEE;
-  --muted-foreground: #6B6B6B;
-  --accent: #F3B9A9;
-  --accent-foreground: #2C2C2C;
-  --destructive: #C0392B;
+  --popover-foreground: #0a0a0a;
+  --primary: #7ccbcd;
+  --primary-foreground: #0a0a0a;
+  --secondary: #7ccbcd;
+  --secondary-foreground: #0a0a0a;
+  --muted: #f9efee;
+  --muted-foreground: #6b6b6b;
+  --accent: #f3b9a9;
+  --accent-foreground: #2c2c2c;
+  --destructive: #c0392b;
   --destructive-foreground: #ffffff;
-  --border: #E6E6E6;
-  --input: #E6E6E6;
-  --ring: #7CCBCD;
+  --border: #e6e6e6;
+  --input: #e6e6e6;
+  --ring: #7ccbcd;
 
-  --chart-1: #7CCBCD;
-  --chart-2: #F3B9A9;
-  --chart-3: #FFC629;
-  --chart-4: #C0392B;
-  --chart-5: #2C7E80;
+  --chart-1: #7ccbcd;
+  --chart-2: #f3b9a9;
+  --chart-3: #ffc629;
+  --chart-4: #c0392b;
+  --chart-5: #2c7e80;
 
-  --sidebar: #F2F0ED;
-  --sidebar-foreground: #0A0A0A;
-  --sidebar-primary: #7CCBCD;
-  --sidebar-primary-foreground: #0A0A0A;
-  --sidebar-accent: #F9EFEE;
-  --sidebar-accent-foreground: #0A0A0A;
-  --sidebar-border: #E6E6E6;
-  --sidebar-ring: #7CCBCD;
+  --sidebar: #f2f0ed;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #7ccbcd;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #f9efee;
+  --sidebar-accent-foreground: #0a0a0a;
+  --sidebar-border: #e6e6e6;
+  --sidebar-ring: #7ccbcd;
 }
 
 @layer base {
@@ -165,11 +231,19 @@
     font-family: inherit;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: "Cabinet Grotesk", "Inter", ui-sans-serif, system-ui, sans-serif;
   }
 
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     letter-spacing: -0.01em;
   }
 }
@@ -178,8 +252,13 @@
   scrollbar-width: thin;
   scrollbar-color: var(--line, var(--border)) transparent;
 }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
 ::-webkit-scrollbar-thumb {
   background: var(--line, var(--border));
   border-radius: 5px;
@@ -220,12 +299,16 @@
   opacity: 1 !important;
 }
 @media (max-width: 768px) {
-  .caveat-decorativo { font-size: 20px; }
-  .caveat-informacional { font-size: 22px; }
+  .caveat-decorativo {
+    font-size: 20px;
+  }
+  .caveat-informacional {
+    font-size: 22px;
+  }
 }
 
 *:focus-visible {
-  outline: 2px solid #7CCBCD;
+  outline: 2px solid #7ccbcd;
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -239,8 +322,8 @@
 .skip-link:focus {
   left: 8px;
   top: 8px;
-  background: #7CCBCD;
-  color: #0A0A0A;
+  background: #7ccbcd;
+  color: #0a0a0a;
   padding: 8px 16px;
   border-radius: 6px;
   font-family: var(--font-sans);

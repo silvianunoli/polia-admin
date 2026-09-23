@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 import { useBrands } from "@/lib/fabrica-social/useData";
 import { useFabricaSocialAuth } from "./AuthContext";
 import type { Brand, CurrentUser } from "@/lib/fabrica-social/mock";
@@ -9,6 +9,11 @@ import type { Brand, CurrentUser } from "@/lib/fabrica-social/mock";
   `useAuth` pela versão com ponte (`useFabricaSocialAuth`), que não tem
   formulário de login: enquanto a ponte não terminar, `profile` fica null e
   esta tela mostra "carregando", igual a qualquer outra espera de sessão.
+
+  `theme`/`sidebarOpen` voltaram (22/09/2026) pra bater com a tela original —
+  mas `theme` aqui é ESTADO LOCAL desta seção, não `document.documentElement`:
+  o toggle liga/desliga a classe "dark" só no wrapper `.fabrica-social`
+  (ver src/routes/fabrica-social.tsx), nunca no resto do polia-admin.
 */
 
 interface WorkspaceState {
@@ -16,6 +21,10 @@ interface WorkspaceState {
   brands: Brand[];
   activeBrand: Brand;
   setActiveBrandId: (id: string) => void;
+  theme: "light" | "dark";
+  toggleTheme: () => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
 }
 
 const WorkspaceContext = createContext<WorkspaceState | null>(null);
@@ -30,6 +39,18 @@ export function WorkspaceProviderFabricaSocial({ children }: { children: ReactNo
     localStorage.setItem("fs-active-brand", id);
     setActiveBrandIdState(id);
   };
+  const [theme, setTheme] = useState<"light" | "dark">(() =>
+    typeof window !== "undefined"
+      ? (localStorage.getItem("fs-theme") as "light" | "dark") || "light"
+      : "light",
+  );
+  const toggleTheme = () =>
+    setTheme((t) => {
+      const novo = t === "light" ? "dark" : "light";
+      localStorage.setItem("fs-theme", novo);
+      return novo;
+    });
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const brandList = useMemo(() => brands ?? [], [brands]);
   const activeBrand = brandList.find((b) => b.id === activeBrandId) ?? brandList[0] ?? null;
@@ -37,19 +58,24 @@ export function WorkspaceProviderFabricaSocial({ children }: { children: ReactNo
   const value = useMemo<WorkspaceState | null>(
     () =>
       activeBrand && profile
-        ? { user: profile, brands: brandList, activeBrand, setActiveBrandId }
+        ? {
+            user: profile,
+            brands: brandList,
+            activeBrand,
+            setActiveBrandId,
+            theme,
+            toggleTheme,
+            sidebarOpen,
+            setSidebarOpen,
+          }
         : null,
-    [brandList, activeBrand, profile],
+    [brandList, activeBrand, profile, theme, sidebarOpen],
   );
 
-  if (bridgeError) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 px-6 text-center">
-        <span className="text-4xl">🔒</span>
-        <p className="max-w-sm text-[15px] text-[var(--ink-soft)]">{bridgeError}</p>
-      </div>
-    );
-  }
+  // bridgeError já é tratado por FabricaSocialGate (src/routes/fabrica-social.tsx)
+  // antes deste provider sequer montar -- chegar aqui com bridgeError setado
+  // não deveria acontecer, mas void evita o aviso de variável não usada.
+  void bridgeError;
 
   if (isLoading || (!profile && !isError)) {
     return (
@@ -63,11 +89,8 @@ export function WorkspaceProviderFabricaSocial({ children }: { children: ReactNo
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 text-center">
         <span className="text-4xl">😵</span>
-        <p className="text-[15px] text-[var(--ink-soft)]">Não consegui carregar as marcas.</p>
-        <button
-          onClick={() => refetch()}
-          className="text-sm text-[var(--secondary-text)] hover:underline"
-        >
+        <p className="text-[15px] text-muted-foreground">Não consegui carregar as marcas.</p>
+        <button onClick={() => refetch()} className="text-sm text-primary hover:underline">
           Tentar novamente
         </button>
       </div>

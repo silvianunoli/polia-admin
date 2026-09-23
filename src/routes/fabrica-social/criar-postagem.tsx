@@ -300,8 +300,8 @@ function CriarPostagem() {
 
   return (
     <div className="mx-auto w-full max-w-3xl px-6 py-10 md:px-10">
-      <h1 className="font-cabinet text-[28px] text-[var(--ink)]">Criar postagem</h1>
-      <p className="mt-2 text-[15px] text-[var(--ink-soft)]">
+      <h1 className="text-3xl font-bold tracking-tight">Criar postagem</h1>
+      <p className="mt-2 text-muted-foreground">
         Suba a peça pronta e publique ou agende — sem gastar crédito. Marca:{" "}
         <strong>{activeBrand.name}</strong>.
       </p>
