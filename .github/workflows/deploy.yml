@@ -46,6 +46,14 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Fábrica Social — chave pública (anon), por isso "vars" e não
+          # "secrets", igual às duas de cima. O segredo de verdade
+          # (FABRICA_SOCIAL_SUPABASE_SERVICE_ROLE_KEY) não passa por aqui:
+          # é secret do Worker (`wrangler secret put`), lido em runtime, não
+          # em build time. Ver §Fábrica Social no CLAUDE.md.
+          VITE_FABRICA_SOCIAL_SUPABASE_URL: ${{ vars.VITE_FABRICA_SOCIAL_SUPABASE_URL }}
+          VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY: ${{ vars.VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY }}
+          VITE_FABRICA_SOCIAL_APP_URL: ${{ vars.VITE_FABRICA_SOCIAL_APP_URL }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}

@@ -4,6 +4,92 @@
 > Serve pra qualquer sessão futura saber, sem a Sil precisar reexplicar, como subir/agendar post
 > no blog direto pelo banco -- sem precisar abrir o editor em `office.usepolia.com.br/blog`.
 
+## Fábrica Social — dois bancos, uma porta de entrada (22/09/2026, em andamento)
+
+O Fábrica Social (criação e publicação de posts pro Instagram e TikTok) é OUTRO produto, com
+OUTRO projeto Supabase — "Fábrica de Posts", `zfsistnimeftijsasojw` (não confundir com o
+projeto "Pólia", `egzwkyqpkexgrhbxwcvb`, que o resto do polia-admin usa). Repositório separado:
+`C:\Users\silnu\Documents\Novo Projeto - Posts` (Vite + React Router, não TanStack Start), com
+CLAUDE.md/ARQUITETURA.md próprios.
+
+**Decisão tomada com a Sil:** não migrar dados nem fundir os dois bancos agora — os dois
+projetos têm usuárias que não batem por e-mail e migrar arriscaria posts/agendamentos que já
+estão em produção. Em vez disso, uma PONTE: a Central autentica normal no projeto Pólia, e uma
+server function troca essa sessão por uma sessão real no projeto Fábrica Social, sem pedir senha
+de novo. Ver o porquê completo no topo de
+[`src/lib/fabrica-social-auth.functions.ts`](src/lib/fabrica-social-auth.functions.ts).
+
+### As peças
+
+    src/lib/fabrica-social-auth.functions.ts    A ponte (server function, service role do
+                                                 Fábrica Social, PASSE_FABRICA_SOCIAL = mapa
+                                                 explícito user id Central -> user id Fábrica
+                                                 Social — só a Sil está no mapa hoje)
+    src/lib/fabrica-social/supabase.ts          Cliente Supabase SEPARADO, projeto Fábrica
+                                                 Social, storageKey próprio
+    src/lib/fabrica-social/{api,mock,useData,
+      formats,credits,tempo,cn,jpeg}.ts         Cópia quase literal do repo original — mesma
+                                                 lógica, só os imports apontam pra cá
+    src/context/fabrica-social/AuthContext.tsx  Versão SEM formulário de login — na entrada,
+                                                 tenta usar sessão existente; sem sessão, chama
+                                                 a ponte e troca o token por sessão via verifyOtp
+    src/context/fabrica-social/WorkspaceContext.tsx   Marca ativa — mesmo desenho do original
+    src/components/fabrica-social/{bits,
+      PreviaArte}.tsx                           Componentes de UI, cópia literal
+    src/routes/fabrica-social.tsx               Layout (chrome próprio, `layoutProprio` no
+                                                 __root.tsx) + provedores + status da ponte
+    src/routes/fabrica-social/{index,
+      biblioteca}.tsx                           Páginas portadas — index redireciona pra
+                                                 biblioteca (única pronta até agora)
+
+**Por que os componentes ficaram com as classes Tailwind originais** (`bg-card`,
+`text-primary`, `bg-muted`, `text-muted-foreground`, `bg-destructive`...): por sorte de
+arquitetura, os dois projetos usam o MESMO vocabulário shadcn, e o `@theme inline` de
+`src/styles.css` já registra todos esses tokens com a paleta real da Pólia (turquesa, creme,
+pêssego) — então os componentes portados herdam a cor certa de graça, sem precisar reescrever
+nenhuma classe. Não precisou de nenhum hack de CSS.
+
+**O que ainda abre no app separado:** o Editor (canvas Fabric.js) não foi portado — "Editar"
+na Biblioteca abre `app.silvianunoli.com.br/editor?post=<id>` numa aba nova (ver
+`VITE_FABRICA_SOCIAL_APP_URL` em `.env`). Fica assim até o Editor ser portado numa fase futura.
+
+### Variáveis novas
+
+    .env / .env.example (build, público)
+      VITE_FABRICA_SOCIAL_SUPABASE_URL
+      VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY
+      VITE_FABRICA_SOCIAL_APP_URL
+
+    .dev.vars local / secret do Worker em produção (nunca no navegador)
+      FABRICA_SOCIAL_SUPABASE_URL
+      FABRICA_SOCIAL_SUPABASE_SERVICE_ROLE_KEY   -> Supabase, projeto "Fábrica de Posts",
+                                                     Project Settings > API Keys > service_role
+
+    GitHub Actions (deploy.yml), como "Variables" do repositório — NÃO "Secrets", são valores
+    públicos (a service role fica só no Worker):
+      VITE_FABRICA_SOCIAL_SUPABASE_URL, VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY,
+      VITE_FABRICA_SOCIAL_APP_URL
+
+**Pendente antes de funcionar em produção:** `wrangler secret put FABRICA_SOCIAL_SUPABASE_URL`
+e `wrangler secret put FABRICA_SOCIAL_SUPABASE_SERVICE_ROLE_KEY` no Worker `polia-admin`, e as
+três "Variables" acima no GitHub do repositório. Sem isso, `/fabrica-social` carrega mas a
+ponte falha com uma mensagem que diz exatamente o que falta.
+
+### O que falta portar (ordem sugerida, por uso do dia a dia)
+
+1. **Calendário** — visão da semana/mês, agendamento, alerta de falha de publicação.
+2. **Criar postagem** (upload manual) — a mais usada pra publicar de verdade; já inclui o
+   destino TikTok (adicionado em 22/09/2026, ver `ARQUITETURA.md` do repo original).
+3. **Conexões** (Instagram + TikTok) — trocar/renovar tokens das redes.
+4. **Marcas** — cadastro de marca, acervo de imagens, briefing.
+5. **Editor** — o mais custoso: canvas Fabric.js inteiro. Só depois dos outros.
+6. Criação com IA, Analytics, Portal do Cliente, Equipe, Assinatura — hoje escondidos ou de
+   uso raro no app original; migrar por último ou nem migrar.
+
+Cada fase repete o padrão da Biblioteca: copiar o que falta de `src/lib`/`src/components` de
+`Novo Projeto - Posts`, ajustar imports, portar a página trocando `react-router-dom` por
+`@tanstack/react-router` e removendo o `PageShell` (o header já vem do layout).
+
 ## Blog CMS — publicar ou agendar post direto no banco
 
 Projeto Supabase **"Pólia"** (id `egzwkyqpkexgrhbxwcvb`), tabela `public.blog_posts`. RLS exige

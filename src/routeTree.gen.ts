@@ -18,6 +18,7 @@ import { Route as ConteudoRouteImport } from './routes/conteudo'
 import { Route as CrmRouteImport } from './routes/crm'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as EstrategicoRouteImport } from './routes/estrategico'
+import { Route as FabricaSocialRouteImport } from './routes/fabrica-social'
 import { Route as FerramentasRouteImport } from './routes/ferramentas'
 import { Route as FlagsRouteImport } from './routes/flags'
 import { Route as FounderRouteImport } from './routes/founder'
@@ -44,6 +45,8 @@ import { Route as CrmModelosRouteImport } from './routes/crm/modelos'
 import { Route as CrmNegociosRouteImport } from './routes/crm/negocios'
 import { Route as CrmTarefasRouteImport } from './routes/crm/tarefas'
 import { Route as CrmUsuariasRouteImport } from './routes/crm/usuarias'
+import { Route as FabricaSocialIndexRouteImport } from './routes/fabrica-social/index'
+import { Route as FabricaSocialBibliotecaRouteImport } from './routes/fabrica-social/biblioteca'
 import { Route as FounderIndexRouteImport } from './routes/founder/index'
 import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
 import { Route as FounderNumerosRouteImport } from './routes/founder/numeros'
@@ -127,6 +130,11 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
 const EstrategicoRoute = EstrategicoRouteImport.update({
   id: '/estrategico',
   path: '/estrategico',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FabricaSocialRoute = FabricaSocialRouteImport.update({
+  id: '/fabrica-social',
+  path: '/fabrica-social',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FerramentasRoute = FerramentasRouteImport.update({
@@ -258,6 +266,16 @@ const CrmUsuariasRoute = CrmUsuariasRouteImport.update({
   id: '/usuarias',
   path: '/usuarias',
   getParentRoute: () => CrmRoute,
+} as any)
+const FabricaSocialIndexRoute = FabricaSocialIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => FabricaSocialRoute,
+} as any)
+const FabricaSocialBibliotecaRoute = FabricaSocialBibliotecaRouteImport.update({
+  id: '/biblioteca',
+  path: '/biblioteca',
+  getParentRoute: () => FabricaSocialRoute,
 } as any)
 const FounderIndexRoute = FounderIndexRouteImport.update({
   id: '/',
@@ -476,6 +494,7 @@ export interface FileRoutesByFullPath {
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
+  '/fabrica-social': typeof FabricaSocialRouteWithChildren
   '/ferramentas': typeof FerramentasRoute
   '/flags': typeof FlagsRoute
   '/founder': typeof FounderRouteWithChildren
@@ -498,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
+  '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -507,6 +527,7 @@ export interface FileRoutesByFullPath {
   '/chamados/': typeof ChamadosIndexRoute
   '/conteudo-polia/': typeof ConteudoPoliaIndexRoute
   '/crm/': typeof CrmIndexRoute
+  '/fabrica-social/': typeof FabricaSocialIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
@@ -572,6 +593,7 @@ export interface FileRoutesByTo {
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
+  '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -581,6 +603,7 @@ export interface FileRoutesByTo {
   '/chamados': typeof ChamadosIndexRoute
   '/conteudo-polia': typeof ConteudoPoliaIndexRoute
   '/crm': typeof CrmIndexRoute
+  '/fabrica-social': typeof FabricaSocialIndexRoute
   '/founder': typeof FounderIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
@@ -627,6 +650,7 @@ export interface FileRoutesById {
   '/crm': typeof CrmRouteWithChildren
   '/design-system': typeof DesignSystemRoute
   '/estrategico': typeof EstrategicoRoute
+  '/fabrica-social': typeof FabricaSocialRouteWithChildren
   '/ferramentas': typeof FerramentasRoute
   '/flags': typeof FlagsRoute
   '/founder': typeof FounderRouteWithChildren
@@ -649,6 +673,7 @@ export interface FileRoutesById {
   '/crm/negocios': typeof CrmNegociosRoute
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
+  '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -658,6 +683,7 @@ export interface FileRoutesById {
   '/chamados/': typeof ChamadosIndexRoute
   '/conteudo-polia/': typeof ConteudoPoliaIndexRoute
   '/crm/': typeof CrmIndexRoute
+  '/fabrica-social/': typeof FabricaSocialIndexRoute
   '/founder/': typeof FounderIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
@@ -705,6 +731,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/design-system'
     | '/estrategico'
+    | '/fabrica-social'
     | '/ferramentas'
     | '/flags'
     | '/founder'
@@ -727,6 +754,7 @@ export interface FileRouteTypes {
     | '/crm/negocios'
     | '/crm/tarefas'
     | '/crm/usuarias'
+    | '/fabrica-social/biblioteca'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -736,6 +764,7 @@ export interface FileRouteTypes {
     | '/chamados/'
     | '/conteudo-polia/'
     | '/crm/'
+    | '/fabrica-social/'
     | '/founder/'
     | '/pesquisas/'
     | '/crm/campanhas/$id'
@@ -801,6 +830,7 @@ export interface FileRouteTypes {
     | '/crm/negocios'
     | '/crm/tarefas'
     | '/crm/usuarias'
+    | '/fabrica-social/biblioteca'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -810,6 +840,7 @@ export interface FileRouteTypes {
     | '/chamados'
     | '/conteudo-polia'
     | '/crm'
+    | '/fabrica-social'
     | '/founder'
     | '/pesquisas'
     | '/crm/campanhas/$id'
@@ -855,6 +886,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/design-system'
     | '/estrategico'
+    | '/fabrica-social'
     | '/ferramentas'
     | '/flags'
     | '/founder'
@@ -877,6 +909,7 @@ export interface FileRouteTypes {
     | '/crm/negocios'
     | '/crm/tarefas'
     | '/crm/usuarias'
+    | '/fabrica-social/biblioteca'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -886,6 +919,7 @@ export interface FileRouteTypes {
     | '/chamados/'
     | '/conteudo-polia/'
     | '/crm/'
+    | '/fabrica-social/'
     | '/founder/'
     | '/pesquisas/'
     | '/crm/campanhas/$id'
@@ -932,6 +966,7 @@ export interface RootRouteChildren {
   CrmRoute: typeof CrmRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
   EstrategicoRoute: typeof EstrategicoRoute
+  FabricaSocialRoute: typeof FabricaSocialRouteWithChildren
   FerramentasRoute: typeof FerramentasRoute
   FlagsRoute: typeof FlagsRoute
   FounderRoute: typeof FounderRouteWithChildren
@@ -1020,6 +1055,13 @@ declare module '@tanstack/react-router' {
       path: '/estrategico'
       fullPath: '/estrategico'
       preLoaderRoute: typeof EstrategicoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/fabrica-social': {
+      id: '/fabrica-social'
+      path: '/fabrica-social'
+      fullPath: '/fabrica-social'
+      preLoaderRoute: typeof FabricaSocialRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ferramentas': {
@@ -1203,6 +1245,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/usuarias'
       preLoaderRoute: typeof CrmUsuariasRouteImport
       parentRoute: typeof CrmRoute
+    }
+    '/fabrica-social/': {
+      id: '/fabrica-social/'
+      path: '/'
+      fullPath: '/fabrica-social/'
+      preLoaderRoute: typeof FabricaSocialIndexRouteImport
+      parentRoute: typeof FabricaSocialRoute
+    }
+    '/fabrica-social/biblioteca': {
+      id: '/fabrica-social/biblioteca'
+      path: '/biblioteca'
+      fullPath: '/fabrica-social/biblioteca'
+      preLoaderRoute: typeof FabricaSocialBibliotecaRouteImport
+      parentRoute: typeof FabricaSocialRoute
     }
     '/founder/': {
       id: '/founder/'
@@ -1508,6 +1564,20 @@ const CrmRouteChildren: CrmRouteChildren = {
 
 const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 
+interface FabricaSocialRouteChildren {
+  FabricaSocialBibliotecaRoute: typeof FabricaSocialBibliotecaRoute
+  FabricaSocialIndexRoute: typeof FabricaSocialIndexRoute
+}
+
+const FabricaSocialRouteChildren: FabricaSocialRouteChildren = {
+  FabricaSocialBibliotecaRoute: FabricaSocialBibliotecaRoute,
+  FabricaSocialIndexRoute: FabricaSocialIndexRoute,
+}
+
+const FabricaSocialRouteWithChildren = FabricaSocialRoute._addFileChildren(
+  FabricaSocialRouteChildren,
+)
+
 interface FounderAnalyticsUsuariasRouteChildren {
   FounderAnalyticsUsuariasIdRoute: typeof FounderAnalyticsUsuariasIdRoute
 }
@@ -1603,6 +1673,7 @@ const rootRouteChildren: RootRouteChildren = {
   CrmRoute: CrmRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
   EstrategicoRoute: EstrategicoRoute,
+  FabricaSocialRoute: FabricaSocialRouteWithChildren,
   FerramentasRoute: FerramentasRoute,
   FlagsRoute: FlagsRoute,
   FounderRoute: FounderRouteWithChildren,

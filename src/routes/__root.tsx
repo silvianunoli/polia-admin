@@ -109,11 +109,15 @@ function RootComponent() {
   // filtro de período), definido em src/routes/founder.tsx.
   // /crm entrou aqui em 18/09/2026: virou módulo com sidebar própria
   // (src/routes/crm.tsx), como o Founder.
+  // /fabrica-social entrou em 22/09/2026: layout próprio (src/routes/fabrica-social.tsx)
+  // com header e ponte de sessão pro projeto Supabase do Fábrica Social.
   const layoutProprio =
     pathname === "/founder" ||
     pathname.startsWith("/founder/") ||
     pathname === "/crm" ||
-    pathname.startsWith("/crm/");
+    pathname.startsWith("/crm/") ||
+    pathname === "/fabrica-social" ||
+    pathname.startsWith("/fabrica-social/");
 
   const semSidebar =
     pathname === "/numeros" ||

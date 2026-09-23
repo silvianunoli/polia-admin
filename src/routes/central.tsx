@@ -3,6 +3,7 @@ import {
   ArrowRight,
   BookOpen,
   ClipboardList,
+  FolderOpen,
   Images,
   Inbox,
   Kanban,
@@ -70,6 +71,16 @@ const PRODUTOS: Produto[] = [
       "Os carrosséis do feed: ver prancha por prancha, ajustar o HTML e baixar os PNG prontos para postar.",
     href: "/conteudo-polia",
     icone: Images,
+  },
+  {
+    // Migração em fases, começada em 22/09/2026 — só a Biblioteca mora aqui
+    // por enquanto, o resto ainda vive no app separado (a própria tela avisa
+    // o que falta). Ver §Fábrica Social no CLAUDE.md.
+    nome: "Fábrica Social",
+    descricao:
+      "Criação e publicação de posts pro Instagram e TikTok — biblioteca, calendário e agendamento.",
+    href: "/fabrica-social",
+    icone: FolderOpen,
   },
   {
     nome: "CMS do Blog",
