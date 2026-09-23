@@ -85,11 +85,16 @@ export function AuthProviderFabricaSocial({ children }: { children: ReactNode })
       if (tentouPonte.current) return;
       tentouPonte.current = true;
       try {
-        const { email, tokenHash } = await iniciarSessaoFabricaSocial();
+        const { tokenHash } = await iniciarSessaoFabricaSocial();
+        // A API do Supabase é estrita aqui: com `token_hash`, `email` NÃO
+        // pode vir junto -- "Only the token_hash and type should be
+        // provided" é o erro exato que ela devolve se vier. `email` é só
+        // pro OUTRO modo de verifyOtp (com o código de 6 dígitos), que não
+        // é o que a ponte usa.
+        //
         // TS não propaga o `if (!supabase) return;` de cima pra dentro deste
-        // closure — mas ele já rodou: sem cliente, o efeito nem chega aqui.
+        // closure -- mas ele já rodou: sem cliente, o efeito nem chega aqui.
         const { error } = await supabase!.auth.verifyOtp({
-          email,
           token_hash: tokenHash,
           type: "email",
         });
