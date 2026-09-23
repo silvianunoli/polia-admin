@@ -37,6 +37,7 @@ export const Route = createFileRoute("/fabrica-social")({
 const ROUTE_LABEL: Record<string, string> = {
   "criar-postagem": "Criar postagem",
   biblioteca: "Biblioteca",
+  conexoes: "Conexões",
 };
 
 function Breadcrumb() {

@@ -40,7 +40,7 @@ const PAGINAS: Pagina[] = [
   { href: `${APP_SEPARADO}/calendario`, label: "Calendário", icon: CalendarDays },
   { href: `${APP_SEPARADO}/inspiracao`, label: "Inspiração", icon: Lightbulb },
   { href: `${APP_SEPARADO}/brands`, label: "Marcas", icon: Store },
-  { href: `${APP_SEPARADO}/conexoes`, label: "Conexões (Instagram, TikTok)", icon: Link2 },
+  { to: "/fabrica-social/conexoes", label: "Conexões (Instagram, TikTok)", icon: Link2 },
   { href: `${APP_SEPARADO}/analytics`, label: "Analytics", icon: BarChart3 },
   { href: `${APP_SEPARADO}/portal-cliente`, label: "Portal do Cliente", icon: Handshake },
   { href: `${APP_SEPARADO}/equipe`, label: "Equipe", icon: Users },

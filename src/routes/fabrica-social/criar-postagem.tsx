@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { unzipSync } from "fflate";
@@ -14,7 +14,6 @@ import {
   Film,
   Instagram,
   Music2,
-  ExternalLink,
 } from "lucide-react";
 import { Callout } from "@/components/fabrica-social/Callout";
 import { Button, Card, Badge } from "@/components/fabrica-social/bits";
@@ -513,15 +512,13 @@ function CriarPostagem() {
                   {!ttConectado && (
                     <span className="text-xs text-muted-foreground">
                       ·{" "}
-                      <a
-                        href={`${APP_SEPARADO}/conexoes/tiktok`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-0.5 underline"
+                      <Link
+                        to="/fabrica-social/conexoes"
+                        className="underline"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        conecte <ExternalLink className="h-2.5 w-2.5 opacity-60" />
-                      </a>
+                        conecte
+                      </Link>
                     </span>
                   )}
                   {ttConectado && tipo === "story" && (

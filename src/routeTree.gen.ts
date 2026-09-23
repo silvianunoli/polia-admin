@@ -47,6 +47,7 @@ import { Route as CrmTarefasRouteImport } from './routes/crm/tarefas'
 import { Route as CrmUsuariasRouteImport } from './routes/crm/usuarias'
 import { Route as FabricaSocialIndexRouteImport } from './routes/fabrica-social/index'
 import { Route as FabricaSocialBibliotecaRouteImport } from './routes/fabrica-social/biblioteca'
+import { Route as FabricaSocialConexoesRouteImport } from './routes/fabrica-social/conexoes'
 import { Route as FabricaSocialCriarPostagemRouteImport } from './routes/fabrica-social/criar-postagem'
 import { Route as FounderIndexRouteImport } from './routes/founder/index'
 import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
@@ -59,6 +60,8 @@ import { Route as CrmCampanhasIndexRouteImport } from './routes/crm/campanhas.in
 import { Route as CrmCampanhasIdRouteImport } from './routes/crm/campanhas.$id'
 import { Route as CrmContatosIndexRouteImport } from './routes/crm/contatos.index'
 import { Route as CrmContatosIdRouteImport } from './routes/crm/contatos.$id'
+import { Route as FabricaSocialConexoesMetaRouteImport } from './routes/fabrica-social/conexoes.meta'
+import { Route as FabricaSocialConexoesTiktokRouteImport } from './routes/fabrica-social/conexoes.tiktok'
 import { Route as FounderAnalyticsIndexRouteImport } from './routes/founder/analytics.index'
 import { Route as FounderAnalyticsComportamentoRouteImport } from './routes/founder/analytics.comportamento'
 import { Route as FounderAnalyticsFuncionalidadesRouteImport } from './routes/founder/analytics.funcionalidades'
@@ -278,6 +281,11 @@ const FabricaSocialBibliotecaRoute = FabricaSocialBibliotecaRouteImport.update({
   path: '/biblioteca',
   getParentRoute: () => FabricaSocialRoute,
 } as any)
+const FabricaSocialConexoesRoute = FabricaSocialConexoesRouteImport.update({
+  id: '/conexoes',
+  path: '/conexoes',
+  getParentRoute: () => FabricaSocialRoute,
+} as any)
 const FabricaSocialCriarPostagemRoute =
   FabricaSocialCriarPostagemRouteImport.update({
     id: '/criar-postagem',
@@ -339,6 +347,18 @@ const CrmContatosIdRoute = CrmContatosIdRouteImport.update({
   path: '/contatos/$id',
   getParentRoute: () => CrmRoute,
 } as any)
+const FabricaSocialConexoesMetaRoute =
+  FabricaSocialConexoesMetaRouteImport.update({
+    id: '/meta',
+    path: '/meta',
+    getParentRoute: () => FabricaSocialConexoesRoute,
+  } as any)
+const FabricaSocialConexoesTiktokRoute =
+  FabricaSocialConexoesTiktokRouteImport.update({
+    id: '/tiktok',
+    path: '/tiktok',
+    getParentRoute: () => FabricaSocialConexoesRoute,
+  } as any)
 const FounderAnalyticsIndexRoute = FounderAnalyticsIndexRouteImport.update({
   id: '/analytics/',
   path: '/analytics/',
@@ -525,6 +545,7 @@ export interface FileRoutesByFullPath {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/conexoes': typeof FabricaSocialConexoesRouteWithChildren
   '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
@@ -540,6 +561,8 @@ export interface FileRoutesByFullPath {
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
+  '/fabrica-social/conexoes/meta': typeof FabricaSocialConexoesMetaRoute
+  '/fabrica-social/conexoes/tiktok': typeof FabricaSocialConexoesTiktokRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -602,6 +625,7 @@ export interface FileRoutesByTo {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/conexoes': typeof FabricaSocialConexoesRouteWithChildren
   '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
@@ -617,6 +641,8 @@ export interface FileRoutesByTo {
   '/pesquisas': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
+  '/fabrica-social/conexoes/meta': typeof FabricaSocialConexoesMetaRoute
+  '/fabrica-social/conexoes/tiktok': typeof FabricaSocialConexoesTiktokRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -683,6 +709,7 @@ export interface FileRoutesById {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/conexoes': typeof FabricaSocialConexoesRouteWithChildren
   '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
@@ -698,6 +725,8 @@ export interface FileRoutesById {
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
+  '/fabrica-social/conexoes/meta': typeof FabricaSocialConexoesMetaRoute
+  '/fabrica-social/conexoes/tiktok': typeof FabricaSocialConexoesTiktokRoute
   '/founder/analytics/comportamento': typeof FounderAnalyticsComportamentoRoute
   '/founder/analytics/funcionalidades': typeof FounderAnalyticsFuncionalidadesRoute
   '/founder/analytics/jornadas': typeof FounderAnalyticsJornadasRoute
@@ -765,6 +794,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/conexoes'
     | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
@@ -780,6 +810,8 @@ export interface FileRouteTypes {
     | '/pesquisas/'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
+    | '/fabrica-social/conexoes/meta'
+    | '/fabrica-social/conexoes/tiktok'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -842,6 +874,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/conexoes'
     | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
@@ -857,6 +890,8 @@ export interface FileRouteTypes {
     | '/pesquisas'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
+    | '/fabrica-social/conexoes/meta'
+    | '/fabrica-social/conexoes/tiktok'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -922,6 +957,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/conexoes'
     | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
@@ -937,6 +973,8 @@ export interface FileRouteTypes {
     | '/pesquisas/'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
+    | '/fabrica-social/conexoes/meta'
+    | '/fabrica-social/conexoes/tiktok'
     | '/founder/analytics/comportamento'
     | '/founder/analytics/funcionalidades'
     | '/founder/analytics/jornadas'
@@ -1273,6 +1311,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FabricaSocialBibliotecaRouteImport
       parentRoute: typeof FabricaSocialRoute
     }
+    '/fabrica-social/conexoes': {
+      id: '/fabrica-social/conexoes'
+      path: '/conexoes'
+      fullPath: '/fabrica-social/conexoes'
+      preLoaderRoute: typeof FabricaSocialConexoesRouteImport
+      parentRoute: typeof FabricaSocialRoute
+    }
     '/fabrica-social/criar-postagem': {
       id: '/fabrica-social/criar-postagem'
       path: '/criar-postagem'
@@ -1356,6 +1401,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/crm/contatos/$id'
       preLoaderRoute: typeof CrmContatosIdRouteImport
       parentRoute: typeof CrmRoute
+    }
+    '/fabrica-social/conexoes/meta': {
+      id: '/fabrica-social/conexoes/meta'
+      path: '/meta'
+      fullPath: '/fabrica-social/conexoes/meta'
+      preLoaderRoute: typeof FabricaSocialConexoesMetaRouteImport
+      parentRoute: typeof FabricaSocialConexoesRoute
+    }
+    '/fabrica-social/conexoes/tiktok': {
+      id: '/fabrica-social/conexoes/tiktok'
+      path: '/tiktok'
+      fullPath: '/fabrica-social/conexoes/tiktok'
+      preLoaderRoute: typeof FabricaSocialConexoesTiktokRouteImport
+      parentRoute: typeof FabricaSocialConexoesRoute
     }
     '/founder/analytics/': {
       id: '/founder/analytics/'
@@ -1584,14 +1643,31 @@ const CrmRouteChildren: CrmRouteChildren = {
 
 const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 
+interface FabricaSocialConexoesRouteChildren {
+  FabricaSocialConexoesMetaRoute: typeof FabricaSocialConexoesMetaRoute
+  FabricaSocialConexoesTiktokRoute: typeof FabricaSocialConexoesTiktokRoute
+}
+
+const FabricaSocialConexoesRouteChildren: FabricaSocialConexoesRouteChildren = {
+  FabricaSocialConexoesMetaRoute: FabricaSocialConexoesMetaRoute,
+  FabricaSocialConexoesTiktokRoute: FabricaSocialConexoesTiktokRoute,
+}
+
+const FabricaSocialConexoesRouteWithChildren =
+  FabricaSocialConexoesRoute._addFileChildren(
+    FabricaSocialConexoesRouteChildren,
+  )
+
 interface FabricaSocialRouteChildren {
   FabricaSocialBibliotecaRoute: typeof FabricaSocialBibliotecaRoute
+  FabricaSocialConexoesRoute: typeof FabricaSocialConexoesRouteWithChildren
   FabricaSocialCriarPostagemRoute: typeof FabricaSocialCriarPostagemRoute
   FabricaSocialIndexRoute: typeof FabricaSocialIndexRoute
 }
 
 const FabricaSocialRouteChildren: FabricaSocialRouteChildren = {
   FabricaSocialBibliotecaRoute: FabricaSocialBibliotecaRoute,
+  FabricaSocialConexoesRoute: FabricaSocialConexoesRouteWithChildren,
   FabricaSocialCriarPostagemRoute: FabricaSocialCriarPostagemRoute,
   FabricaSocialIndexRoute: FabricaSocialIndexRoute,
 }

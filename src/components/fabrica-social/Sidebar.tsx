@@ -191,7 +191,7 @@ export function FabricaSocialSidebar() {
         </Group>
         <Group label="Marcas & Medição">
           <NavItem href={`${APP_SEPARADO}/brands`} icon={Store} label="Marcas" />
-          <NavItem href={`${APP_SEPARADO}/conexoes`} icon={Link2} label="Conexões" />
+          <NavItem to="/fabrica-social/conexoes" icon={Link2} label="Conexões" />
           <NavItem
             href={`${APP_SEPARADO}/analytics`}
             icon={BarChart3}

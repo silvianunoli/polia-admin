@@ -479,7 +479,11 @@ export interface SocialConnection {
 }
 
 export function buildMetaOAuthUrl(brandId: string): string {
-  const redirectUri = `${window.location.origin}/conexoes/meta`;
+  // Prefixo /fabrica-social/: esta é a cópia que vive dentro da Central
+  // (office.usepolia.com.br) — o redirect URI cadastrado no painel da Meta
+  // tem que apontar pra cá, não pro app separado. A cópia original em
+  // Novo Projeto - Posts/src/lib/api.ts continua usando /conexoes/meta puro.
+  const redirectUri = `${window.location.origin}/fabrica-social/conexoes/meta`;
   const params = new URLSearchParams({
     client_id: META_APP_ID,
     redirect_uri: redirectUri,
@@ -546,7 +550,10 @@ export const tiktokConfigurado = TIKTOK_CLIENT_KEY.length > 0;
 export type PublishablePlatform = "instagram" | "tiktok";
 
 export function buildTikTokOAuthUrl(brandId: string): string {
-  const redirectUri = `${window.location.origin}/conexoes/tiktok`;
+  // Mesmo motivo do buildMetaOAuthUrl: prefixo /fabrica-social/ porque esta
+  // cópia roda dentro da Central. O redirect URI cadastrado no portal do
+  // TikTok precisa ser https://office.usepolia.com.br/fabrica-social/conexoes/tiktok.
+  const redirectUri = `${window.location.origin}/fabrica-social/conexoes/tiktok`;
   const params = new URLSearchParams({
     client_key: TIKTOK_CLIENT_KEY,
     /*
@@ -580,7 +587,10 @@ export async function tiktokCallback(params: {
     body: {
       brandId: params.brandId,
       code: params.code,
-      redirectUri: `${window.location.origin}/conexoes/tiktok`,
+      // Tem que bater byte a byte com o que foi mandado no /authorize (ver
+      // buildTikTokOAuthUrl acima) — é assim que o OAuth confere que quem
+      // troca o code é quem pediu.
+      redirectUri: `${window.location.origin}/fabrica-social/conexoes/tiktok`,
     },
   });
   if (error) {
@@ -616,7 +626,7 @@ export async function metaCallback(params: {
       brandId: params.brandId,
       code: params.code,
       page_id: params.pageId,
-      redirectUri: `${window.location.origin}/conexoes/meta`,
+      redirectUri: `${window.location.origin}/fabrica-social/conexoes/meta`,
     },
   });
   if (error) {
