@@ -178,12 +178,12 @@ function Biblioteca() {
       <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {brandPosts.map((p) => {
           const format = FORMATS.find((f) => f.id === p.formatId);
+          // O card em si NÃO navega pra lugar nenhum -- o fluxo real (posts
+          // por upload manual, o único que existe aqui) não passa pelo
+          // Editor. Só quem clica em "Editar" de propósito é que sai pro
+          // app separado; clicar no post não devia surpreender ninguém.
           return (
-            <Card
-              key={p.id}
-              className="flex flex-col transition-colors hover:border-primary/50"
-              onClick={() => abrirNoEditor(p.id)}
-            >
+            <Card key={p.id} className="flex flex-col transition-colors hover:border-primary/50">
               <PreviaArte
                 post={p}
                 width={format?.width ?? 1080}
@@ -219,12 +219,7 @@ function Biblioteca() {
                   💬 {p.clientComment}
                 </p>
               )}
-              {/*
-                O card inteiro abre o Editor (ainda no app separado), então
-                tudo que é ação própria para de propagar aqui — senão apagar ou
-                agendar abriria a aba nova por cima da própria ação.
-              */}
-              <div onClick={(e) => e.stopPropagation()}>
+              <div>
                 <div className="mt-3 flex flex-wrap items-center gap-4">
                   <button
                     type="button"

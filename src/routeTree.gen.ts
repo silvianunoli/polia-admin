@@ -47,6 +47,7 @@ import { Route as CrmTarefasRouteImport } from './routes/crm/tarefas'
 import { Route as CrmUsuariasRouteImport } from './routes/crm/usuarias'
 import { Route as FabricaSocialIndexRouteImport } from './routes/fabrica-social/index'
 import { Route as FabricaSocialBibliotecaRouteImport } from './routes/fabrica-social/biblioteca'
+import { Route as FabricaSocialCriarPostagemRouteImport } from './routes/fabrica-social/criar-postagem'
 import { Route as FounderIndexRouteImport } from './routes/founder/index'
 import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
 import { Route as FounderNumerosRouteImport } from './routes/founder/numeros'
@@ -277,6 +278,12 @@ const FabricaSocialBibliotecaRoute = FabricaSocialBibliotecaRouteImport.update({
   path: '/biblioteca',
   getParentRoute: () => FabricaSocialRoute,
 } as any)
+const FabricaSocialCriarPostagemRoute =
+  FabricaSocialCriarPostagemRouteImport.update({
+    id: '/criar-postagem',
+    path: '/criar-postagem',
+    getParentRoute: () => FabricaSocialRoute,
+  } as any)
 const FounderIndexRoute = FounderIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -518,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -594,6 +602,7 @@ export interface FileRoutesByTo {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -674,6 +683,7 @@ export interface FileRoutesById {
   '/crm/tarefas': typeof CrmTarefasRoute
   '/crm/usuarias': typeof CrmUsuariasRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaRoute
+  '/fabrica-social/criar-postagem': typeof FabricaSocialCriarPostagemRoute
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
@@ -755,6 +765,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -831,6 +842,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -910,6 +922,7 @@ export interface FileRouteTypes {
     | '/crm/tarefas'
     | '/crm/usuarias'
     | '/fabrica-social/biblioteca'
+    | '/fabrica-social/criar-postagem'
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
@@ -1260,6 +1273,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FabricaSocialBibliotecaRouteImport
       parentRoute: typeof FabricaSocialRoute
     }
+    '/fabrica-social/criar-postagem': {
+      id: '/fabrica-social/criar-postagem'
+      path: '/criar-postagem'
+      fullPath: '/fabrica-social/criar-postagem'
+      preLoaderRoute: typeof FabricaSocialCriarPostagemRouteImport
+      parentRoute: typeof FabricaSocialRoute
+    }
     '/founder/': {
       id: '/founder/'
       path: '/'
@@ -1566,11 +1586,13 @@ const CrmRouteWithChildren = CrmRoute._addFileChildren(CrmRouteChildren)
 
 interface FabricaSocialRouteChildren {
   FabricaSocialBibliotecaRoute: typeof FabricaSocialBibliotecaRoute
+  FabricaSocialCriarPostagemRoute: typeof FabricaSocialCriarPostagemRoute
   FabricaSocialIndexRoute: typeof FabricaSocialIndexRoute
 }
 
 const FabricaSocialRouteChildren: FabricaSocialRouteChildren = {
   FabricaSocialBibliotecaRoute: FabricaSocialBibliotecaRoute,
+  FabricaSocialCriarPostagemRoute: FabricaSocialCriarPostagemRoute,
   FabricaSocialIndexRoute: FabricaSocialIndexRoute,
 }
 

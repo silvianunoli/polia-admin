@@ -20,9 +20,9 @@ export const Route = createFileRoute("/fabrica-social")({
   Social no CLAUDE.md pra a ordem recomendada das próximas.
 */
 const SECOES = [
+  { label: "Criar postagem", to: "/fabrica-social/criar-postagem", pronto: true },
   { label: "Biblioteca", to: "/fabrica-social/biblioteca", pronto: true },
   { label: "Calendário", pronto: false },
-  { label: "Criar postagem", pronto: false },
   { label: "Marcas", pronto: false },
   { label: "Conexões", pronto: false },
 ] as const;
