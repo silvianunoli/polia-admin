@@ -54,6 +54,10 @@ jobs:
           VITE_FABRICA_SOCIAL_SUPABASE_URL: ${{ vars.VITE_FABRICA_SOCIAL_SUPABASE_URL }}
           VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY: ${{ vars.VITE_FABRICA_SOCIAL_SUPABASE_ANON_KEY }}
           VITE_FABRICA_SOCIAL_APP_URL: ${{ vars.VITE_FABRICA_SOCIAL_APP_URL }}
+          # Chave pública do app do TikTok (Sandbox) -- mesma que o app
+          # separado usa. Sem ela, o botão "Conectar TikTok" fica desativado
+          # (ver tiktokConfigurado em src/lib/fabrica-social/api.ts).
+          VITE_TIKTOK_CLIENT_KEY: ${{ vars.VITE_TIKTOK_CLIENT_KEY }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
