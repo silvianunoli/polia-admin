@@ -37,7 +37,7 @@ const PAGINAS: Pagina[] = [
   { href: APP_SEPARADO, label: "Início", icon: Home },
   { to: "/fabrica-social/criar-postagem", label: "Criar postagem (upload)", icon: PackageOpen },
   { to: "/fabrica-social/biblioteca", label: "Biblioteca", icon: FolderOpen },
-  { href: `${APP_SEPARADO}/calendario`, label: "Calendário", icon: CalendarDays },
+  { to: "/fabrica-social/calendario", label: "Calendário", icon: CalendarDays },
   { href: `${APP_SEPARADO}/inspiracao`, label: "Inspiração", icon: Lightbulb },
   { href: `${APP_SEPARADO}/brands`, label: "Marcas", icon: Store },
   { to: "/fabrica-social/conexoes", label: "Conexões (Instagram, TikTok)", icon: Link2 },

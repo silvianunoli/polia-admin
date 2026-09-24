@@ -177,7 +177,7 @@ export function FabricaSocialSidebar() {
       {/* Navegação em grupos (árvore Notion) */}
       <nav className="notion-scroll flex-1 overflow-y-auto px-2 pb-2">
         <Group label="Planejamento">
-          <NavItem href={`${APP_SEPARADO}/calendario`} icon={CalendarDays} label="Calendário" />
+          <NavItem to="/fabrica-social/calendario" icon={CalendarDays} label="Calendário" />
           <NavItem
             href={`${APP_SEPARADO}/inspiracao`}
             icon={Lightbulb}

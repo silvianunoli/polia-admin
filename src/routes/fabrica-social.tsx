@@ -38,6 +38,7 @@ const ROUTE_LABEL: Record<string, string> = {
   "criar-postagem": "Criar postagem",
   biblioteca: "Biblioteca",
   conexoes: "Conexões",
+  calendario: "Calendário",
 };
 
 function Breadcrumb() {
