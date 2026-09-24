@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { PenTool, Send, CalendarClock, Loader2, Trash2, ExternalLink } from "lucide-react";
+import { PenTool, Send, CalendarClock, Loader2, Trash2 } from "lucide-react";
 import { Card, StatusBadge, ApprovalBadge, Badge, Button } from "@/components/fabrica-social/bits";
 import { PreviaArte } from "@/components/fabrica-social/PreviaArte";
 import { usePosts } from "@/lib/fabrica-social/useData";
@@ -17,18 +17,14 @@ export const Route = createFileRoute("/fabrica-social/biblioteca")({
 
 /*
   Primeira tela portada do Fábrica Social pra dentro da Central (22/09/2026).
-  Lógica idêntica à original (src/pages/Biblioteca.tsx no repo separado) —
-  a única mudança de comportamento é o "Editar": o Editor (canvas Fabric.js)
-  ainda não foi portado, então por ora ele abre o app separado numa aba nova
-  em vez de linkar pra uma rota que não existe aqui. Ver §Fábrica Social no
-  CLAUDE.md pra o que falta portar.
-*/
-const APP_SEPARADO =
-  import.meta.env.VITE_FABRICA_SOCIAL_APP_URL || "https://app.silvianunoli.com.br";
+  Lógica idêntica à original (src/pages/Biblioteca.tsx no repo separado).
 
-function abrirNoEditor(postId: string) {
-  window.open(`${APP_SEPARADO}/editor?post=${postId}`, "_blank", "noopener,noreferrer");
-}
+  "Editar" mudou de propósito em 23/09/2026, a pedido da Sil: em vez de abrir
+  o Editor de canvas (design/arte, que ainda só existe no app separado), leva
+  pra edição leve daqui mesmo -- trocar foto/vídeo, título, legenda, sem
+  nenhum jeito de mexer em arte. Só existe pra post que ainda não publicou
+  (ver guarda em biblioteca.$postId.tsx).
+*/
 
 function PublishControls({ post }: { post: Post }) {
   const queryClient = useQueryClient();
@@ -221,14 +217,15 @@ function Biblioteca() {
               )}
               <div>
                 <div className="mt-3 flex flex-wrap items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => abrirNoEditor(p.id)}
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                  >
-                    <PenTool className="h-3.5 w-3.5" /> Editar
-                    <ExternalLink className="h-3 w-3 opacity-60" aria-label="abre em outra aba" />
-                  </button>
+                  {p.status !== "published" && !p.isDemo && (
+                    <Link
+                      to="/fabrica-social/biblioteca/$postId"
+                      params={{ postId: p.id }}
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    >
+                      <PenTool className="h-3.5 w-3.5" /> Editar
+                    </Link>
+                  )}
                   <ApagarPost post={p} />
                 </div>
                 <PublishControls post={p} />

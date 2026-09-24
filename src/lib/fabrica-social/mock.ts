@@ -99,6 +99,14 @@ export interface Post {
   script?: string;
   /** Arte renderizada (PNG público) — exigida para publicar no Instagram */
   imageUrl?: string;
+  /** Vídeo (reels, ou story em vídeo) — mesmo papel que imageUrl pra mídia de vídeo. */
+  videoUrl?: string;
+  /**
+   * Só existe em post de upload manual (Criar postagem/edição leve). Post
+   * gerado pela engine vem null e o publicador decide pela contagem de
+   * slides — não dava pra preencher retroativamente sem inventar dado.
+   */
+  mediaType?: "image" | "carousel" | "reels" | "story" | null;
   publishError?: string;
   /** Falhas de publicação. O cron para em 2; publicar na mão zera. */
   publishAttempts?: number;

@@ -135,6 +135,8 @@ function mapPost(r: any): Post {
     fabricJson: r.fabric_json ?? undefined,
     script: r.script ?? undefined,
     imageUrl: r.image_url ?? undefined,
+    videoUrl: r.video_url ?? undefined,
+    mediaType: r.media_type ?? undefined,
     publishError: r.publish_error ?? undefined,
     publishAttempts: r.publish_attempts ?? 0,
     publishResults: r.publish_results ?? undefined,
@@ -900,6 +902,104 @@ export async function createManualPost(input: {
   return { postId: post.id };
 }
 
+/*
+  Edição leve, pensada pra dentro da Central: troca foto/vídeo, inclui ou
+  exclui peça do carrossel, reordena. NUNCA mexe em arte/design (isso
+  continua exclusivo do Editor, no app separado, ainda não portado pra cá).
+  Peça "existente" reaproveita a URL que já estava lá, sem subir de novo;
+  peça "nova" sobe o arquivo agora, no mesmo padrão de createManualPost.
+*/
+export type PecaEdicao =
+  { tipo: "existente"; url: string; ehVideo: boolean } | { tipo: "novo"; file: File };
+
+export async function updatePostMedia(input: {
+  postId: string;
+  mediaType: ManualMediaType;
+  /** Já na ordem final. Carrossel: a peça 0 vira a capa mostrada na Biblioteca. */
+  pieces: PecaEdicao[];
+  onProgress?: (feito: number, total: number) => void;
+}): Promise<void> {
+  if (!supabase) throw new Error("backend não configurado");
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error("not_authenticated");
+  const userId = userData.user.id;
+  if (input.pieces.length === 0) throw new Error("Precisa de pelo menos uma imagem ou vídeo.");
+
+  const resolvidas: { url: string; ehVideo: boolean }[] = [];
+  for (let i = 0; i < input.pieces.length; i++) {
+    const p = input.pieces[i];
+    if (p.tipo === "existente") {
+      resolvidas.push({ url: p.url, ehVideo: p.ehVideo });
+    } else {
+      const url = await uploadMidia(userId, input.postId, p.file, i);
+      resolvidas.push({ url, ehVideo: p.file.type.startsWith("video/") });
+    }
+    input.onProgress?.(i + 1, input.pieces.length);
+  }
+
+  const capa = resolvidas[0];
+  const ehVideoUnico = input.mediaType === "reels" || (input.mediaType === "story" && capa.ehVideo);
+
+  /*
+    Os slides antigos são sempre limpos primeiro, mesmo quando o post deixa de
+    ser carrossel -- sem isso, um post que virou "foto única" continuaria com
+    slides órfãos no banco, e a Biblioteca mostraria mídia fantasma.
+  */
+  await supabase.from("fs_post_slides").delete().eq("post_id", input.postId);
+
+  if (ehVideoUnico) {
+    const { data, error } = await supabase
+      .from("fs_posts")
+      .update({
+        video_url: capa.url,
+        image_url: null,
+        fabric_json: null,
+        media_type: input.mediaType,
+      })
+      .eq("id", input.postId)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) throw new ReadOnlyPostError();
+  } else if (input.mediaType === "carousel") {
+    const rows = resolvidas.map((r, i) => ({
+      owner_id: userId,
+      post_id: input.postId,
+      position: i,
+      image_url: r.ehVideo ? null : r.url,
+      video_url: r.ehVideo ? r.url : null,
+      fabric_json: r.ehVideo ? null : fabricDeImagem(r.url, 1080, 1350),
+    }));
+    const { error: slidesError } = await supabase.from("fs_post_slides").insert(rows);
+    if (slidesError) throw slidesError;
+
+    const { data, error } = await supabase
+      .from("fs_posts")
+      .update({
+        image_url: capa.ehVideo ? null : capa.url,
+        video_url: null,
+        fabric_json: capa.ehVideo ? null : fabricDeImagem(capa.url, 1080, 1350),
+        media_type: input.mediaType,
+      })
+      .eq("id", input.postId)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) throw new ReadOnlyPostError();
+  } else {
+    const { data, error } = await supabase
+      .from("fs_posts")
+      .update({
+        image_url: capa.url,
+        video_url: null,
+        fabric_json: fabricDeImagem(capa.url, 1080, 1350),
+        media_type: input.mediaType,
+      })
+      .eq("id", input.postId)
+      .select("id");
+    if (error) throw error;
+    if (!data || data.length === 0) throw new ReadOnlyPostError();
+  }
+}
+
 // ===== Acervo de imagens por marca =====
 
 export interface BrandAsset {
@@ -1220,13 +1320,14 @@ export interface PostSlide {
   position: number;
   fabricJson?: unknown;
   imageUrl?: string;
+  videoUrl?: string;
 }
 
 export async function fetchSlides(postId: string): Promise<PostSlide[]> {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from("fs_post_slides")
-    .select("id, position, fabric_json, image_url")
+    .select("id, position, fabric_json, image_url, video_url")
     .eq("post_id", postId)
     .order("position");
   if (error) throw error;
@@ -1236,6 +1337,7 @@ export async function fetchSlides(postId: string): Promise<PostSlide[]> {
     position: r.position,
     fabricJson: r.fabric_json ?? undefined,
     imageUrl: r.image_url ?? undefined,
+    videoUrl: r.video_url ?? undefined,
   }));
 }
 
