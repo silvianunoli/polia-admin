@@ -9,7 +9,6 @@ const ITENS = [
   { to: "/painel", label: "Visão geral" },
   { to: "/funil", label: "Funil de módulos" },
   { to: "/negocio", label: "Negócio" },
-  { to: "/trafego", label: "Tráfego (Meta Ads)" },
   { to: "/analytics", label: "Analytics" },
   { to: "/qualidade", label: "Qualidade" },
   { to: "/governanca", label: "Governança" },

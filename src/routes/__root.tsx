@@ -123,7 +123,8 @@ function RootComponent() {
     pathname === "/numeros" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||
-    pathname.startsWith("/blog");
+    pathname.startsWith("/blog") ||
+    pathname === "/trafego";
 
   // O SSR não checa sessão (auth é só client-side, via localStorage) — sem
   // este gate, QUALQUER rota (com a Sidebar inteira revelando as seções

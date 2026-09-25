@@ -12,6 +12,7 @@ import {
   Newspaper,
   Radar,
   Sparkles,
+  TrendingUp,
   Users,
   Wrench,
 } from "lucide-react";
@@ -101,6 +102,12 @@ const PRODUTOS: Produto[] = [
     descricao: "Listas, newsletter e campanhas de e-mail, com quem abriu e quem clicou.",
     href: "/crm/campanhas",
     icone: Mail,
+  },
+  {
+    nome: "Tráfego (Meta Ads)",
+    descricao: "Campanhas da Conta de Anúncios Pólia ao vivo: gasto, leads e custo por lead.",
+    href: "/trafego",
+    icone: TrendingUp,
   },
   {
     nome: "Chamados",
