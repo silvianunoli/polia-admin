@@ -31,6 +31,7 @@ import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NumerosRouteImport } from './routes/numeros'
 import { Route as PainelRouteImport } from './routes/painel'
 import { Route as QualidadeRouteImport } from './routes/qualidade'
+import { Route as TrafegoRouteImport } from './routes/trafego'
 import { Route as AuthLoginRouteImport } from './routes/auth/login'
 import { Route as BlogIndexRouteImport } from './routes/blog.index'
 import { Route as BlogIdRouteImport } from './routes/blog.$id'
@@ -201,6 +202,11 @@ const PainelRoute = PainelRouteImport.update({
 const QualidadeRoute = QualidadeRouteImport.update({
   id: '/qualidade',
   path: '/qualidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TrafegoRoute = TrafegoRouteImport.update({
+  id: '/trafego',
+  path: '/trafego',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthLoginRoute = AuthLoginRouteImport.update({
@@ -547,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
+  '/trafego': typeof TrafegoRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -629,6 +636,7 @@ export interface FileRoutesByTo {
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
+  '/trafego': typeof TrafegoRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -715,6 +723,7 @@ export interface FileRoutesById {
   '/numeros': typeof NumerosRoute
   '/painel': typeof PainelRoute
   '/qualidade': typeof QualidadeRoute
+  '/trafego': typeof TrafegoRoute
   '/auth/login': typeof AuthLoginRoute
   '/blog/$id': typeof BlogIdRoute
   '/blog/novo': typeof BlogNovoRoute
@@ -802,6 +811,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/painel'
     | '/qualidade'
+    | '/trafego'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -884,6 +894,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/painel'
     | '/qualidade'
+    | '/trafego'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -969,6 +980,7 @@ export interface FileRouteTypes {
     | '/numeros'
     | '/painel'
     | '/qualidade'
+    | '/trafego'
     | '/auth/login'
     | '/blog/$id'
     | '/blog/novo'
@@ -1055,6 +1067,7 @@ export interface RootRouteChildren {
   NumerosRoute: typeof NumerosRoute
   PainelRoute: typeof PainelRoute
   QualidadeRoute: typeof QualidadeRoute
+  TrafegoRoute: typeof TrafegoRoute
   AuthLoginRoute: typeof AuthLoginRoute
   BlogIdRoute: typeof BlogIdRoute
   BlogNovoRoute: typeof BlogNovoRoute
@@ -1222,6 +1235,13 @@ declare module '@tanstack/react-router' {
       path: '/qualidade'
       fullPath: '/qualidade'
       preLoaderRoute: typeof QualidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/trafego': {
+      id: '/trafego'
+      path: '/trafego'
+      fullPath: '/trafego'
+      preLoaderRoute: typeof TrafegoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth/login': {
@@ -1839,6 +1859,7 @@ const rootRouteChildren: RootRouteChildren = {
   NumerosRoute: NumerosRoute,
   PainelRoute: PainelRoute,
   QualidadeRoute: QualidadeRoute,
+  TrafegoRoute: TrafegoRoute,
   AuthLoginRoute: AuthLoginRoute,
   BlogIdRoute: BlogIdRoute,
   BlogNovoRoute: BlogNovoRoute,
