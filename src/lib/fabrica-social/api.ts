@@ -796,10 +796,21 @@ function fabricDeImagem(url: string, w: number, h: number) {
   };
 }
 
-async function uploadMidia(userId: string, postId: string, file: File, i: number): Promise<string> {
+async function uploadMidia(
+  userId: string,
+  postId: string,
+  file: File,
+  i: number,
+  /*
+    Só a edição passa. Lá a peça nova convive com arquivos que já estão na
+    pasta, e o nome só pela posição ("01.png") cairia em cima de um que o post
+    ainda usa -- ex.: tirar a peça 1 e incluir outra no fim.
+  */
+  sufixo = "",
+): Promise<string> {
   if (!supabase) throw new Error("backend não configurado");
   const ext = (file.name.split(".").pop() ?? "bin").toLowerCase();
-  const path = `${userId}/manual/${postId}/${String(i).padStart(2, "0")}.${ext}`;
+  const path = `${userId}/manual/${postId}/${String(i).padStart(2, "0")}${sufixo}.${ext}`;
   const { error } = await supabase.storage
     .from("post-images")
     .upload(path, file, { upsert: true, contentType: file.type || undefined });
@@ -926,12 +937,13 @@ export async function updatePostMedia(input: {
   if (input.pieces.length === 0) throw new Error("Precisa de pelo menos uma imagem ou vídeo.");
 
   const resolvidas: { url: string; ehVideo: boolean }[] = [];
+  const sufixo = `-${Date.now()}`;
   for (let i = 0; i < input.pieces.length; i++) {
     const p = input.pieces[i];
     if (p.tipo === "existente") {
       resolvidas.push({ url: p.url, ehVideo: p.ehVideo });
     } else {
-      const url = await uploadMidia(userId, input.postId, p.file, i);
+      const url = await uploadMidia(userId, input.postId, p.file, i, sufixo);
       resolvidas.push({ url, ehVideo: p.file.type.startsWith("video/") });
     }
     input.onProgress?.(i + 1, input.pieces.length);

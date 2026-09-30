@@ -10,7 +10,7 @@ import { FORMATS, PLATFORM_LABEL } from "@/lib/fabrica-social/formats";
 import { useFabricaSocialWorkspace } from "@/context/fabrica-social/WorkspaceContext";
 import type { Post } from "@/lib/fabrica-social/mock";
 
-export const Route = createFileRoute("/fabrica-social/biblioteca")({
+export const Route = createFileRoute("/fabrica-social/biblioteca/")({
   head: () => ({ meta: [{ title: "Biblioteca · Fábrica Social · Pólia" }] }),
   component: Biblioteca,
 });
@@ -24,6 +24,10 @@ export const Route = createFileRoute("/fabrica-social/biblioteca")({
   pra edição leve daqui mesmo -- trocar foto/vídeo, título, legenda, sem
   nenhum jeito de mexer em arte. Só existe pra post que ainda não publicou
   (ver guarda em biblioteca.$postId.tsx).
+
+  Este arquivo é biblioteca.index.tsx, e não biblioteca.tsx, de propósito:
+  como biblioteca.tsx ele virava PAI de biblioteca.$postId.tsx e, sem
+  <Outlet />, o clique em "Editar" trocava a URL e a lista continuava na tela.
 */
 
 function PublishControls({ post }: { post: Post }) {
