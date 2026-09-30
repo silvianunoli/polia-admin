@@ -1,5 +1,6 @@
 import { fabricaSocialSupabase as supabase } from "./supabase";
 import { isoDeLocal } from "./tempo";
+import { paraJpeg } from "./jpeg";
 import {
   brands as mockBrands,
   posts as mockPosts,
@@ -444,7 +445,7 @@ export class ReadOnlyPostError extends Error {
  */
 export async function updatePostContent(
   postId: string,
-  changes: { title?: string; caption?: string; fabricJson?: unknown },
+  changes: { title?: string; caption?: string; fabricJson?: unknown; platforms?: string[] },
 ): Promise<void> {
   if (!supabase) {
     await new Promise((r) => setTimeout(r, 300));
@@ -454,6 +455,7 @@ export async function updatePostContent(
   if (changes.title !== undefined) payload.title = changes.title;
   if (changes.caption !== undefined) payload.caption = changes.caption;
   if (changes.fabricJson !== undefined) payload.fabric_json = changes.fabricJson;
+  if (changes.platforms !== undefined) payload.platforms = changes.platforms;
   const { data, error } = await supabase
     .from("fs_posts")
     .update(payload)
@@ -1010,6 +1012,114 @@ export async function updatePostMedia(input: {
     if (error) throw error;
     if (!data || data.length === 0) throw new ReadOnlyPostError();
   }
+}
+
+// ===== Destinos (Instagram / TikTok) depois de o post já existir =====
+
+const PUBLICAVEIS: PublishablePlatform[] = ["instagram", "tiktok"];
+
+/**
+ * Para onde o post vai de verdade. Mesma regra do `destinosDe` do
+ * social-publish: post antigo, sem destino publicável, é Instagram.
+ */
+export function destinosPublicaveis(platforms: string[]): PublishablePlatform[] {
+  const d = PUBLICAVEIS.filter((p) => platforms.includes(p));
+  return d.length > 0 ? d : ["instagram"];
+}
+
+/*
+  O TikTok só aceita foto JPEG até 1080x1920, e essa conversão só acontece no
+  upload quando ele JÁ está entre os destinos (ver jpeg.ts). Post que nasceu só
+  pro Instagram pode ter PNG ou imagem maior -- ao ganhar o TikTok depois, a
+  mídia que já está no storage precisa passar pelo mesmo funil, senão o TikTok
+  devolve `picture_size_check_failed`. Só troca o que precisa: imagem que já é
+  JPEG e já cabe fica com a mesma URL. Vídeo não é tocado.
+*/
+export async function garantirMidiaParaTikTok(postId: string): Promise<void> {
+  if (!supabase) throw new Error("backend não configurado");
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) throw new Error("not_authenticated");
+  const userId = userData.user.id;
+
+  const [post, slides] = await Promise.all([fetchPost(postId), fetchSlides(postId)]);
+  if (!post) throw new Error("Não achei esse post.");
+
+  const sufixo = `-tt${Date.now()}`;
+  const convertidas = new Map<string, string>();
+  async function converter(url: string, i: number): Promise<string> {
+    const pronta = convertidas.get(url);
+    if (pronta) return pronta;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Não consegui baixar a imagem ${i + 1} pra preparar pro TikTok.`);
+    const blob = await res.blob();
+    const original = new File([blob], `peca-${i}.${blob.type === "image/jpeg" ? "jpg" : "png"}`, {
+      type: blob.type,
+    });
+    const jpeg = await paraJpeg(original);
+    const final = jpeg === original ? url : await uploadMidia(userId, postId, jpeg, i, sufixo);
+    convertidas.set(url, final);
+    return final;
+  }
+
+  for (const s of slides) {
+    if (!s.imageUrl || s.videoUrl) continue;
+    const url = await converter(s.imageUrl, s.position);
+    if (url === s.imageUrl) continue;
+    const { error } = await supabase
+      .from("fs_post_slides")
+      .update({ image_url: url, fabric_json: fabricDeImagem(url, 1080, 1350) })
+      .eq("id", s.id);
+    if (error) throw error;
+  }
+
+  if (post.imageUrl && !post.videoUrl) {
+    const url = await converter(post.imageUrl, 0);
+    if (url !== post.imageUrl) {
+      const { error } = await supabase
+        .from("fs_posts")
+        .update({ image_url: url, fabric_json: fabricDeImagem(url, 1080, 1350) })
+        .eq("id", postId);
+      if (error) throw error;
+    }
+  }
+}
+
+/**
+ * Post que já saiu numa rede vai também pra outra, agora.
+ *
+ * O social-publish pula o destino que já tem `ok` em `publish_results` -- é o
+ * que impede o Instagram de sair duas vezes. Só que post publicado antes de
+ * `publish_results` existir não tem esse registro: sem preencher aqui, incluir
+ * o TikTok republicaria o Instagram junto. Post com status "published" saiu em
+ * todos os destinos que tinha (a function só marca assim sem nenhum erro),
+ * então o preenchimento não inventa nada.
+ */
+export async function publishToExtraPlatform(
+  post: Post,
+  destino: PublishablePlatform,
+): Promise<void> {
+  if (!supabase) throw new Error("backend não configurado");
+
+  const resultados: Record<string, unknown> = { ...(post.publishResults ?? {}) };
+  if (post.status === "published") {
+    for (const d of destinosPublicaveis(post.platforms)) {
+      if (!resultados[d]) resultados[d] = { ok: true, at: post.createdAt };
+    }
+  }
+  const platforms = Array.from(
+    new Set<string>([...post.platforms, ...destinosPublicaveis(post.platforms), destino]),
+  );
+
+  const { data, error } = await supabase
+    .from("fs_posts")
+    .update({ platforms, publish_results: resultados })
+    .eq("id", post.id)
+    .select("id");
+  if (error) throw error;
+  if (!data || data.length === 0) throw new ReadOnlyPostError();
+
+  if (destino === "tiktok") await garantirMidiaParaTikTok(post.id);
+  await publishPostNow(post.id);
 }
 
 // ===== Acervo de imagens por marca =====

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Upload,
@@ -10,16 +10,22 @@ import {
   ChevronDown,
   Save,
   Film,
+  Instagram,
+  Music2,
 } from "lucide-react";
 import { Callout } from "@/components/fabrica-social/Callout";
 import { Button, Card } from "@/components/fabrica-social/bits";
 import {
   fetchPost,
   fetchSlides,
+  fetchConnections,
   updatePostContent,
   updatePostMedia,
+  garantirMidiaParaTikTok,
+  destinosPublicaveis,
   type PecaEdicao,
   type ManualMediaType,
+  type PublishablePlatform,
 } from "@/lib/fabrica-social/api";
 import { paraJpeg } from "@/lib/fabrica-social/jpeg";
 import type { Post } from "@/lib/fabrica-social/mock";
@@ -32,7 +38,8 @@ export const Route = createFileRoute("/fabrica-social/biblioteca/$postId")({
 /*
   Edição leve de um post que ainda não foi publicado (rascunho ou agendado) —
   pedido explícito da Sil: dá pra trocar imagem/vídeo, incluir ou excluir peça
-  do carrossel, mudar título e legenda. NÃO dá pra mexer em arte/design —
+  do carrossel, mudar título, legenda e pra quais redes o post vai (Instagram,
+  TikTok ou as duas). NÃO dá pra mexer em arte/design —
   isso continua exclusivo do Editor (canvas Fabric.js), que ainda só existe no
   app separado. Por isso esta tela não linca pra lá: é um caminho
   deliberadamente mais estreito, não um atalho pro Editor.
@@ -74,6 +81,7 @@ function EditarPostagem() {
   const [legenda, setLegenda] = useState("");
   const [pecas, setPecas] = useState<Peca[]>([]);
   const [tipo, setTipo] = useState<ManualMediaType | null>(null);
+  const [destinos, setDestinos] = useState<PublishablePlatform[]>(["instagram"]);
   const [salvando, setSalvando] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [salvo, setSalvo] = useState(false);
@@ -91,6 +99,7 @@ function EditarPostagem() {
       setPost(p);
       setTitulo(p.title);
       setLegenda(p.caption);
+      setDestinos(destinosPublicaveis(p.platforms));
 
       const mediaType =
         p.mediaType ?? (slides.length > 1 ? "carousel" : p.videoUrl ? "reels" : "image");
@@ -116,6 +125,27 @@ function EditarPostagem() {
       vivo = false;
     };
   }, [postId]);
+
+  /*
+    Mesma regra de Criar postagem: TikTok só com a conta conectada nesta marca
+    e nunca em story. Destino onde o post JÁ saiu fica travado -- desmarcar não
+    tiraria o post de lá, só daria essa impressão.
+  */
+  const { data: connections = [] } = useQuery({
+    queryKey: ["connections", post?.brandId],
+    queryFn: () => fetchConnections(post!.brandId),
+    enabled: !!post && !post.isDemo,
+  });
+  const igConectado = connections.some((c) => c.platform === "instagram");
+  const ttConectado = connections.some((c) => c.platform === "tiktok");
+  const jaSaiu = (d: PublishablePlatform) => !!post?.publishResults?.[d]?.ok;
+  const tiktokPossivel = (ttConectado && tipo !== "story") || jaSaiu("tiktok");
+  const destinosEfetivos = destinos.filter((d) => d !== "tiktok" || tiktokPossivel);
+
+  function alternarDestino(d: PublishablePlatform) {
+    setDestinos((atual) => (atual.includes(d) ? atual.filter((x) => x !== d) : [...atual, d]));
+    setSalvo(false);
+  }
 
   // Só as peças NOVAS (com File local) têm object URL pra revogar ao sair.
   const pecasRef = useRef<Peca[]>([]);
@@ -180,9 +210,19 @@ function EditarPostagem() {
   async function salvar() {
     if (!post || !tipo || pecas.length === 0) return;
     setErro(null);
+    if (destinosEfetivos.length === 0) {
+      setErro("Marque pelo menos um destino (Instagram ou TikTok).");
+      return;
+    }
     setSalvando("Salvando…");
     try {
-      const paraTikTok = post.platforms.includes("tiktok");
+      const paraTikTok = destinosEfetivos.includes("tiktok");
+      const tiktokEntrouAgora = paraTikTok && !post.platforms.includes("tiktok");
+      // Destino só de planejamento (linkedin, whatsapp…) não aparece aqui e não pode sumir.
+      const platforms = [
+        ...post.platforms.filter((pl) => pl !== "instagram" && pl !== "tiktok"),
+        ...destinosEfetivos,
+      ];
       /*
         Se o TikTok está entre os destinos, cada peça NOVA precisa virar JPEG
         dentro do limite de tamanho dele -- mesma exigência de Criar postagem.
@@ -202,8 +242,18 @@ function EditarPostagem() {
         setSalvando(`Enviando ${feitas} de ${pecas.length}…`);
       }
 
-      await updatePostContent(post.id, { title: titulo, caption: legenda });
+      await updatePostContent(post.id, { title: titulo, caption: legenda, platforms });
       await updatePostMedia({ postId: post.id, mediaType: tipo, pieces: pecasFinais });
+      /*
+        Peça que já estava no post subiu quando o TikTok não era destino, então
+        pode ser PNG ou grande demais pra ele. Só na primeira vez que ele entra:
+        depois disso tudo que está lá já passou pelo funil.
+      */
+      if (tiktokEntrouAgora) {
+        setSalvando("Preparando as imagens pro TikTok…");
+        await garantirMidiaParaTikTok(post.id);
+      }
+      setPost({ ...post, platforms });
 
       await queryClient.invalidateQueries({ queryKey: ["posts", post.brandId] });
       setSalvo(true);
@@ -266,8 +316,8 @@ function EditarPostagem() {
       </Link>
       <h1 className="mt-3 text-3xl font-bold tracking-tight">Editar postagem</h1>
       <p className="mt-2 text-muted-foreground">
-        Troque foto ou vídeo, inclua ou tire peça do carrossel, mude título e legenda. Pra mexer no
-        design da arte, use o Editor.
+        Troque foto ou vídeo, inclua ou tire peça do carrossel, mude título, legenda e onde o post
+        vai sair. Pra mexer no design da arte, use o Editor.
       </p>
 
       <div className="mt-8 space-y-5">
@@ -368,6 +418,71 @@ function EditarPostagem() {
           {tipo === "carousel" && (
             <p className="text-xs text-muted-foreground">
               A ordem aqui é a ordem de publicação — use as setas pra trocar.
+            </p>
+          )}
+        </Card>
+
+        <Card className="space-y-3">
+          <p className="font-semibold">Onde publicar</p>
+          <div className="flex flex-wrap gap-2">
+            <label
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                jaSaiu("instagram") ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+              } ${destinos.includes("instagram") ? "border-primary bg-primary/10" : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={destinos.includes("instagram")}
+                disabled={jaSaiu("instagram")}
+                onChange={() => alternarDestino("instagram")}
+              />
+              <Instagram className="h-4 w-4" /> Instagram
+              {jaSaiu("instagram") ? (
+                <span className="text-xs text-muted-foreground">· já publicado</span>
+              ) : (
+                !igConectado && (
+                  <span className="text-xs text-muted-foreground">· não conectado</span>
+                )
+              )}
+            </label>
+            <label
+              className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+                tiktokPossivel && !jaSaiu("tiktok")
+                  ? "cursor-pointer"
+                  : "cursor-not-allowed opacity-60"
+              } ${destinosEfetivos.includes("tiktok") ? "border-primary bg-primary/10" : ""}`}
+            >
+              <input
+                type="checkbox"
+                checked={destinosEfetivos.includes("tiktok")}
+                disabled={!tiktokPossivel || jaSaiu("tiktok")}
+                onChange={() => alternarDestino("tiktok")}
+              />
+              <Music2 className="h-4 w-4" /> TikTok
+              {jaSaiu("tiktok") && (
+                <span className="text-xs text-muted-foreground">· já publicado</span>
+              )}
+              {!jaSaiu("tiktok") && !ttConectado && (
+                <span className="text-xs text-muted-foreground">
+                  ·{" "}
+                  <Link to="/fabrica-social/conexoes" className="underline">
+                    conecte
+                  </Link>
+                </span>
+              )}
+              {!jaSaiu("tiktok") && ttConectado && tipo === "story" && (
+                <span className="text-xs text-muted-foreground">· story não vai para o TikTok</span>
+              )}
+            </label>
+          </div>
+          {destinosEfetivos.includes("tiktok") && !jaSaiu("tiktok") && (
+            <p className="text-xs text-muted-foreground">
+              No TikTok,{" "}
+              {tipo === "reels"
+                ? "o vídeo sobe como vídeo"
+                : "foto e carrossel viram post de fotos (as imagens são convertidas para JPEG)"}
+              . Enquanto o app não passar na auditoria do TikTok, o post sai como <em>só eu</em> —
+              privado.
             </p>
           )}
         </Card>

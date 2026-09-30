@@ -1,11 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { PenTool, Send, CalendarClock, Loader2, Trash2 } from "lucide-react";
 import { Card, StatusBadge, ApprovalBadge, Badge, Button } from "@/components/fabrica-social/bits";
 import { PreviaArte } from "@/components/fabrica-social/PreviaArte";
 import { usePosts } from "@/lib/fabrica-social/useData";
-import { publishPostNow, schedulePost, deletePost } from "@/lib/fabrica-social/api";
+import {
+  publishPostNow,
+  schedulePost,
+  deletePost,
+  fetchConnections,
+  publishToExtraPlatform,
+  destinosPublicaveis,
+  type PublishablePlatform,
+} from "@/lib/fabrica-social/api";
 import { FORMATS, PLATFORM_LABEL } from "@/lib/fabrica-social/formats";
 import { useFabricaSocialWorkspace } from "@/context/fabrica-social/WorkspaceContext";
 import type { Post } from "@/lib/fabrica-social/mock";
@@ -113,6 +121,70 @@ function PublishControls({ post }: { post: Post }) {
 }
 
 /*
+  Post que já saiu numa rede e ainda pode ir pra outra (pedido da Sil em
+  30/09/2026): publicou no Instagram e depois quer o mesmo post no TikTok, ou o
+  contrário. Só oferece rede conectada na marca e onde o post ainda não saiu --
+  o que também faz deste botão o "tentar de novo" quando a segunda rede falha.
+  Story fica fora do TikTok: a API dele não tem story.
+*/
+function PublicarEmOutraRede({ post, conectadas }: { post: Post; conectadas: string[] }) {
+  const queryClient = useQueryClient();
+  const publicar = useMutation({
+    mutationFn: (destino: PublishablePlatform) => publishToExtraPlatform(post, destino),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["posts"] }),
+  });
+
+  if (post.isDemo || post.status !== "published") return null;
+
+  const jaTem = destinosPublicaveis(post.platforms);
+  const faltam = (["instagram", "tiktok"] as const).filter((d) => {
+    if (!conectadas.includes(d)) return false;
+    if (d === "tiktok" && post.mediaType === "story") return false;
+    const r = post.publishResults?.[d];
+    return r ? !r.ok : !jaTem.includes(d);
+  });
+  if (faltam.length === 0) return null;
+
+  return (
+    <div className="mt-3 space-y-2 border-t pt-3">
+      <div className="flex flex-wrap items-center gap-2">
+        {faltam.map((d) => (
+          <Button
+            key={d}
+            variant="outline"
+            onClick={() =>
+              window.confirm(
+                `Publicar "${post.title}" no ${PLATFORM_LABEL[d]} agora?\n\nVai com a mesma mídia e a mesma legenda.`,
+              ) && publicar.mutate(d)
+            }
+            disabled={publicar.isPending}
+            className="px-2.5 py-1 text-xs"
+          >
+            {publicar.isPending && publicar.variables === d ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Send className="h-3.5 w-3.5" />
+            )}
+            {post.publishResults?.[d] ? "Tentar de novo no" : "Publicar também no"}{" "}
+            {PLATFORM_LABEL[d]}
+          </Button>
+        ))}
+      </div>
+      {publicar.isPending && (
+        <p className="text-xs text-muted-foreground">
+          Publicando. Vídeo pode levar alguns minutos.
+        </p>
+      )}
+      {publicar.isError && (
+        <p className="rounded bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+          ⚠️ Falha ao publicar: {(publicar.error as Error).message.slice(0, 200)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/*
   Apagar é a única ação irreversível da tela, então o aviso muda conforme o
   estado: num post já publicado o risco não é perder a arte, é achar que saiu
   do Instagram. Um texto genérico ("tem certeza?") esconderia justamente isso.
@@ -166,6 +238,12 @@ function ApagarPost({ post }: { post: Post }) {
 function Biblioteca() {
   const { activeBrand } = useFabricaSocialWorkspace();
   const { data: brandPosts = [] } = usePosts(activeBrand.id);
+  const { data: connections = [] } = useQuery({
+    queryKey: ["connections", activeBrand.id],
+    queryFn: () => fetchConnections(activeBrand.id),
+    enabled: !activeBrand.isDemo,
+  });
+  const conectadas = connections.map((c) => c.platform);
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 md:px-10">
@@ -233,6 +311,7 @@ function Biblioteca() {
                   <ApagarPost post={p} />
                 </div>
                 <PublishControls post={p} />
+                <PublicarEmOutraRede post={p} conectadas={conectadas} />
               </div>
             </Card>
           );
