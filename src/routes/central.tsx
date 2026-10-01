@@ -11,6 +11,7 @@ import {
   Mail,
   Newspaper,
   Radar,
+  ShoppingBag,
   Sparkles,
   TrendingUp,
   Users,
@@ -88,6 +89,13 @@ const PRODUTOS: Produto[] = [
     descricao: "Escrever, editar e publicar os posts do blog.",
     href: "/blog",
     icone: Newspaper,
+  },
+  {
+    nome: "Loja de serviços",
+    descricao:
+      "Os serviços à venda em servicos.usepolia.com.br/loja: preços, fotos, cupons, pedidos e a chave de abrir a loja.",
+    href: "/loja",
+    icone: ShoppingBag,
   },
   {
     nome: "CRM",

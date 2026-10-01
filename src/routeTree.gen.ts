@@ -26,6 +26,7 @@ import { Route as FunilRouteImport } from './routes/funil'
 import { Route as GovernancaRouteImport } from './routes/governanca'
 import { Route as KanbanRouteImport } from './routes/kanban'
 import { Route as LogsRouteImport } from './routes/logs'
+import { Route as LojaRouteImport } from './routes/loja'
 import { Route as ManualDaMarcaRouteImport } from './routes/manual-da-marca'
 import { Route as NegocioRouteImport } from './routes/negocio'
 import { Route as NumerosRouteImport } from './routes/numeros'
@@ -54,6 +55,10 @@ import { Route as FounderIndexRouteImport } from './routes/founder/index'
 import { Route as FounderAlertasRouteImport } from './routes/founder/alertas'
 import { Route as FounderNumerosRouteImport } from './routes/founder/numeros'
 import { Route as FounderSaudeRouteImport } from './routes/founder/saude'
+import { Route as LojaIndexRouteImport } from './routes/loja/index'
+import { Route as LojaCategoriasRouteImport } from './routes/loja/categorias'
+import { Route as LojaConfigRouteImport } from './routes/loja/config'
+import { Route as LojaCuponsRouteImport } from './routes/loja/cupons'
 import { Route as PesquisasIndexRouteImport } from './routes/pesquisas.index'
 import { Route as PesquisasSlugRouteImport } from './routes/pesquisas.$slug'
 import { Route as UsuariosIdRouteImport } from './routes/usuarios.$id'
@@ -92,6 +97,11 @@ import { Route as FounderProdutoAtivacaoRouteImport } from './routes/founder/pro
 import { Route as FounderProdutoExperimentosRouteImport } from './routes/founder/produto.experimentos'
 import { Route as FounderProdutoFeedbackRouteImport } from './routes/founder/produto.feedback'
 import { Route as FounderProdutoFunilRouteImport } from './routes/founder/produto.funil'
+import { Route as LojaPedidosIndexRouteImport } from './routes/loja/pedidos.index'
+import { Route as LojaPedidosIdRouteImport } from './routes/loja/pedidos.$id'
+import { Route as LojaProdutosIndexRouteImport } from './routes/loja/produtos.index'
+import { Route as LojaProdutosIdRouteImport } from './routes/loja/produtos.$id'
+import { Route as LojaProdutosNovoRouteImport } from './routes/loja/produtos.novo'
 import { Route as FounderAnalyticsUsuariasIdRouteImport } from './routes/founder/analytics.usuarias.$id'
 
 const IndexRoute = IndexRouteImport.update({
@@ -177,6 +187,11 @@ const KanbanRoute = KanbanRouteImport.update({
 const LogsRoute = LogsRouteImport.update({
   id: '/logs',
   path: '/logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LojaRoute = LojaRouteImport.update({
+  id: '/loja',
+  path: '/loja',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ManualDaMarcaRoute = ManualDaMarcaRouteImport.update({
@@ -319,6 +334,26 @@ const FounderSaudeRoute = FounderSaudeRouteImport.update({
   id: '/saude',
   path: '/saude',
   getParentRoute: () => FounderRoute,
+} as any)
+const LojaIndexRoute = LojaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaCategoriasRoute = LojaCategoriasRouteImport.update({
+  id: '/categorias',
+  path: '/categorias',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaConfigRoute = LojaConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaCuponsRoute = LojaCuponsRouteImport.update({
+  id: '/cupons',
+  path: '/cupons',
+  getParentRoute: () => LojaRoute,
 } as any)
 const PesquisasIndexRoute = PesquisasIndexRouteImport.update({
   id: '/pesquisas/',
@@ -524,6 +559,31 @@ const FounderProdutoFunilRoute = FounderProdutoFunilRouteImport.update({
   path: '/produto/funil',
   getParentRoute: () => FounderRoute,
 } as any)
+const LojaPedidosIndexRoute = LojaPedidosIndexRouteImport.update({
+  id: '/pedidos/',
+  path: '/pedidos/',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaPedidosIdRoute = LojaPedidosIdRouteImport.update({
+  id: '/pedidos/$id',
+  path: '/pedidos/$id',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaProdutosIndexRoute = LojaProdutosIndexRouteImport.update({
+  id: '/produtos/',
+  path: '/produtos/',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaProdutosIdRoute = LojaProdutosIdRouteImport.update({
+  id: '/produtos/$id',
+  path: '/produtos/$id',
+  getParentRoute: () => LojaRoute,
+} as any)
+const LojaProdutosNovoRoute = LojaProdutosNovoRouteImport.update({
+  id: '/produtos/novo',
+  path: '/produtos/novo',
+  getParentRoute: () => LojaRoute,
+} as any)
 const FounderAnalyticsUsuariasIdRoute =
   FounderAnalyticsUsuariasIdRouteImport.update({
     id: '/$id',
@@ -549,6 +609,7 @@ export interface FileRoutesByFullPath {
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
+  '/loja': typeof LojaRouteWithChildren
   '/manual-da-marca': typeof ManualDaMarcaRoute
   '/negocio': typeof NegocioRoute
   '/numeros': typeof NumerosRoute
@@ -571,6 +632,9 @@ export interface FileRoutesByFullPath {
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
+  '/loja/categorias': typeof LojaCategoriasRoute
+  '/loja/config': typeof LojaConfigRoute
+  '/loja/cupons': typeof LojaCuponsRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
@@ -579,6 +643,7 @@ export interface FileRoutesByFullPath {
   '/crm/': typeof CrmIndexRoute
   '/fabrica-social/': typeof FabricaSocialIndexRoute
   '/founder/': typeof FounderIndexRoute
+  '/loja/': typeof LojaIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
@@ -611,10 +676,15 @@ export interface FileRoutesByFullPath {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/loja/pedidos/$id': typeof LojaPedidosIdRoute
+  '/loja/produtos/$id': typeof LojaProdutosIdRoute
+  '/loja/produtos/novo': typeof LojaProdutosNovoRoute
   '/crm/campanhas/': typeof CrmCampanhasIndexRoute
   '/crm/contatos/': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca/': typeof FabricaSocialBibliotecaIndexRoute
   '/founder/analytics/': typeof FounderAnalyticsIndexRoute
+  '/loja/pedidos/': typeof LojaPedidosIndexRoute
+  '/loja/produtos/': typeof LojaProdutosIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRoutesByTo {
@@ -654,6 +724,9 @@ export interface FileRoutesByTo {
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
+  '/loja/categorias': typeof LojaCategoriasRoute
+  '/loja/config': typeof LojaConfigRoute
+  '/loja/cupons': typeof LojaCuponsRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog': typeof BlogIndexRoute
@@ -662,6 +735,7 @@ export interface FileRoutesByTo {
   '/crm': typeof CrmIndexRoute
   '/fabrica-social': typeof FabricaSocialIndexRoute
   '/founder': typeof FounderIndexRoute
+  '/loja': typeof LojaIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
@@ -694,10 +768,15 @@ export interface FileRoutesByTo {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/loja/pedidos/$id': typeof LojaPedidosIdRoute
+  '/loja/produtos/$id': typeof LojaProdutosIdRoute
+  '/loja/produtos/novo': typeof LojaProdutosNovoRoute
   '/crm/campanhas': typeof CrmCampanhasIndexRoute
   '/crm/contatos': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaIndexRoute
   '/founder/analytics': typeof FounderAnalyticsIndexRoute
+  '/loja/pedidos': typeof LojaPedidosIndexRoute
+  '/loja/produtos': typeof LojaProdutosIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRoutesById {
@@ -719,6 +798,7 @@ export interface FileRoutesById {
   '/governanca': typeof GovernancaRoute
   '/kanban': typeof KanbanRoute
   '/logs': typeof LogsRoute
+  '/loja': typeof LojaRouteWithChildren
   '/manual-da-marca': typeof ManualDaMarcaRoute
   '/negocio': typeof NegocioRoute
   '/numeros': typeof NumerosRoute
@@ -741,6 +821,9 @@ export interface FileRoutesById {
   '/founder/alertas': typeof FounderAlertasRoute
   '/founder/numeros': typeof FounderNumerosRoute
   '/founder/saude': typeof FounderSaudeRoute
+  '/loja/categorias': typeof LojaCategoriasRoute
+  '/loja/config': typeof LojaConfigRoute
+  '/loja/cupons': typeof LojaCuponsRoute
   '/pesquisas/$slug': typeof PesquisasSlugRoute
   '/usuarios/$id': typeof UsuariosIdRoute
   '/blog/': typeof BlogIndexRoute
@@ -749,6 +832,7 @@ export interface FileRoutesById {
   '/crm/': typeof CrmIndexRoute
   '/fabrica-social/': typeof FabricaSocialIndexRoute
   '/founder/': typeof FounderIndexRoute
+  '/loja/': typeof LojaIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
@@ -781,10 +865,15 @@ export interface FileRoutesById {
   '/founder/produto/experimentos': typeof FounderProdutoExperimentosRoute
   '/founder/produto/feedback': typeof FounderProdutoFeedbackRoute
   '/founder/produto/funil': typeof FounderProdutoFunilRoute
+  '/loja/pedidos/$id': typeof LojaPedidosIdRoute
+  '/loja/produtos/$id': typeof LojaProdutosIdRoute
+  '/loja/produtos/novo': typeof LojaProdutosNovoRoute
   '/crm/campanhas/': typeof CrmCampanhasIndexRoute
   '/crm/contatos/': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca/': typeof FabricaSocialBibliotecaIndexRoute
   '/founder/analytics/': typeof FounderAnalyticsIndexRoute
+  '/loja/pedidos/': typeof LojaPedidosIndexRoute
+  '/loja/produtos/': typeof LojaProdutosIndexRoute
   '/founder/analytics/usuarias/$id': typeof FounderAnalyticsUsuariasIdRoute
 }
 export interface FileRouteTypes {
@@ -807,6 +896,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/kanban'
     | '/logs'
+    | '/loja'
     | '/manual-da-marca'
     | '/negocio'
     | '/numeros'
@@ -829,6 +919,9 @@ export interface FileRouteTypes {
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
+    | '/loja/categorias'
+    | '/loja/config'
+    | '/loja/cupons'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog/'
@@ -837,6 +930,7 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/fabrica-social/'
     | '/founder/'
+    | '/loja/'
     | '/pesquisas/'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
@@ -869,10 +963,15 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/loja/pedidos/$id'
+    | '/loja/produtos/$id'
+    | '/loja/produtos/novo'
     | '/crm/campanhas/'
     | '/crm/contatos/'
     | '/fabrica-social/biblioteca/'
     | '/founder/analytics/'
+    | '/loja/pedidos/'
+    | '/loja/produtos/'
     | '/founder/analytics/usuarias/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -912,6 +1011,9 @@ export interface FileRouteTypes {
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
+    | '/loja/categorias'
+    | '/loja/config'
+    | '/loja/cupons'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog'
@@ -920,6 +1022,7 @@ export interface FileRouteTypes {
     | '/crm'
     | '/fabrica-social'
     | '/founder'
+    | '/loja'
     | '/pesquisas'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
@@ -952,10 +1055,15 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/loja/pedidos/$id'
+    | '/loja/produtos/$id'
+    | '/loja/produtos/novo'
     | '/crm/campanhas'
     | '/crm/contatos'
     | '/fabrica-social/biblioteca'
     | '/founder/analytics'
+    | '/loja/pedidos'
+    | '/loja/produtos'
     | '/founder/analytics/usuarias/$id'
   id:
     | '__root__'
@@ -976,6 +1084,7 @@ export interface FileRouteTypes {
     | '/governanca'
     | '/kanban'
     | '/logs'
+    | '/loja'
     | '/manual-da-marca'
     | '/negocio'
     | '/numeros'
@@ -998,6 +1107,9 @@ export interface FileRouteTypes {
     | '/founder/alertas'
     | '/founder/numeros'
     | '/founder/saude'
+    | '/loja/categorias'
+    | '/loja/config'
+    | '/loja/cupons'
     | '/pesquisas/$slug'
     | '/usuarios/$id'
     | '/blog/'
@@ -1006,6 +1118,7 @@ export interface FileRouteTypes {
     | '/crm/'
     | '/fabrica-social/'
     | '/founder/'
+    | '/loja/'
     | '/pesquisas/'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
@@ -1038,10 +1151,15 @@ export interface FileRouteTypes {
     | '/founder/produto/experimentos'
     | '/founder/produto/feedback'
     | '/founder/produto/funil'
+    | '/loja/pedidos/$id'
+    | '/loja/produtos/$id'
+    | '/loja/produtos/novo'
     | '/crm/campanhas/'
     | '/crm/contatos/'
     | '/fabrica-social/biblioteca/'
     | '/founder/analytics/'
+    | '/loja/pedidos/'
+    | '/loja/produtos/'
     | '/founder/analytics/usuarias/$id'
   fileRoutesById: FileRoutesById
 }
@@ -1063,6 +1181,7 @@ export interface RootRouteChildren {
   GovernancaRoute: typeof GovernancaRoute
   KanbanRoute: typeof KanbanRoute
   LogsRoute: typeof LogsRoute
+  LojaRoute: typeof LojaRouteWithChildren
   ManualDaMarcaRoute: typeof ManualDaMarcaRoute
   NegocioRoute: typeof NegocioRoute
   NumerosRoute: typeof NumerosRoute
@@ -1201,6 +1320,13 @@ declare module '@tanstack/react-router' {
       path: '/logs'
       fullPath: '/logs'
       preLoaderRoute: typeof LogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loja': {
+      id: '/loja'
+      path: '/loja'
+      fullPath: '/loja'
+      preLoaderRoute: typeof LojaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/manual-da-marca': {
@@ -1398,6 +1524,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/founder/saude'
       preLoaderRoute: typeof FounderSaudeRouteImport
       parentRoute: typeof FounderRoute
+    }
+    '/loja/': {
+      id: '/loja/'
+      path: '/'
+      fullPath: '/loja/'
+      preLoaderRoute: typeof LojaIndexRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/categorias': {
+      id: '/loja/categorias'
+      path: '/categorias'
+      fullPath: '/loja/categorias'
+      preLoaderRoute: typeof LojaCategoriasRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/config': {
+      id: '/loja/config'
+      path: '/config'
+      fullPath: '/loja/config'
+      preLoaderRoute: typeof LojaConfigRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/cupons': {
+      id: '/loja/cupons'
+      path: '/cupons'
+      fullPath: '/loja/cupons'
+      preLoaderRoute: typeof LojaCuponsRouteImport
+      parentRoute: typeof LojaRoute
     }
     '/pesquisas/': {
       id: '/pesquisas/'
@@ -1665,6 +1819,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FounderProdutoFunilRouteImport
       parentRoute: typeof FounderRoute
     }
+    '/loja/pedidos/': {
+      id: '/loja/pedidos/'
+      path: '/pedidos'
+      fullPath: '/loja/pedidos/'
+      preLoaderRoute: typeof LojaPedidosIndexRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/pedidos/$id': {
+      id: '/loja/pedidos/$id'
+      path: '/pedidos/$id'
+      fullPath: '/loja/pedidos/$id'
+      preLoaderRoute: typeof LojaPedidosIdRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/produtos/': {
+      id: '/loja/produtos/'
+      path: '/produtos'
+      fullPath: '/loja/produtos/'
+      preLoaderRoute: typeof LojaProdutosIndexRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/produtos/$id': {
+      id: '/loja/produtos/$id'
+      path: '/produtos/$id'
+      fullPath: '/loja/produtos/$id'
+      preLoaderRoute: typeof LojaProdutosIdRouteImport
+      parentRoute: typeof LojaRoute
+    }
+    '/loja/produtos/novo': {
+      id: '/loja/produtos/novo'
+      path: '/produtos/novo'
+      fullPath: '/loja/produtos/novo'
+      preLoaderRoute: typeof LojaProdutosNovoRouteImport
+      parentRoute: typeof LojaRoute
+    }
     '/founder/analytics/usuarias/$id': {
       id: '/founder/analytics/usuarias/$id'
       path: '/$id'
@@ -1825,6 +2014,32 @@ const FounderRouteChildren: FounderRouteChildren = {
 const FounderRouteWithChildren =
   FounderRoute._addFileChildren(FounderRouteChildren)
 
+interface LojaRouteChildren {
+  LojaCategoriasRoute: typeof LojaCategoriasRoute
+  LojaConfigRoute: typeof LojaConfigRoute
+  LojaCuponsRoute: typeof LojaCuponsRoute
+  LojaIndexRoute: typeof LojaIndexRoute
+  LojaPedidosIdRoute: typeof LojaPedidosIdRoute
+  LojaProdutosIdRoute: typeof LojaProdutosIdRoute
+  LojaProdutosNovoRoute: typeof LojaProdutosNovoRoute
+  LojaPedidosIndexRoute: typeof LojaPedidosIndexRoute
+  LojaProdutosIndexRoute: typeof LojaProdutosIndexRoute
+}
+
+const LojaRouteChildren: LojaRouteChildren = {
+  LojaCategoriasRoute: LojaCategoriasRoute,
+  LojaConfigRoute: LojaConfigRoute,
+  LojaCuponsRoute: LojaCuponsRoute,
+  LojaIndexRoute: LojaIndexRoute,
+  LojaPedidosIdRoute: LojaPedidosIdRoute,
+  LojaProdutosIdRoute: LojaProdutosIdRoute,
+  LojaProdutosNovoRoute: LojaProdutosNovoRoute,
+  LojaPedidosIndexRoute: LojaPedidosIndexRoute,
+  LojaProdutosIndexRoute: LojaProdutosIndexRoute,
+}
+
+const LojaRouteWithChildren = LojaRoute._addFileChildren(LojaRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlertasRoute: AlertasRoute,
@@ -1843,6 +2058,7 @@ const rootRouteChildren: RootRouteChildren = {
   GovernancaRoute: GovernancaRoute,
   KanbanRoute: KanbanRoute,
   LogsRoute: LogsRoute,
+  LojaRoute: LojaRouteWithChildren,
   ManualDaMarcaRoute: ManualDaMarcaRoute,
   NegocioRoute: NegocioRoute,
   NumerosRoute: NumerosRoute,

@@ -117,7 +117,11 @@ function RootComponent() {
     pathname === "/crm" ||
     pathname.startsWith("/crm/") ||
     pathname === "/fabrica-social" ||
-    pathname.startsWith("/fabrica-social/");
+    pathname.startsWith("/fabrica-social/") ||
+    // /loja entrou em 01/10/2026: CMS da loja de serviços, sidebar própria
+    // (src/routes/loja.tsx), mesmo desenho do CRM.
+    pathname === "/loja" ||
+    pathname.startsWith("/loja/");
 
   const semSidebar =
     pathname === "/numeros" ||
