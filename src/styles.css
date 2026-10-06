@@ -61,7 +61,20 @@
   /* Tipografia: font-sans, font-accent, font-handwritten */
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-accent: "DM Sans", "Inter", sans-serif;
-  --font-handwritten: "Caveat", cursive;
+  --font-handwritten: "Anzylna", cursive;
+}
+
+/* Anzylna: fonte manuscrita paga (Cititype/MyFonts), licenciada e self-hosted
+   — não está no Google Fonts nem no Fontshare. Arquivo em public/fonts/,
+   servido como /fonts/Anzylna-Regular.ttf. Peso único (Regular); a fundição
+   não publica outro peso. Migrada de Caveat em 2026-10-06, mesmo bloco do
+   polia-servicos e do polia-comunidade (DESIGN.md §3 do polia-app). */
+@font-face {
+  font-family: "Anzylna";
+  src: url("/fonts/Anzylna-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 /*
@@ -269,40 +282,45 @@
   background-color: var(--muted, var(--muted-foreground));
 }
 
-.font-caveat,
+/* Anzylna (era Caveat até 2026-10-06 aqui; no produto, até 2026-09-15): piso
+   de legibilidade e opacity travada, mesmos valores do polia-servicos e do
+   polia-comunidade. */
+.font-anzylna,
 .font-handwritten,
-[class*="font-caveat"],
+[class*="font-anzylna"],
 [class*="font-handwritten"] {
-  font-family: "Caveat", cursive;
-  font-size: max(18px, var(--caveat-size, 18px));
+  font-family: "Anzylna", cursive;
+  font-size: max(18px, var(--anzylna-size, 18px));
   opacity: 1 !important;
 }
 @media (max-width: 768px) {
-  .font-caveat,
+  .font-anzylna,
   .font-handwritten,
-  [class*="font-caveat"],
+  [class*="font-anzylna"],
   [class*="font-handwritten"] {
-    font-size: max(20px, var(--caveat-size, 20px));
+    font-size: max(20px, var(--anzylna-size, 20px));
   }
 }
 
-.caveat-decorativo {
-  font-family: "Caveat", cursive;
-  font-size: 18px;
+/* Anzylna tokens (eram .caveat-decorativo/.caveat-informacional). Use SEMPRE
+   uma destas classes em texto manuscrito. */
+.anzylna-decorativo {
+  font-family: "Anzylna", cursive;
+  font-size: 30px;
   line-height: 1.4;
   opacity: 1 !important;
 }
-.caveat-informacional {
-  font-family: "Caveat", cursive;
+.anzylna-informacional {
+  font-family: "Anzylna", cursive;
   font-size: 20px;
   line-height: 1.4;
   opacity: 1 !important;
 }
 @media (max-width: 768px) {
-  .caveat-decorativo {
-    font-size: 20px;
+  .anzylna-decorativo {
+    font-size: 30px;
   }
-  .caveat-informacional {
+  .anzylna-informacional {
     font-size: 22px;
   }
 }

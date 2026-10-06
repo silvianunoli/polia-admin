@@ -30,7 +30,7 @@ const FONTES = [
   "600 16px Inter",
   "700 16px 'DM Sans'",
   "italic 16px Fraunces",
-  "600 16px Caveat",
+  '400 16px "Anzylna"',
 ];
 
 /*

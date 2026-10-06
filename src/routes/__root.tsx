@@ -25,18 +25,19 @@ export const Route = createRootRoute({
       // Área interna — nunca indexar.
       { name: "robots", content: "noindex, nofollow" },
     ],
-    // Sem isso, font-cabinet/font-accent/font-fraunces e Caveat caem tudo em
-    // fallback de sistema -- nenhuma fica visualmente diferente da outra.
-    // Mesmas fontes e mesma fonte de carregamento do polia-app (__root.tsx
-    // de lá): Google Fonts pra Fraunces/Inter/DM Sans/Caveat, Fontshare pra
-    // Cabinet Grotesk (não está no Google Fonts).
+    // Sem isso, font-cabinet/font-accent/font-fraunces caem tudo em fallback
+    // de sistema -- nenhuma fica visualmente diferente da outra. Mesmas fontes
+    // e mesma fonte de carregamento do polia-app (__root.tsx de lá): Google
+    // Fonts pra Fraunces/Inter/DM Sans, Fontshare pra Cabinet Grotesk (não
+    // está no Google Fonts). Anzylna (manuscrita) é self-hosted via
+    // @font-face em styles.css; Caveat saiu deste link em 2026-10-06.
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400..600&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@700&family=Caveat:wght@400;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400..600&family=Inter:wght@400;500;600;700&family=DM+Sans:wght@700&display=swap",
       },
       {
         rel: "stylesheet",

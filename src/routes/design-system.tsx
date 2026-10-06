@@ -57,8 +57,8 @@ const TIPOS = [
     uso: "SÓ itálico de acento pontual (pull-quote, saudação) — nunca título",
   },
   {
-    fam: "Caveat",
-    classe: "caveat-informacional",
+    fam: "Anzylna",
+    classe: "anzylna-informacional",
     amostra: "feito com carinho, sem achismo.",
     uso: "toques manuscritos",
   },
@@ -218,7 +218,7 @@ function DesignSystemPage() {
       </main>
 
       <footer className="border-t border-[var(--line)] px-6 py-8 text-center md:px-12">
-        <p className="caveat-decorativo text-[var(--secondary-text)]">
+        <p className="anzylna-decorativo text-[var(--secondary-text)]">
           um sistema vivo, cresce com a Pólia.
         </p>
       </footer>
