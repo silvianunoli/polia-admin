@@ -2,7 +2,7 @@ import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router"
 import { LojaSidebar } from "@/components/loja/LojaSidebar";
 import { tituloDaRotaLoja } from "@/lib/loja-nav";
 
-// Casca do módulo da loja de serviços (servicos.usepolia.com.br/loja), mesmo
+// Casca do módulo da loja de serviços (lab.usepolia.com.br/loja), mesmo
 // desenho de /crm: sidebar própria + header com o título da tela.
 export const Route = createFileRoute("/loja")({
   head: () => ({ meta: [{ title: "Loja de serviços · Gestão Pólia" }] }),

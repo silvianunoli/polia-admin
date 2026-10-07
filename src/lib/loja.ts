@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-// Regras puras da loja de serviços (servicos.usepolia.com.br/loja). Nada aqui
+// Regras puras da loja de serviços (lab.usepolia.com.br/loja). Nada aqui
 // toca banco nem React: roda igual no client, no servidor e no Vitest.
 // Schema real: polia-app/supabase/migrations/20261001150000_loja_servicos.sql.
 //

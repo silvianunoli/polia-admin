@@ -74,7 +74,7 @@ function LojaResumo() {
             </p>
             <p className="text-[13px] text-[var(--ink-soft)]">
               {aberta
-                ? "Quem entra em servicos.usepolia.com.br/loja consegue comprar e pagar."
+                ? "Quem entra em lab.usepolia.com.br/loja consegue comprar e pagar."
                 : "A vitrine não aceita pedido nenhum até a chave ser virada."}
             </p>
           </div>

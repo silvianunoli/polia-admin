@@ -69,7 +69,7 @@ function LojaConfig() {
         descricao: (
           <div className="flex flex-col gap-2">
             <p>
-              A partir de agora, quem entrar em servicos.usepolia.com.br/loja consegue comprar os
+              A partir de agora, quem entrar em lab.usepolia.com.br/loja consegue comprar os
               serviços publicados.
             </p>
             <p>

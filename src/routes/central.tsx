@@ -93,7 +93,7 @@ const PRODUTOS: Produto[] = [
   {
     nome: "Loja de serviços",
     descricao:
-      "Os serviços à venda em servicos.usepolia.com.br/loja: preços, fotos, cupons, pedidos e a chave de abrir a loja.",
+      "Os serviços à venda em lab.usepolia.com.br/loja: preços, fotos, cupons, pedidos e a chave de abrir a loja.",
     href: "/loja",
     icone: ShoppingBag,
   },
