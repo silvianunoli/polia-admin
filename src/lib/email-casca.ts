@@ -191,7 +191,7 @@ function blocoRodape({ descadastroUrl }: { descadastroUrl?: string }): string {
                   Pequenas marcas. Grandes sonhos.
                 </p>
                 <p style="margin:8px 0 0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.06em;color:${COR_MUTED};">
-                  Alguma dúvida? <a href="${AJUDA_URL}" style="color:${COR_MUTED};text-decoration:underline;">Fale com a gente</a>
+                  Alguma dúvida? <a href="${AJUDA_URL}" style="color:${COR_MUTED};text-decoration:underline;">Fale com a Pólia</a>
                 </p>
                 ${linhaDescadastro}
               </td>
