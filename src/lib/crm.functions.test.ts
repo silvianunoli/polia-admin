@@ -126,11 +126,9 @@ describe("normalizarTelefone", () => {
     expect(normalizarTelefone("9999-8888")).toBeNull();
   });
 
-  // Bug documentado: número do DDD 55 (Santa Maria, RS) digitado sem o
-  // código do país começa com "55", cai no ramo "já tem código" e, com 11
-  // dígitos, é descartado. Quando for corrigido, este it.fails passa a
-  // falhar: aí é só trocar por it.
-  it.fails("celular do DDD 55 sem o +55 deveria virar 5555999998888 (hoje vira null)", () => {
+  // CRM-15: número do DDD 55 (Santa Maria, RS) sem o código do país começava
+  // com "55", caía no ramo "já tem código" e era descartado.
+  it("celular do DDD 55 sem o +55 vira 5555999998888", () => {
     expect(normalizarTelefone("(55) 99999-8888")).toBe("5555999998888");
   });
 });

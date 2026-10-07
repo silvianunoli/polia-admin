@@ -150,11 +150,8 @@ describe("formatarReais", () => {
     expect(semNbsp(formatarReais(19.99))).toBe("R$ 19,99");
   });
 
-  // Bug documentado: minimumFractionDigits 0 + maximumFractionDigits 2 deixa
-  // 19.9 virar "R$ 19,9". Em dinheiro, no Brasil, ou não tem centavo ou tem
-  // dois dígitos. Quando o produto for corrigido, este it.fails passa a
-  // falhar: aí é só trocar por it.
-  it.fails("dez centavos redondos deveriam sair como R$ 19,90 (hoje sai R$ 19,9)", () => {
+  // CRM-14: minimumFractionDigits 0 deixava 19.9 virar "R$ 19,9".
+  it("dez centavos redondos saem como R$ 19,90", () => {
     expect(semNbsp(formatarReais(19.9))).toBe("R$ 19,90");
   });
 });

@@ -50,10 +50,8 @@ describe("renderErrorPage", () => {
   });
 
   // Regra nº 4 do CLAUDE.md da raiz: hex fora de polia-tokens.css é
-  // regressão. Esta página usa #fafafa, #111, #4b5563, #fff e #d1d5db (cinzas
-  // do Tailwind, paleta nenhuma da Pólia). Quando for trocada pelos tokens,
-  // este it.fails passa a falhar: aí é só trocar por it.
-  it.fails("só usa cor da paleta da Pólia (hoje: cinzas do Tailwind)", () => {
+  // regressão (ADM-18: a página usava os cinzas do Tailwind).
+  it("só usa cor da paleta da Pólia", () => {
     const hexes = [...new Set(html.match(/#[0-9A-Fa-f]{3,6}\b/g) ?? [])].map((h) => {
       const semHash = h.slice(1);
       const cheio = semHash.length === 3 ? [...semHash].map((c) => c + c).join("") : semHash;

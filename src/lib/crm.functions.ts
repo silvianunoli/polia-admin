@@ -105,11 +105,13 @@ export interface Modelo {
 
 // Só dígitos, com 55 na frente: é o formato que o wa.me aceita. Número curto
 // demais volta nulo em vez de virar link quebrado que abre conversa errada.
+// Com 10 ou 11 dígitos é DDD + número, mesmo começando com 55 (DDD de Santa
+// Maria e Caxias do Sul): o código do país só pode estar lá a partir de 12.
 export function normalizarTelefone(bruto: string | null | undefined): string | null {
   if (!bruto) return null;
   const digitos = bruto.replace(/\D/g, "");
   if (digitos.length < 10) return null;
-  if (digitos.startsWith("55")) return digitos.length >= 12 ? digitos : null;
+  if (digitos.length >= 12 && digitos.startsWith("55")) return digitos;
   return `55${digitos}`;
 }
 

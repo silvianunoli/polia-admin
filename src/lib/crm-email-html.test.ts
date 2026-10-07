@@ -78,11 +78,9 @@ describe("montarHtmlCampanha", () => {
     expect(texto).toContain("Não quero mais receber");
   });
 
-  // Bug documentado: o assunto vai cru pro <title> e pro <h1> da casca, sem
-  // escapeHtml. "Preço < R$ 50 & frete" quebra o HTML do e-mail. É texto da
-  // própria admin (não é fronteira de segurança), mas é defeito visível.
-  // Quando for corrigido, este it.fails passa a falhar: aí é só trocar por it.
-  it.fails("assunto com & e < deveria chegar escapado no título", () => {
+  // CRM-13: o assunto ia cru pro <title> e pro <h1> da casca e
+  // "Preço < R$ 50 & frete" quebrava o HTML do e-mail.
+  it("assunto com & e < chega escapado no título", () => {
     const html = montarHtmlCampanha({
       assunto: "Preço < R$ 50 & frete",
       preheader: null,

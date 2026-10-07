@@ -1,4 +1,4 @@
-import { emailPoliaCampanha } from "@/lib/email-casca";
+import { emailPoliaCampanha, escapeHtml } from "@/lib/email-casca";
 
 // Estilo inline do corpo escrito no editor. A casca (cabeçalho, cartão,
 // rodapé) é a de email-casca.ts, a mesma dos outros e-mails da Pólia — aqui só
@@ -55,9 +55,11 @@ export function montarHtmlCampanha(params: {
   preheader: string | null;
   corpo: string;
 }): string {
+  // Assunto e preheader são texto puro digitado na admin; a casca interpola
+  // cru no <title> e no <h1>, então "Promoção & novidades" quebrava o HTML.
   return emailPoliaCampanha({
-    preheader: params.preheader ?? params.assunto,
-    headline: params.assunto,
+    preheader: escapeHtml(params.preheader ?? params.assunto),
+    headline: escapeHtml(params.assunto),
     corpoHtml: inlineParaEmail(params.corpo),
     descadastroUrl: "{{{RESEND_UNSUBSCRIBE_URL}}}",
   });

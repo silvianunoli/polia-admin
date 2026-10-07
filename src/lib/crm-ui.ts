@@ -132,12 +132,15 @@ export function formatarDataHora(iso: string | null): string {
   });
 }
 
+// Valor redondo sai sem centavo ("R$ 1.500"); com centavo, sempre duas casas
+// ("R$ 19,90", nunca "R$ 19,9").
 export function formatarReais(valor: number): string {
+  const casas = Math.round(valor * 100) % 100 === 0 ? 0 : 2;
   return valor.toLocaleString("pt-BR", {
     style: "currency",
     currency: "BRL",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: casas,
+    maximumFractionDigits: casas,
   });
 }
 
