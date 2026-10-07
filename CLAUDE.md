@@ -180,10 +180,10 @@ Três coisas que não são óbvias e já custaram raciocínio:
 1. **O convite só vale no nascimento da conta.** Editar o convite depois que a pessoa se
    cadastrou não muda nada — o gatilho não roda mais. A tela recusa essa edição de propósito, em
    vez de aceitar em silêncio. Mudar plano de quem já tem conta **não tem tela ainda** (CRM-10).
-2. **A ordem alfabética dos gatilhos é intencional.** `aplicar_convite_no_perfil` roda antes de
-   `tmp_plano_beta_conta_teste` porque gatilhos do mesmo timing disparam em ordem de nome — é
-   assim que a conta de teste continua ganhando `beta` por cima do convite. Renomear qualquer um
-   dos dois pra algo que inverta a ordem quebra isso sem erro nenhum.
+2. **A conta de teste não tem mais gatilho próprio.** Até 07/10/2026 existia
+   `tmp_plano_beta_conta_teste`, com o e-mail oi.prismia@gmail.com escrito dentro da função.
+   Saiu no CRM-11: agora ela nasce com `beta` pelo convite, como qualquer conta (plano
+   "Lançamento" em `/crm/convites`). Não recriar gatilho com e-mail fixo.
 3. **Plano concedido na mão não é permanente.** O webhook do Stripe escreve `profiles.plano`
    (inclusive `'cancelada'`), então quem assinar e cancelar perde a concessão manual.
 

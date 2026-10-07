@@ -55,12 +55,10 @@ describe("FERRAMENTAS_SETUP", () => {
     expect(tudo).not.toMatch(/eyJ[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{20,}/);
   });
 
-  // Vocabulário morto: ferramentas-setup.ts:237 diz "planos
-  // Confere/Controle/Projete". Desde 14/09/2026 os nomes visíveis são
-  // Grátis/Premium/Pro; a chave interna (confere/controle/projete) fica só em
-  // minúscula, em código. Quando o texto for corrigido, este it.fails passa a
-  // falhar: aí é só trocar por it.
-  it.fails("nenhum texto visível usa nome morto de plano (hoje: Stripe, oQueE)", () => {
+  // Vocabulário morto: desde 14/09/2026 os nomes visíveis são Grátis/Premium/Pro;
+  // a chave interna (confere/controle/projete) fica só em minúscula, em código.
+  // O runbook do Stripe foi corrigido em 07/10/2026 (DEC-13).
+  it("nenhum texto visível usa nome morto de plano", () => {
     for (const f of FERRAMENTAS_SETUP) {
       expect(f.oQueE, f.nome).not.toMatch(
         /\bComeço\b|\bAlcance\b|\bVoo\b|Confere|Controle|Projete/,

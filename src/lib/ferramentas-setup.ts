@@ -234,7 +234,7 @@ export const FERRAMENTAS_SETUP: FerramentaSetup[] = [
   {
     id: "5",
     nome: "Stripe (pagamento e assinatura)",
-    oQueE: "Checkout e cobrança recorrente dos planos Confere/Controle/Projete.",
+    oQueE: "Checkout e cobrança recorrente dos planos Premium e Pro.",
     passos: [
       {
         tipo: "ol",

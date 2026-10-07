@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { porLanding } from "@/lib/founder-landing";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
@@ -253,7 +254,14 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const p = resolverPeriodo(data);
-    const [todas, { data: perfisData }, { count: leads }, { count: leadsAnt }] = await Promise.all([
+    const [
+      todas,
+      { data: perfisData },
+      { count: leads },
+      { count: leadsAnt },
+      { data: cadastrosLanding },
+      { data: comprasLanding },
+    ] = await Promise.all([
       assinaturas(),
       supabaseAdmin.from("profiles").select("id, created_at, plano, onboarding_completed"),
       supabaseAdmin
@@ -266,6 +274,19 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
         .select("id", { head: true, count: "exact" })
         .gte("criado_em", p.iniAnterior)
         .lt("criado_em", p.fimAnterior),
+      // FND-04: cadastro e compra por landing, no período do filtro.
+      supabaseAdmin
+        .from("founder_eventos")
+        .select("propriedades")
+        .eq("evento", "signup")
+        .gte("criado_em", p.ini)
+        .lt("criado_em", p.fim),
+      supabaseAdmin
+        .from("eventos_analytics")
+        .select("propriedades")
+        .eq("evento", "checkout_concluido")
+        .gte("criado_em", p.ini)
+        .lt("criado_em", p.fim),
     ]);
     const perfis = (perfisData ?? []) as {
       id: string;
@@ -315,6 +336,14 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
       leadsListaEspera: leads ?? 0,
       leadsVariacao: variacaoPct(leads ?? 0, leadsAnt ?? 0),
       diasAteAssinarMediana: mediana(tempoAteAssinar),
+      porLanding: porLanding(
+        ((cadastrosLanding ?? []) as { propriedades: Record<string, unknown> | null }[]).map(
+          (x) => x.propriedades,
+        ),
+        ((comprasLanding ?? []) as { propriedades: Record<string, unknown> | null }[]).map(
+          (x) => x.propriedades,
+        ),
+      ),
       funil: [
         { rotulo: "Contas criadas", total: total },
         {

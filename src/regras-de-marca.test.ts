@@ -9,8 +9,8 @@ import { join, relative } from "node:path";
 // (src/regras-de-marca.test.ts de lá), com uma diferença de escopo:
 //
 // O office é ferramenta interna. Aqui o "—" é o marcador padrão de célula sem
-// valor (founder-formato.ts), o guia de setup é documentação da fundadora e a
-// navegação do founder chama a análise de "Jornadas". Nada disso chega na
+// valor (founder-formato.ts) e o guia de setup é documentação da fundadora.
+// Nada disso chega na
 // cliente, então as regras de forma valem só pros arquivos que geram algo
 // que sai daqui: e-mail do CRM, convite, casca de e-mail e o manual da marca.
 // A regra de nome de plano morto vale no repo inteiro, porque o CRM já vazou

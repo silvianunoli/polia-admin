@@ -26,7 +26,7 @@ export const GRUPOS_FOUNDER: { titulo: string; itens: ItemFounder[] }[] = [
       { to: "/founder/analytics/retencao", label: "Retenção" },
       { to: "/founder/analytics/comportamento", label: "Comportamento" },
       { to: "/founder/analytics/funcionalidades", label: "Funcionalidades" },
-      { to: "/founder/analytics/jornadas", label: "Jornadas" },
+      { to: "/founder/analytics/jornadas", label: "Caminhos" },
       { to: "/founder/analytics/segmentos", label: "Segmentos" },
     ],
   },

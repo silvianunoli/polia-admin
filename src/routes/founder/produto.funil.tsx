@@ -27,7 +27,7 @@ function FunilOnboarding() {
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Funil de onboarding da coorte que criou conta no período ({f?.tamanhoCoorte ?? "…"}). O
-        funil de jornada mais longo (até "recorrente") fica em Analytics → Jornadas.
+        funil mais longo (até "recorrente") fica em Analytics → Caminhos.
       </p>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className={`${CARD_CLASS} p-6`}>

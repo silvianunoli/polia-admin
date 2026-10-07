@@ -51,10 +51,8 @@ describe("GRUPOS_FOUNDER", () => {
     }
   });
 
-  // Vocabulário morto: founder-nav.ts:29 tem o label "Jornadas". A palavra
-  // "jornada" foi banida do produto (mundo territorial morto). Quando o label
-  // for trocado, este it.fails passa a falhar: aí é só trocar por it.
-  it.fails("nenhum label usa vocabulário morto (hoje: 'Jornadas')", () => {
+  // Vocabulário morto: "Jornadas" virou "Caminhos" em 07/10/2026 (DEC-13).
+  it("nenhum label usa vocabulário morto", () => {
     for (const i of itens) {
       expect(i.label).not.toMatch(
         /[Ee]tapa|[Tt]rilha|[Jj]ornada|[Mm]arco|[Bb]ússola|[Tt]erritório/,
