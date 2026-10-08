@@ -179,7 +179,10 @@ Três coisas que não são óbvias e já custaram raciocínio:
 
 1. **O convite só vale no nascimento da conta.** Editar o convite depois que a pessoa se
    cadastrou não muda nada — o gatilho não roda mais. A tela recusa essa edição de propósito, em
-   vez de aceitar em silêncio. Mudar plano de quem já tem conta **não tem tela ainda** (CRM-10).
+   vez de aceitar em silêncio. Mudar plano/admin de quem já tem conta é na seção **"Plano e
+   acesso"** de `/usuarios/$id` (CRM-10, 08/10/2026, `src/lib/acesso-usuaria.functions.ts`):
+   server function com assertAdmin, log `usuaria_acesso`/`usuaria_acesso_admin` com antes e
+   depois, e trava pra ninguém tirar o próprio admin.
 2. **A conta de teste não tem mais gatilho próprio.** Até 07/10/2026 existia
    `tmp_plano_beta_conta_teste`, com o e-mail oi.prismia@gmail.com escrito dentro da função.
    Saiu no CRM-11: agora ela nasce com `beta` pelo convite, como qualquer conta (plano

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
+import { PlanoEAcesso } from "@/components/crm/PlanoEAcesso";
 
 export const Route = createFileRoute("/usuarios/$id")({
   head: () => ({
@@ -106,6 +107,8 @@ function AdminUsuarioPerfil() {
           </div>
         ))}
       </div>
+
+      <PlanoEAcesso userId={usuario.id} nome={usuario.full_name ?? "Essa usuária"} />
 
       <div className="rounded-2xl border border-[var(--line)] bg-white p-7">
         <p className="mb-5 font-sans text-[11px] font-semibold uppercase tracking-[2px] text-[var(--muted)]">
