@@ -24,7 +24,10 @@ export const Route = createFileRoute("/central")({
   component: CentralAdmin,
 });
 
+type Grupo = "gestao" | "conteudo" | "marketing" | "clientes";
+
 type Produto = {
+  grupo: Grupo;
   nome: string;
   descricao: string;
   href: string;
@@ -35,6 +38,7 @@ type Produto = {
 // existe pra crescer sem mexer no layout da página.
 const PRODUTOS: Produto[] = [
   {
+    grupo: "gestao",
     nome: "Founder Dashboard",
     descricao:
       "O cockpit: em 30 segundos, se a Pólia está saudável, o que precisa de atenção e os números.",
@@ -42,18 +46,21 @@ const PRODUTOS: Produto[] = [
     icone: Radar,
   },
   {
+    grupo: "gestao",
     nome: "Kanban Operacional",
     descricao: "Tarefas do dia a dia, por pessoa e por área.",
     href: "/kanban",
     icone: Kanban,
   },
   {
+    grupo: "gestao",
     nome: "Setup de ferramentas",
     descricao: "Runbook das 14 ferramentas externas: passo a passo e as armadilhas já encontradas.",
     href: "/ferramentas",
     icone: Wrench,
   },
   {
+    grupo: "gestao",
     nome: "Manual da Marca",
     descricao:
       "A régua de decisão: eixo, voz, palavras proibidas, cores e tipografia, num documento só.",
@@ -64,6 +71,7 @@ const PRODUTOS: Produto[] = [
     // Migração em fases, começada em 22/09/2026 — só a Biblioteca mora aqui
     // por enquanto, o resto ainda vive no app separado (a própria tela avisa
     // o que falta). Ver §Fábrica Social no CLAUDE.md.
+    grupo: "conteudo",
     nome: "Fábrica Social",
     descricao:
       "Criação e publicação de posts pro Instagram e TikTok — biblioteca, calendário e agendamento.",
@@ -71,12 +79,14 @@ const PRODUTOS: Produto[] = [
     icone: FolderOpen,
   },
   {
+    grupo: "conteudo",
     nome: "CMS do Blog",
     descricao: "Escrever, editar e publicar os posts do blog.",
     href: "/blog",
     icone: Newspaper,
   },
   {
+    grupo: "clientes",
     nome: "Loja de serviços",
     descricao:
       "Os serviços à venda em lab.usepolia.com.br/loja: preços, fotos, cupons, pedidos e a chave de abrir a loja.",
@@ -84,6 +94,7 @@ const PRODUTOS: Produto[] = [
     icone: ShoppingBag,
   },
   {
+    grupo: "clientes",
     nome: "CRM",
     descricao: "Contatos, negociações, lembretes e WhatsApp, do primeiro contato ao pós-venda.",
     href: "/crm",
@@ -92,12 +103,14 @@ const PRODUTOS: Produto[] = [
   {
     // Entrada direta pra newsletter, sem passar pelo CRM. É o mesmo módulo,
     // mas na cabeça dela é outra frente de trabalho.
+    grupo: "marketing",
     nome: "E-mail e campanhas",
     descricao: "Listas, newsletter e campanhas de e-mail, com quem abriu e quem clicou.",
     href: "/crm/campanhas",
     icone: Mail,
   },
   {
+    grupo: "marketing",
     nome: "Tráfego (Meta Ads)",
     descricao: "Campanhas da Conta de Anúncios Pólia ao vivo: gasto, leads e custo por lead.",
     href: "/trafego",
@@ -106,6 +119,7 @@ const PRODUTOS: Produto[] = [
   {
     // Funil próprio dos anúncios (09/10/2026): parte do cadastro, não do
     // pixel, então mostra até onde a conta foi depois do clique.
+    grupo: "marketing",
     nome: "Campanhas",
     descricao:
       "Funil por anúncio: cadastros, onboarding, preço calculado e assinantes, com o gasto do Meta ao lado.",
@@ -113,17 +127,28 @@ const PRODUTOS: Produto[] = [
     icone: ChartNoAxesColumnIncreasing,
   },
   {
+    grupo: "clientes",
     nome: "Chamados",
     descricao: "Suporte e dúvidas abertas pelas usuárias.",
     href: "/chamados",
     icone: Inbox,
   },
   {
+    grupo: "clientes",
     nome: "Pesquisas",
     descricao: "Respostas e resultados das pesquisas com usuárias.",
     href: "/pesquisas",
     icone: ClipboardList,
   },
+];
+
+// Ordem e nome das seções da Central (10/10/2026). Card novo escolhe um
+// destes grupos; grupo sem card não aparece.
+const GRUPOS: { id: Grupo; titulo: string }[] = [
+  { id: "gestao", titulo: "Gestão da Pólia" },
+  { id: "marketing", titulo: "Marketing e aquisição" },
+  { id: "conteudo", titulo: "Conteúdo" },
+  { id: "clientes", titulo: "Clientes e vendas" },
 ];
 
 async function sair() {
@@ -150,29 +175,49 @@ function CentralAdmin() {
         <h1 className="text-[28px] font-medium text-[var(--ink)]">Central de administração</h1>
         <p className="mt-2 text-[15px] text-[var(--ink-soft)]">Escolha o produto pra gerenciar.</p>
 
-        <div className="mt-8 grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {PRODUTOS.map((produto) => {
-            const Icone = produto.icone;
+        <div className="mt-8 flex max-w-5xl flex-col gap-10">
+          {GRUPOS.map((grupo) => {
+            const produtos = PRODUTOS.filter((p) => p.grupo === grupo.id);
+            if (produtos.length === 0) return null;
             return (
-              <Link
-                key={produto.nome}
-                to={produto.href}
-                className="group flex flex-col gap-3 rounded-xl border border-[var(--line)] bg-white p-5 no-underline transition-colors hover:border-[var(--secondary)]"
-              >
-                <Icone className="h-8 w-auto text-[var(--ink)]" />
-                <div>
-                  <p className="text-[16px] font-medium text-[var(--ink)]">{produto.nome}</p>
-                  <p className="mt-1 text-[13px] text-[var(--ink-soft)]">{produto.descricao}</p>
+              <section key={grupo.id} aria-labelledby={`grupo-${grupo.id}`}>
+                <h2
+                  id={`grupo-${grupo.id}`}
+                  className="font-accent text-[11px] font-bold uppercase tracking-[1.5px] text-[var(--muted)]"
+                >
+                  {grupo.titulo}
+                </h2>
+                <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  {produtos.map((produto) => {
+                    const Icone = produto.icone;
+                    return (
+                      <Link
+                        key={produto.nome}
+                        to={produto.href}
+                        className="group flex flex-col gap-3 rounded-xl border border-[var(--line)] bg-white p-5 no-underline transition-colors hover:border-[var(--secondary)]"
+                      >
+                        <Icone className="h-8 w-auto text-[var(--ink)]" />
+                        <div>
+                          <p className="text-[16px] font-medium text-[var(--ink)]">
+                            {produto.nome}
+                          </p>
+                          <p className="mt-1 text-[13px] text-[var(--ink-soft)]">
+                            {produto.descricao}
+                          </p>
+                        </div>
+                        <span className="mt-auto flex items-center gap-1 text-[13px] font-medium text-[var(--secondary-text)]">
+                          Entrar no admin
+                          <ArrowRight
+                            size={14}
+                            className="transition-transform group-hover:translate-x-0.5"
+                            aria-hidden="true"
+                          />
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
-                <span className="mt-auto flex items-center gap-1 text-[13px] font-medium text-[var(--secondary-text)]">
-                  Entrar no admin
-                  <ArrowRight
-                    size={14}
-                    className="transition-transform group-hover:translate-x-0.5"
-                    aria-hidden="true"
-                  />
-                </span>
-              </Link>
+              </section>
             );
           })}
         </div>
