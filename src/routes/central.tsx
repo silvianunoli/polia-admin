@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   ArrowRight,
   BookOpen,
+  ChartNoAxesColumnIncreasing,
   ClipboardList,
   FolderOpen,
   Images,
@@ -116,6 +117,15 @@ const PRODUTOS: Produto[] = [
     descricao: "Campanhas da Conta de Anúncios Pólia ao vivo: gasto, leads e custo por lead.",
     href: "/trafego",
     icone: TrendingUp,
+  },
+  {
+    // Funil próprio dos anúncios (09/10/2026): parte do cadastro, não do
+    // pixel, então mostra até onde a conta foi depois do clique.
+    nome: "Campanhas",
+    descricao:
+      "Funil por anúncio: cadastros, onboarding, preço calculado e assinantes, com o gasto do Meta ao lado.",
+    href: "/campanhas",
+    icone: ChartNoAxesColumnIncreasing,
   },
   {
     nome: "Chamados",

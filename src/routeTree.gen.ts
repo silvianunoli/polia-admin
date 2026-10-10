@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AlertasRouteImport } from './routes/alertas'
 import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as AuditoriaRouteImport } from './routes/auditoria'
+import { Route as CampanhasRouteImport } from './routes/campanhas'
 import { Route as CentralRouteImport } from './routes/central'
 import { Route as ConteudoRouteImport } from './routes/conteudo'
 import { Route as CrmRouteImport } from './routes/crm'
@@ -122,6 +123,11 @@ const AnalyticsRoute = AnalyticsRouteImport.update({
 const AuditoriaRoute = AuditoriaRouteImport.update({
   id: '/auditoria',
   path: '/auditoria',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CampanhasRoute = CampanhasRouteImport.update({
+  id: '/campanhas',
+  path: '/campanhas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CentralRoute = CentralRouteImport.update({
@@ -596,6 +602,7 @@ export interface FileRoutesByFullPath {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/campanhas': typeof CampanhasRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
   '/crm': typeof CrmRouteWithChildren
@@ -692,6 +699,7 @@ export interface FileRoutesByTo {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/campanhas': typeof CampanhasRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
   '/design-system': typeof DesignSystemRoute
@@ -785,6 +793,7 @@ export interface FileRoutesById {
   '/alertas': typeof AlertasRoute
   '/analytics': typeof AnalyticsRoute
   '/auditoria': typeof AuditoriaRoute
+  '/campanhas': typeof CampanhasRoute
   '/central': typeof CentralRoute
   '/conteudo': typeof ConteudoRoute
   '/crm': typeof CrmRouteWithChildren
@@ -883,6 +892,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/campanhas'
     | '/central'
     | '/conteudo'
     | '/crm'
@@ -979,6 +989,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/campanhas'
     | '/central'
     | '/conteudo'
     | '/design-system'
@@ -1071,6 +1082,7 @@ export interface FileRouteTypes {
     | '/alertas'
     | '/analytics'
     | '/auditoria'
+    | '/campanhas'
     | '/central'
     | '/conteudo'
     | '/crm'
@@ -1168,6 +1180,7 @@ export interface RootRouteChildren {
   AlertasRoute: typeof AlertasRoute
   AnalyticsRoute: typeof AnalyticsRoute
   AuditoriaRoute: typeof AuditoriaRoute
+  CampanhasRoute: typeof CampanhasRoute
   CentralRoute: typeof CentralRoute
   ConteudoRoute: typeof ConteudoRoute
   CrmRoute: typeof CrmRouteWithChildren
@@ -1229,6 +1242,13 @@ declare module '@tanstack/react-router' {
       path: '/auditoria'
       fullPath: '/auditoria'
       preLoaderRoute: typeof AuditoriaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/campanhas': {
+      id: '/campanhas'
+      path: '/campanhas'
+      fullPath: '/campanhas'
+      preLoaderRoute: typeof CampanhasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/central': {
@@ -2045,6 +2065,7 @@ const rootRouteChildren: RootRouteChildren = {
   AlertasRoute: AlertasRoute,
   AnalyticsRoute: AnalyticsRoute,
   AuditoriaRoute: AuditoriaRoute,
+  CampanhasRoute: CampanhasRoute,
   CentralRoute: CentralRoute,
   ConteudoRoute: ConteudoRoute,
   CrmRoute: CrmRouteWithChildren,
