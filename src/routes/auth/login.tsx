@@ -3,6 +3,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useTurnstile } from "@/hooks/useTurnstile";
+import { useCaptchaPronto } from "@/hooks/useCaptchaPronto";
 
 const searchSchema = z.object({
   next: z.string().optional(),
@@ -21,14 +23,32 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
   const [loading, setLoading] = useState(false);
+  // Anti-robô: o Supabase Auth (projeto "Pólia", o mesmo do produto) está com a
+  // proteção de captcha ligada desde 09/10/2026. Sem token, todo login volta
+  // captcha_failed, e a tela dizia "senha errada". Mesmo widget do polia-app.
+  const ts = useTurnstile();
+  const [tentativas, setTentativas] = useState(0);
+  const captchaPronto = useCaptchaPronto({ token: ts.token, pedidoDeReset: tentativas });
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password: senha });
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password: senha,
+      options: { captchaToken: ts.token ?? undefined },
+    });
     setLoading(false);
     if (error) {
-      toast.error("E-mail ou senha errados.");
+      // Token é de uso único: cada tentativa pede um novo.
+      ts.reset();
+      setTentativas((n) => n + 1);
+      const ehCaptcha = error.code === "captcha_failed" || /captcha/i.test(error.message ?? "");
+      toast.error(
+        ehCaptcha
+          ? "Confirma que não é um robô e tenta de novo. Se a verificação não aparecer, desativa o bloqueador de anúncios e recarrega a página."
+          : "E-mail ou senha errados.",
+      );
       return;
     }
     // "/" não conta como destino de verdade — quem chegou aqui a partir da
@@ -74,12 +94,13 @@ function LoginPage() {
             className="h-11 rounded-lg border border-[var(--line)] px-3 text-[14px]"
           />
         </label>
+        <div ref={ts.containerRef} className="mb-4" />
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !captchaPronto}
           className="h-11 w-full rounded-lg bg-[var(--secondary)] text-[14px] font-semibold text-[var(--secondary-ink)] disabled:opacity-60"
         >
-          {loading ? "Entrando..." : "Entrar"}
+          {loading ? "Entrando..." : !captchaPronto ? "Verificando..." : "Entrar"}
         </button>
       </form>
     </div>

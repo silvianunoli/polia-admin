@@ -58,6 +58,10 @@ jobs:
           # separado usa. Sem ela, o botão "Conectar TikTok" fica desativado
           # (ver tiktokConfigurado em src/lib/fabrica-social/api.ts).
           VITE_TIKTOK_CLIENT_KEY: ${{ vars.VITE_TIKTOK_CLIENT_KEY }}
+          # Chave pública do Turnstile (widget "Pólia (Spin)", a mesma do
+          # polia-app). Sem ela o widget do login não aparece e o Supabase
+          # recusa todo login com captcha_failed.
+          VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
       - uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
