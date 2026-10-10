@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripeClient } from "@/lib/stripe.functions";
+import { precoConhecido } from "@/lib/precos-stripe";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import {
   periodoSearchSchema,
@@ -245,15 +246,16 @@ async function calcularNumeros(p: PeriodoResolvido): Promise<NumerosPrincipais> 
   ativas.forEach((a) => porPrice.set(a.price_id, (porPrice.get(a.price_id) ?? 0) + 1));
   let mrr = 0;
   if (porPrice.size > 0) {
-    const stripe = stripeClient();
     for (const [priceId, quantidade] of porPrice.entries()) {
       try {
-        const price = await stripe.prices.retrieve(priceId);
+        const price = await stripeClient().prices.retrieve(priceId);
         const valor = price.unit_amount ?? 0;
         const mensal = price.recurring?.interval === "year" ? Math.round(valor / 12) : valor;
         mrr += mensal * quantidade;
       } catch (err) {
         console.error(`[Founder] Falha ao buscar price ${priceId} no Stripe:`, err);
+        // Stripe fora não zera o MRR: o catálogo local tem os preços vivos.
+        mrr += (precoConhecido(priceId)?.mensal ?? 0) * quantidade;
       }
     }
   }

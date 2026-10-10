@@ -4,6 +4,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripeClient } from "@/lib/stripe.functions";
+import { precoConhecido } from "@/lib/precos-stripe";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
@@ -50,6 +51,12 @@ async function infoPreco(priceId: string) {
     cachePreco.set(priceId, info);
     return info;
   } catch {
+    // Stripe fora (ex.: chave do admin vencida): o catálogo local mantém MRR e nome do plano.
+    const conhecido = precoConhecido(priceId);
+    if (conhecido) {
+      cachePreco.set(priceId, conhecido);
+      return conhecido;
+    }
     return { mensal: 0, intervalo: "desconhecido", nome: priceId };
   }
 }
@@ -76,8 +83,8 @@ export const getNegocioReceita = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const p = resolverPeriodo(data);
-    const stripe = stripeClient();
     const buscarFaturas = async (ini: string, fim: string) => {
+      const stripe = stripeClient();
       const faturas: {
         valor: number;
         quando: string;

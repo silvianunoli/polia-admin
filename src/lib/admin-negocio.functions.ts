@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripeClient } from "@/lib/stripe.functions";
+import { precoConhecido } from "@/lib/precos-stripe";
 
 async function assertAdmin(userId: string) {
   const { data: profile } = await supabaseAdmin
@@ -57,6 +58,12 @@ export const getResumoMonetizacao = createServerFn({ method: "GET" })
         }
       } catch (err) {
         console.error(`[Negócio] Falha ao buscar price ${priceId} no Stripe:`, err);
+        // Stripe fora não zera o MRR: o catálogo local tem os preços vivos.
+        const conhecido = precoConhecido(priceId);
+        if (conhecido) {
+          valorMensalCentavos = conhecido.mensal;
+          plano = conhecido.intervalo === "year" ? "anual" : "mensal";
+        }
       }
       porPlano.push({ priceId, plano, quantidade, valorMensalCentavos });
     }
