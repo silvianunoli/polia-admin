@@ -5,7 +5,6 @@ import {
   ChartNoAxesColumnIncreasing,
   ClipboardList,
   FolderOpen,
-  Images,
   Inbox,
   Kanban,
   LogOut,
@@ -13,7 +12,6 @@ import {
   Newspaper,
   Radar,
   ShoppingBag,
-  Sparkles,
   TrendingUp,
   Users,
   Wrench,
@@ -61,19 +59,6 @@ const PRODUTOS: Produto[] = [
       "A régua de decisão: eixo, voz, palavras proibidas, cores e tipografia, num documento só.",
     href: "/manual-da-marca",
     icone: BookOpen,
-  },
-  {
-    nome: "Criação de Conteúdo",
-    descricao: "Instagram e blog, da ideia até o post no ar.",
-    href: "/conteudo",
-    icone: Sparkles,
-  },
-  {
-    nome: "Conteúdo Pólia",
-    descricao:
-      "Os carrosséis do feed: ver prancha por prancha, ajustar o HTML e baixar os PNG prontos para postar.",
-    href: "/conteudo-polia",
-    icone: Images,
   },
   {
     // Migração em fases, começada em 22/09/2026 — só a Biblioteca mora aqui
