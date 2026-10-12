@@ -88,7 +88,8 @@ function Segmentos() {
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         {s ? `${s.totalUsuarias} usuária(s), ${s.totalPagantes} com assinatura ativa. ` : ""}
         Clique num grupo pra ver a lista. "Ativas" segue o período do filtro; os outros grupos usam
-        janelas fixas (14, 30 e 90 dias) pra não mudarem de definição conforme o filtro.
+        janelas fixas (7, 14, 30 e 90 dias). Pagante sem uso aparece na grade de uso × assinatura
+        pra não mudarem de definição conforme o filtro.
       </p>
       <p className="mb-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
         Segmentos
@@ -96,7 +97,7 @@ function Segmentos() {
       {carregando || !s ? (
         <SkeletonBloco className="mb-6 h-32" />
       ) : (
-        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-5">
+        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {s.segmentos.map((g) => (
             <Cartao key={g.chave} g={g} />
           ))}

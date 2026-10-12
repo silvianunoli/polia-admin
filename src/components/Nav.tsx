@@ -6,15 +6,8 @@ import { supabase } from "@/integrations/supabase/client";
 // prefixo /admin (aqui toda rota já é admin) e sem blog-admin/design-system
 // (fora do escopo desta extração — ver polia_admin_extracao memória).
 const ITENS = [
-  { to: "/painel", label: "Visão geral" },
-  { to: "/funil", label: "Funil de módulos" },
-  { to: "/negocio", label: "Negócio" },
-  { to: "/analytics", label: "Analytics" },
-  { to: "/qualidade", label: "Qualidade" },
   { to: "/governanca", label: "Governança" },
   { to: "/auditoria", label: "Auditoria" },
-  { to: "/alertas", label: "Alertas" },
-  { to: "/logs", label: "Logs do sistema" },
   { to: "/founder/features/flags", label: "Feature Flags" },
   { to: "/design-system", label: "Design System" },
 ] as const;

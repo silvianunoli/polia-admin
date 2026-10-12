@@ -118,7 +118,7 @@ function FounderPulse() {
           variacaoPct={n?.usuariasTotal.variacaoPct}
           descricao="total cadastradas"
           carregando={carregando}
-          href="/founder/numeros"
+          href="/founder/analytics/usuarias"
         />
         <StatCard
           label="Novas contas"
@@ -126,7 +126,7 @@ function FounderPulse() {
           variacaoPct={n?.novasContas.variacaoPct}
           descricao="no período"
           carregando={carregando}
-          href="/founder/numeros"
+          href="/founder/analytics"
         />
         <StatCard
           label="Ativas"
@@ -134,7 +134,7 @@ function FounderPulse() {
           variacaoPct={n?.usuariasAtivas.variacaoPct}
           descricao="com ação real no período"
           carregando={carregando}
-          href="/founder/numeros"
+          href="/founder/analytics"
         />
         <StatCard
           label="Assinantes"
@@ -286,7 +286,58 @@ function FounderPulse() {
       </div>
 
       <FlagsResumo />
+      <ComoCalcula />
     </>
+  );
+}
+
+// Veio da antiga /founder/numeros (FND-09, 11/10/2026), que repetia estes 7
+// cards. Churn e MRR aqui são os mesmos das telas de Negócio.
+const DEFINICOES: { label: string; texto: string }[] = [
+  {
+    label: "Usuárias",
+    texto:
+      "contas criadas até o fim do período; a comparação usa o total no fim do período anterior.",
+  },
+  { label: "Novas contas", texto: "contas criadas dentro do período." },
+  {
+    label: "Ativas",
+    texto:
+      "contas com pelo menos uma ação real no período (criar ou editar produto ou meta, concluir onboarding, usar uma funcionalidade até o fim). Abrir tela e heartbeat não contam.",
+  },
+  {
+    label: "Assinantes",
+    texto:
+      "assinaturas em active, trialing ou past_due agora; comparação com o snapshot diário mais próximo do fim do período anterior.",
+  },
+  {
+    label: "MRR",
+    texto:
+      "soma do preço mensal das assinaturas ativas, com o anual dividido por 12. O preço vem do Stripe; se ele não responder, do catálogo de preços do office.",
+  },
+  {
+    label: "Churn",
+    texto:
+      "canceladas no período dividido pelas assinantes no início do período (snapshot diário). Sem snapshot, usa ativas agora + canceladas no período.",
+  },
+  { label: "Erros", texto: "erros do app registrados no período." },
+];
+
+function ComoCalcula() {
+  return (
+    <details className={`${CARD_CLASS} mt-6 p-6`}>
+      <summary className="cursor-pointer font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Como cada número é calculado
+      </summary>
+      <dl className="mt-4 space-y-2">
+        {DEFINICOES.map((d) => (
+          <div key={d.label} className="font-sans text-[13px] leading-relaxed">
+            <dt className="inline font-medium text-[var(--ink)]">{d.label}: </dt>
+            <dd className="inline text-[var(--ink-soft)]">{d.texto}</dd>
+          </div>
+        ))}
+      </dl>
+    </details>
   );
 }
 

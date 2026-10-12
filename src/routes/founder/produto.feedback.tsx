@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { getProdutoFeedback } from "@/lib/founder-produto.functions";
 import { CARD_CLASS, ALERTA_ERRO_CLASS, BTN_LINK } from "@/lib/botoes";
-import { formatarDataHoraBRT, formatarDuracao } from "@/lib/founder-formato";
+import { formatarDataHoraBRT } from "@/lib/founder-formato";
 import { StatCard } from "@/components/founder/StatCard";
 import { BarraLista } from "@/components/founder/Graficos";
 import { useCarregar } from "@/components/founder/useCarregar";
@@ -25,11 +25,16 @@ function Feedback() {
   return (
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
-        Notas do CSAT (1 ruim, 2 ok, 3 bom) enviadas pelo produto no período, e os chamados de
-        suporte (últimos 90 dias). Sem resposta ainda = a captura de CSAT está desligada na flag
-        <code className="font-mono text-[12px]"> csat_modal_ativo</code>.
+        Notas do CSAT (1 ruim, 2 ok, 3 bom) enviadas pelo produto no período. Sem resposta ainda = a
+        captura de CSAT está desligada na flag
+        <code className="font-mono text-[12px]"> csat_modal_ativo</code>. Os chamados de suporte
+        ficam em{" "}
+        <Link to="/chamados" className={BTN_LINK}>
+          Chamados
+        </Link>
+        .
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-md">
         <StatCard
           label="Respostas"
           valor={f?.totalFeedbacks}
@@ -42,33 +47,6 @@ function Feedback() {
           semDados={f?.mediaScore === null}
           variacaoPct={f?.mediaScore === null ? undefined : f?.mediaScoreVariacao}
           descricao="de 1 a 3"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Chamados abertos"
-          valor={f?.chamados.abertos}
-          descricao="agora"
-          carregando={carregando}
-          invertido
-          href="/chamados"
-        />
-        <StatCard
-          label="Chamados no período"
-          valor={f?.chamados.noPeriodo}
-          descricao="criados"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Resolvidos"
-          valor={f?.chamados.resolvidos90d}
-          descricao="últimos 90 dias"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Tempo de resolução"
-          valor={f ? formatarDuracao(f.chamados.tempoMedioResolucaoS) : null}
-          semDados={f?.chamados.tempoMedioResolucaoS === null}
-          descricao="médio, 90 dias"
           carregando={carregando}
         />
       </div>
@@ -109,7 +87,7 @@ function Feedback() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div>
         <div className={CARD_CLASS}>
           <p className="border-b border-[var(--line)] px-5 py-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Comentários
@@ -143,44 +121,6 @@ function Feedback() {
                       c.usuaria
                     )}
                   </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-        <div className={CARD_CLASS}>
-          <p className="border-b border-[var(--line)] px-5 py-3 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-            Chamados recentes
-          </p>
-          {carregando || !f ? (
-            <SkeletonBloco className="h-40" />
-          ) : f.chamados.recentes.length === 0 ? (
-            <p className="p-5 font-sans text-[13px] text-[var(--muted)]">
-              Nenhum chamado nos últimos 90 dias.
-            </p>
-          ) : (
-            <div className="max-h-[480px] overflow-y-auto">
-              {f.chamados.recentes.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-start justify-between gap-3 border-b border-[var(--line)] px-5 py-3 last:border-0"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      to="/chamados/$id"
-                      params={{ id: t.id }}
-                      className="font-sans text-[13px] text-[var(--ink)] no-underline hover:underline"
-                    >
-                      {t.titulo}
-                    </Link>
-                    <p className="font-sans text-[11px] text-[var(--muted)]">
-                      {t.usuaria} · {t.modulo ?? "sem módulo"} · {formatarDataHoraBRT(t.quando)}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[var(--surface)] px-2 py-0.5 font-sans text-[11px] text-[var(--ink-soft)]">
-                    {t.status}
-                    {t.prioridade ? ` · ${t.prioridade}` : ""}
-                  </span>
                 </div>
               ))}
             </div>

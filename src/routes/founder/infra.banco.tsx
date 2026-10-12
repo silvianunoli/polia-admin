@@ -25,7 +25,7 @@ function Banco() {
         consultas lentas incluem as do painel do Supabase e do próprio monitor; o que importa é ver
         se alguma consulta da Pólia aparece no topo.
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-xl">
         <StatCard
           label="Tamanho do banco"
           valor={d ? formatarBytes(d.tamanhoBytes) : null}
@@ -35,18 +35,6 @@ function Banco() {
           label="Conexões"
           valor={d?.conexoesTotal}
           descricao={d ? `${ativas} ativas · ${ociosas} ociosas` : undefined}
-          carregando={carregando}
-        />
-        <StatCard
-          label="Tabelas maiores"
-          valor={d?.tabelas.length}
-          descricao="listadas abaixo"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Consultas lentas"
-          valor={d?.lentas.length}
-          descricao="top por tempo médio"
           carregando={carregando}
         />
       </div>

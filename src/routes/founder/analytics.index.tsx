@@ -110,7 +110,7 @@ function VisaoGeralDeUso() {
         />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div>
         <div className={`${CARD_CLASS} p-6`}>
           <p className="mb-4 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
             Usuárias ativas por dia
@@ -119,23 +119,6 @@ function VisaoGeralDeUso() {
             <SkeletonBloco className="h-28" />
           ) : (
             <BarrasDiarias pontos={v.serieAtivas} />
-          )}
-        </div>
-        <div className={`${CARD_CLASS} p-6`}>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
-              Sessões por dia
-            </p>
-            {v && (
-              <span className="font-sans text-[12px] text-[var(--muted)]">
-                {v.sessoesPeriodo} no período
-              </span>
-            )}
-          </div>
-          {carregando || !v ? (
-            <SkeletonBloco className="h-28" />
-          ) : (
-            <BarrasDiarias pontos={v.serieSessoes} />
           )}
         </div>
       </div>

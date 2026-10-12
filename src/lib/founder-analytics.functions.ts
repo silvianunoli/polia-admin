@@ -186,23 +186,20 @@ export const getAnalyticsVisaoGeral = createServerFn({ method: "POST" })
     const dia60 = new Date(agora - 60 * DIA_MS).toISOString();
     const agoraIso = new Date(agora).toISOString();
 
-    const [todos, { count: totalUsuarias }, novasAtual, novasAnterior, sessoes, sessoesAnt] =
-      await Promise.all([
-        eventosNoPeriodo(dia60, agoraIso, undefined, 40000),
-        supabaseAdmin.from("profiles").select("id", { head: true, count: "exact" }),
-        supabaseAdmin
-          .from("profiles")
-          .select("id", { head: true, count: "exact" })
-          .gte("created_at", p.ini)
-          .lt("created_at", p.fim),
-        supabaseAdmin
-          .from("profiles")
-          .select("id", { head: true, count: "exact" })
-          .gte("created_at", p.iniAnterior)
-          .lt("created_at", p.fimAnterior),
-        sessoesNoPeriodo(p.ini, p.fim),
-        sessoesNoPeriodo(p.iniAnterior, p.fimAnterior),
-      ]);
+    const [todos, { count: totalUsuarias }, novasAtual, novasAnterior] = await Promise.all([
+      eventosNoPeriodo(dia60, agoraIso, undefined, 40000),
+      supabaseAdmin.from("profiles").select("id", { head: true, count: "exact" }),
+      supabaseAdmin
+        .from("profiles")
+        .select("id", { head: true, count: "exact" })
+        .gte("created_at", p.ini)
+        .lt("created_at", p.fim),
+      supabaseAdmin
+        .from("profiles")
+        .select("id", { head: true, count: "exact" })
+        .gte("created_at", p.iniAnterior)
+        .lt("created_at", p.fimAnterior),
+    ]);
 
     const ativosEm = (desde: string, ate: string) =>
       usuariasAtivas(todos.filter((e) => e.criado_em >= desde && e.criado_em < ate)).size;
@@ -226,12 +223,6 @@ export const getAnalyticsVisaoGeral = createServerFn({ method: "POST" })
       if (!ativasPorDia.has(d)) ativasPorDia.set(d, new Set());
       ativasPorDia.get(d)!.add(e.user_id);
     }
-    const sessoesPorDia = new Map<string, number>();
-    for (const s of sessoes) {
-      const d = dataBRT(s.inicio);
-      sessoesPorDia.set(d, (sessoesPorDia.get(d) ?? 0) + 1);
-    }
-
     return {
       periodo: p,
       totalUsuarias: totalUsuarias ?? 0,
@@ -248,10 +239,7 @@ export const getAnalyticsVisaoGeral = createServerFn({ method: "POST" })
       novasContasVariacao: variacaoPct(novasAtual.count ?? 0, novasAnterior.count ?? 0),
       ativasPeriodo,
       ativasPeriodoVariacao: variacaoPct(ativasPeriodo, ativasPeriodoAnterior),
-      sessoesPeriodo: sessoes.length,
-      sessoesVariacao: variacaoPct(sessoes.length, sessoesAnt.length),
       serieAtivas: serieDiaria(p, (dia) => ativasPorDia.get(dia)?.size ?? 0),
-      serieSessoes: serieDiaria(p, (dia) => sessoesPorDia.get(dia) ?? 0),
       temEventos: todos.length > 0,
     };
   });
@@ -736,7 +724,6 @@ export const getAnalyticsSegmentos = createServerFn({ method: "POST" })
     const agora = Date.now();
     const agoraIso = new Date(agora).toISOString();
     const dia7 = new Date(agora - 7 * DIA_MS).toISOString();
-    const dia14 = new Date(agora - 14 * DIA_MS).toISOString();
     const dia30 = new Date(agora - 30 * DIA_MS).toISOString();
     const dia90 = new Date(agora - 90 * DIA_MS).toISOString();
 
@@ -784,10 +771,6 @@ export const getAnalyticsSegmentos = createServerFn({ method: "POST" })
 
     const ids = todosPerfis.map((x) => x.id);
     const ativas = ids.filter((id) => (diasAtivosPeriodo.get(id)?.size ?? 0) > 0);
-    const pagantesSemUso = ids.filter(
-      (id) =>
-        pagantesSet.has(id) && !(ultimaSessao.get(id) && (ultimaSessao.get(id) as string) >= dia14),
-    );
     const abandonaram = ids.filter((id) => {
       const u = ultimaSessao.get(id);
       return u !== undefined && u < dia30;
@@ -829,12 +812,6 @@ export const getAnalyticsSegmentos = createServerFn({ method: "POST" })
           rotulo: "Ativas",
           definicao: "ação real no período selecionado",
           usuarias: linhas(ativas),
-        },
-        {
-          chave: "pagantes_sem_uso",
-          rotulo: "Pagantes sem uso",
-          definicao: "assinatura ativa e nenhuma sessão nos últimos 14 dias",
-          usuarias: linhas(pagantesSemUso),
         },
         {
           chave: "abandonaram",

@@ -27,7 +27,7 @@ function Erros() {
         <code className="font-mono text-[12px]">erros_app</code>. Agrupados por origem, página e
         mensagem pra achar o padrão antes do caso.
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-xl">
         <StatCard
           label="Erros"
           valor={d?.total}
@@ -42,18 +42,6 @@ function Erros() {
           descricao="com erro atribuído"
           carregando={carregando}
           invertido
-        />
-        <StatCard
-          label="Origens"
-          valor={d?.porOrigem.length}
-          descricao="client, server, edge…"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Páginas com erro"
-          valor={d?.porPagina.length}
-          descricao="distintas"
-          carregando={carregando}
         />
       </div>
 

@@ -14,7 +14,6 @@ export const GRUPOS_FOUNDER: { titulo: string; itens: ItemFounder[] }[] = [
       { to: "/founder", label: "Founder Pulse", exato: true },
       { to: "/founder/saude", label: "Saúde do sistema" },
       { to: "/founder/alertas", label: "Alertas" },
-      { to: "/founder/numeros", label: "Números principais" },
     ],
   },
   {
@@ -34,8 +33,6 @@ export const GRUPOS_FOUNDER: { titulo: string; itens: ItemFounder[] }[] = [
     titulo: "Produto",
     itens: [
       { to: "/founder/produto/ativacao", label: "Ativação" },
-      { to: "/founder/produto/funil", label: "Funil" },
-      { to: "/founder/produto/experimentos", label: "Experimentos" },
       { to: "/founder/produto/feedback", label: "Feedback" },
     ],
   },

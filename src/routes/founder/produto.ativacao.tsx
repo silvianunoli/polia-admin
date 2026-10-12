@@ -1,6 +1,6 @@
-import { createFileRoute, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { getProdutoAtivacao } from "@/lib/founder-produto.functions";
-import { CARD_CLASS, ALERTA_ERRO_CLASS, TH_CLASS } from "@/lib/botoes";
+import { CARD_CLASS, ALERTA_ERRO_CLASS, BTN_LINK, TH_CLASS } from "@/lib/botoes";
 import { formatarDataBRT, formatarDuracao, formatarPct } from "@/lib/founder-formato";
 import { StatCard } from "@/components/founder/StatCard";
 import { TabelaUsuarias } from "@/components/founder/TabelaUsuarias";
@@ -33,10 +33,13 @@ function Ativacao() {
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Ativada = concluiu o onboarding e fez a primeira ação de valor (produto, meta ou
         funcionalidade até o fim) em até 7 dias depois de criar a conta. Tempo até o primeiro valor
-        = da conta à primeira ação de valor. Retorno D1/D7/D30 vem das coortes das últimas 12
-        semanas.
+        = da conta à primeira ação de valor. O retorno D1/D7/D30 fica em{" "}
+        <Link to="/founder/analytics/retencao" search={(prev) => prev} className={BTN_LINK}>
+          Analytics › Retenção
+        </Link>
+        .
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3">
         <StatCard
           label="Contas no período"
           valor={a?.contasNoPeriodo}
@@ -56,27 +59,6 @@ function Ativacao() {
           valor={a ? formatarDuracao(a.ttfvMedianaS) : null}
           semDados={a?.ttfvMedianaS === null}
           descricao="mediana da coorte"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Retorno D1"
-          valor={a ? formatarPct(a.retorno.d1) : null}
-          semDados={a?.retorno.d1 === null}
-          descricao={`base ${a?.retorno.base ?? "…"}`}
-          carregando={carregando}
-        />
-        <StatCard
-          label="Retorno D7"
-          valor={a ? formatarPct(a.retorno.d7) : null}
-          semDados={a?.retorno.d7 === null}
-          descricao="12 semanas"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Retorno D30"
-          valor={a ? formatarPct(a.retorno.d30) : null}
-          semDados={a?.retorno.d30 === null}
-          descricao="12 semanas"
           carregando={carregando}
         />
       </div>

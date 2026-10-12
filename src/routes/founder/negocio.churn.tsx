@@ -24,10 +24,14 @@ function Churn() {
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Churn = assinaturas canceladas no período ÷ assinantes no início do período (snapshot diário
-        do monitor; sem snapshot, usa ativas agora + canceladas). Quem marcou "cancelar ao fim"
-        ainda está ativa, mas já decidiu.
+        do monitor; sem snapshot, usa ativas agora + canceladas). A mesma conta vale no card da
+        Visão geral. Quem marcou "cancelar ao fim" aparece em{" "}
+        <Link to="/founder/negocio/assinaturas" search={(prev) => prev} className={BTN_LINK}>
+          Assinaturas
+        </Link>
+        .
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
         <StatCard
           label="Churn"
           valor={d ? formatarPct(d.churnPct, 1) : null}
@@ -51,16 +55,9 @@ function Churn() {
           descricao="período anterior"
           carregando={carregando}
         />
-        <StatCard
-          label="Vão cancelar"
-          valor={d?.cancelamAoFim}
-          descricao="ativas com cancel_at_period_end"
-          carregando={carregando}
-          invertido
-        />
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="mb-6">
         <Secao titulo="Cancelamentos por mês (12 meses)" carregando={carregando}>
           {d && d.porMes.length ? (
             <BarrasDiarias pontos={d.porMes} />
@@ -68,13 +65,6 @@ function Churn() {
             <p className="font-sans text-[13px] text-[var(--muted)]">
               Nenhum cancelamento registrado.
             </p>
-          )}
-        </Secao>
-        <Secao titulo="Assinantes (snapshot, 180 dias)" carregando={carregando}>
-          {d && d.serieAssinantes.length ? (
-            <BarrasDiarias pontos={d.serieAssinantes} />
-          ) : (
-            <p className="font-sans text-[13px] text-[var(--muted)]">Ainda sem snapshot.</p>
           )}
         </Secao>
       </div>

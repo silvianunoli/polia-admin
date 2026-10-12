@@ -4,7 +4,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripeClient } from "@/lib/stripe.functions";
-import { precoConhecido } from "@/lib/precos-stripe";
+import { infoPreco } from "@/lib/founder-precos.server";
+import { calcularChurn } from "@/lib/founder-churn";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
@@ -14,6 +15,7 @@ import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/li
 // webhook); receita vem direto do Stripe pra não inventar número.
 
 const STATUS_ATIVOS = ["active", "trialing", "past_due"];
+const STATUS_CHECKOUT_ABANDONADO = ["incomplete", "incomplete_expired"];
 const DIA_MS = 86400000;
 
 type Assinatura = {
@@ -33,32 +35,6 @@ async function assinaturas(): Promise<Assinatura[]> {
       "user_id, price_id, status, created_at, updated_at, current_period_end, cancel_at_period_end",
     );
   return (data ?? []) as Assinatura[];
-}
-
-const cachePreco = new Map<string, { mensal: number; intervalo: string; nome: string }>();
-async function infoPreco(priceId: string) {
-  const c = cachePreco.get(priceId);
-  if (c) return c;
-  try {
-    const price = await stripeClient().prices.retrieve(priceId, { expand: ["product"] });
-    const valor = price.unit_amount ?? 0;
-    const intervalo = price.recurring?.interval ?? "month";
-    const nome =
-      typeof price.product === "object" && price.product && "name" in price.product
-        ? (price.product as { name: string }).name
-        : (price.nickname ?? priceId);
-    const info = { mensal: intervalo === "year" ? Math.round(valor / 12) : valor, intervalo, nome };
-    cachePreco.set(priceId, info);
-    return info;
-  } catch {
-    // Stripe fora (ex.: chave do admin vencida): o catálogo local mantém MRR e nome do plano.
-    const conhecido = precoConhecido(priceId);
-    if (conhecido) {
-      cachePreco.set(priceId, conhecido);
-      return conhecido;
-    }
-    return { mensal: 0, intervalo: "desconhecido", nome: priceId };
-  }
 }
 
 async function snapshots(ini: string, fim: string) {
@@ -262,25 +238,13 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
     await assertAdmin(context.userId);
     const p = resolverPeriodo(data);
     const [
-      todas,
+      todasBrutas,
       { data: perfisData },
-      { count: leads },
-      { count: leadsAnt },
       { data: cadastrosLanding },
       { data: comprasLanding },
     ] = await Promise.all([
       assinaturas(),
       supabaseAdmin.from("profiles").select("id, created_at, plano, onboarding_completed"),
-      supabaseAdmin
-        .from("lista_espera")
-        .select("id", { head: true, count: "exact" })
-        .gte("criado_em", p.ini)
-        .lt("criado_em", p.fim),
-      supabaseAdmin
-        .from("lista_espera")
-        .select("id", { head: true, count: "exact" })
-        .gte("criado_em", p.iniAnterior)
-        .lt("criado_em", p.fimAnterior),
       // FND-04: cadastro e compra por landing, no período do filtro.
       supabaseAdmin
         .from("founder_eventos")
@@ -301,6 +265,8 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
       plano: string | null;
       onboarding_completed: boolean;
     }[];
+    // incomplete/incomplete_expired = checkout que não foi pago: não é assinatura.
+    const todas = todasBrutas.filter((a) => !STATUS_CHECKOUT_ABANDONADO.includes(a.status));
     const pagantesSet = new Set(
       todas.filter((a) => STATUS_ATIVOS.includes(a.status)).map((a) => a.user_id),
     );
@@ -340,8 +306,6 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
       jaTiveramAssinatura: jaTeveAssinatura.size,
       trialsNoPeriodo: trials.length,
       trialParaPaga,
-      leadsListaEspera: leads ?? 0,
-      leadsVariacao: variacaoPct(leads ?? 0, leadsAnt ?? 0),
       diasAteAssinarMediana: mediana(tempoAteAssinar),
       porLanding: porLanding(
         ((cadastrosLanding ?? []) as { propriedades: Record<string, unknown> | null }[]).map(
@@ -352,7 +316,7 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
         ),
       ),
       funil: [
-        { rotulo: "Contas criadas", total: total },
+        { rotulo: "Todas as contas", total: total },
         {
           rotulo: "Onboarding concluído",
           total: perfis.filter((x) => x.onboarding_completed).length,
@@ -396,14 +360,16 @@ export const getNegocioChurn = createServerFn({ method: "POST" })
       (a) =>
         a.status === "canceled" && a.updated_at >= p.iniAnterior && a.updated_at < p.fimAnterior,
     );
-    // Base do churn = assinantes no fim do período anterior (snapshot); sem snapshot, usa ativas + canceladas.
-    const snapInicio = snaps
-      .filter((s) => s.dia <= dataBRT(p.ini))
-      .sort((a, b) => b.dia.localeCompare(a.dia))[0];
-    const base = snapInicio ? snapInicio.assinantes : ativas.length + canceladas.length;
-    const churn = base > 0 ? (canceladas.length / base) * 100 : null;
-    const baseAnt = ativas.length + canceladasAnt.length;
-    const churnAnt = baseAnt > 0 ? (canceladasAnt.length / baseAnt) * 100 : null;
+    // Base = assinantes no início do período (snapshot); mesma fórmula da Visão geral.
+    const snapEm = (iso: string) =>
+      snaps.filter((s) => s.dia <= dataBRT(iso)).sort((a, b) => b.dia.localeCompare(a.dia))[0];
+    const snapInicio = snapEm(p.ini);
+    const atual = calcularChurn(canceladas.length, snapInicio?.assinantes, ativas.length);
+    const anterior = calcularChurn(
+      canceladasAnt.length,
+      snapEm(p.iniAnterior)?.assinantes,
+      ativas.length,
+    );
     const mensal = new Map<string, { canceladas: number }>();
     for (const a of todas.filter((x) => x.status === "canceled")) {
       const mes = a.updated_at.slice(0, 7);
@@ -413,15 +379,14 @@ export const getNegocioChurn = createServerFn({ method: "POST" })
     }
     return {
       periodo: p,
-      churnPct: churn,
-      churnAnteriorPct: churnAnt,
+      churnPct: atual.pct,
+      churnAnteriorPct: anterior.pct,
       canceladas: canceladas.length,
       canceladasVariacao: variacaoPct(canceladas.length, canceladasAnt.length),
-      base,
+      base: atual.base,
       baseOrigem: snapInicio
         ? `snapshot de ${snapInicio.dia}`
         : "ativas agora + canceladas no período",
-      cancelamAoFim: ativas.filter((a) => a.cancel_at_period_end).length,
       lista: canceladas.map((a) => ({
         userId: a.user_id,
         nome: nome(a.user_id),
@@ -432,7 +397,6 @@ export const getNegocioChurn = createServerFn({ method: "POST" })
         .sort((a, b) => a[0].localeCompare(b[0]))
         .slice(-12)
         .map(([mes, m]) => ({ dia: mes, valor: m.canceladas })),
-      serieAssinantes: snaps.map((s) => ({ dia: s.dia, valor: s.assinantes })),
     };
   });
 

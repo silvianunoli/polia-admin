@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { stripeClient } from "@/lib/stripe.functions";
-import { precoConhecido } from "@/lib/precos-stripe";
+import { infoPreco } from "@/lib/founder-precos.server";
+import { calcularChurn } from "@/lib/founder-churn";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import {
   periodoSearchSchema,
@@ -245,19 +245,8 @@ async function calcularNumeros(p: PeriodoResolvido): Promise<NumerosPrincipais> 
   const porPrice = new Map<string, number>();
   ativas.forEach((a) => porPrice.set(a.price_id, (porPrice.get(a.price_id) ?? 0) + 1));
   let mrr = 0;
-  if (porPrice.size > 0) {
-    for (const [priceId, quantidade] of porPrice.entries()) {
-      try {
-        const price = await stripeClient().prices.retrieve(priceId);
-        const valor = price.unit_amount ?? 0;
-        const mensal = price.recurring?.interval === "year" ? Math.round(valor / 12) : valor;
-        mrr += mensal * quantidade;
-      } catch (err) {
-        console.error(`[Founder] Falha ao buscar price ${priceId} no Stripe:`, err);
-        // Stripe fora não zera o MRR: o catálogo local tem os preços vivos.
-        mrr += (precoConhecido(priceId)?.mensal ?? 0) * quantidade;
-      }
-    }
+  for (const [priceId, quantidade] of porPrice.entries()) {
+    mrr += (await infoPreco(priceId)).mensal * quantidade;
   }
 
   // Assinantes/MRR do período anterior vêm do snapshot diário mais próximo do
@@ -271,8 +260,8 @@ async function calcularNumeros(p: PeriodoResolvido): Promise<NumerosPrincipais> 
     .maybeSingle();
   const snap = snapAnterior as { assinantes: number; mrr_centavos: number } | null;
 
-  const baseChurn = ativas.length + canceladasNoPeriodo.length;
-  const churn = baseChurn > 0 ? (canceladasNoPeriodo.length / baseChurn) * 100 : null;
+  // fimAnterior = início do período: o snapshot é a base do churn, igual à tela Churn.
+  const churn = calcularChurn(canceladasNoPeriodo.length, snap?.assinantes, ativas.length).pct;
 
   return {
     usuariasTotal: metrica(usuariasTotalAtual, usuariasTotalAnterior),

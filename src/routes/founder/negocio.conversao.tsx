@@ -24,8 +24,8 @@ function Conversao() {
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Da conta criada até a assinatura ativa. "Coorte do período" = contas criadas dentro do
-        período que hoje têm assinatura ativa. Lista de espera entra como topo do funil
-        pré-lançamento.
+        período que hoje têm assinatura ativa. O funil olha a base inteira, desde o primeiro
+        cadastro. Pagamento que ficou pela metade no checkout não conta como assinatura.
       </p>
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -56,35 +56,6 @@ function Conversao() {
           carregando={carregando}
         />
       </div>
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatCard
-          label="Lista de espera"
-          valor={d?.leadsListaEspera}
-          variacaoPct={d?.leadsVariacao}
-          descricao={d?.periodo.rotulo}
-          carregando={carregando}
-        />
-        <StatCard
-          label="Contas criadas"
-          valor={d?.contasNoPeriodo}
-          descricao={d?.periodo.rotulo}
-          carregando={carregando}
-          href="/founder/analytics/usuarias"
-        />
-        <StatCard
-          label="Já tiveram assinatura"
-          valor={d?.jaTiveramAssinatura}
-          descricao="em qualquer momento"
-          carregando={carregando}
-        />
-        <StatCard
-          label="Assinantes ativas"
-          valor={d?.pagantes}
-          carregando={carregando}
-          href="/founder/negocio/assinaturas"
-        />
-      </div>
-
       <Secao titulo="Funil de conversão (base total)" carregando={carregando} altura="h-48">
         {d ? <Funil passos={d.funil} /> : null}
       </Secao>

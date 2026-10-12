@@ -125,7 +125,6 @@ function RootComponent() {
     pathname.startsWith("/loja/");
 
   const semSidebar =
-    pathname === "/numeros" ||
     pathname.startsWith("/chamados") ||
     pathname.startsWith("/pesquisas") ||
     pathname.startsWith("/blog") ||

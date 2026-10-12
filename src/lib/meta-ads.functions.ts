@@ -2,6 +2,16 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { janelaDoPeriodo } from "@/lib/campanhas-funil";
+import { dataBRT } from "@/lib/founder-periodo";
+
+// "30 dias" = hoje e os 29 dias anteriores, em horário de Brasília: a mesma
+// janela da tela Campanhas (FND-09, 11/10/2026). Antes era date_preset=last_30d,
+// que deixa hoje de fora, e as duas telas mostravam gastos diferentes.
+function timeRange30d(): string {
+  const j = janelaDoPeriodo("30");
+  return encodeURIComponent(JSON.stringify({ since: j.since, until: j.until }));
+}
 
 // "Conta de Anúncios Pólia", business meuinstavendedor — ver
 // polia_meta_ads_business_set2026 na memória. Não é segredo, só um ID
@@ -155,10 +165,8 @@ export const listarCampanhasMeta = createServerFn({ method: "GET" })
       chamarGraph<{ data: CampanhaGraph[] }>(
         `/act_${AD_ACCOUNT_ID}/campaigns?fields=id,name,status,effective_status,objective,daily_budget,lifetime_budget,updated_time&limit=100`,
       ),
-      // date_preset=last_30d: mesma janela que os cards de resumo do
-      // Gerenciador de Anúncios mostram por padrão.
       chamarGraph<{ data: InsightGraph[] }>(
-        `/act_${AD_ACCOUNT_ID}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,ctr,cpc,actions&date_preset=last_30d&limit=100`,
+        `/act_${AD_ACCOUNT_ID}/insights?level=campaign&fields=campaign_id,spend,impressions,clicks,ctr,cpc,actions&time_range=${timeRange30d()}&limit=100`,
       ),
     ]);
 
@@ -226,10 +234,6 @@ interface InsightDiarioGraph {
   actions?: { action_type: string; value: string }[];
 }
 
-function dataISO(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
 // 60 dias em UMA chamada (level=account, time_increment=1): os últimos 30 vão
 // pro gráfico, os 30 anteriores só servem de referência pra comparação —
 // nunca aparecem sozinhos na tela.
@@ -238,13 +242,11 @@ export const obterTendenciaMeta = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context.userId);
 
-    const hoje = new Date();
-    const ontem = new Date(hoje);
-    ontem.setUTCDate(ontem.getUTCDate() - 1);
-    const inicio = new Date(hoje);
-    inicio.setUTCDate(inicio.getUTCDate() - 60);
-
-    const timeRange = JSON.stringify({ since: dataISO(inicio), until: dataISO(ontem) });
+    // 60 dias até hoje (BRT), contando hoje: os 30 últimos batem com os cards.
+    const DIA_MS = 86_400_000;
+    const agora = Date.now();
+    const chaves = Array.from({ length: 60 }, (_, i) => dataBRT(agora - (59 - i) * DIA_MS));
+    const timeRange = JSON.stringify({ since: chaves[0], until: chaves[59] });
     const resp = await chamarGraph<{ data: InsightDiarioGraph[] }>(
       `/act_${AD_ACCOUNT_ID}/insights?level=account&time_increment=1&fields=spend,actions&time_range=${encodeURIComponent(timeRange)}&limit=60`,
     );
@@ -258,14 +260,10 @@ export const obterTendenciaMeta = createServerFn({ method: "GET" })
 
     // Preenche os 60 dias mesmo sem dado (dia sem gasto não aparece na
     // resposta da Graph, e um buraco no gráfico pareceria bug).
-    const dias: PontoDiario[] = [];
-    for (let i = 59; i >= 0; i -= 1) {
-      const d = new Date(ontem);
-      d.setUTCDate(d.getUTCDate() - i);
-      const chave = dataISO(d);
+    const dias: PontoDiario[] = chaves.map((chave) => {
       const v = porDia.get(chave);
-      dias.push({ dia: chave, gasto: v?.gasto ?? 0, leads: v?.leads ?? 0 });
-    }
+      return { dia: chave, gasto: v?.gasto ?? 0, leads: v?.leads ?? 0 };
+    });
 
     const ultimos30 = dias.slice(30);
     const anteriores30 = dias.slice(0, 30);
@@ -321,7 +319,7 @@ export const listarAnunciosDaCampanha = createServerFn({ method: "GET" })
         `/${data.campanhaId}/ads?fields=id,name,status,creative{thumbnail_url,title}&limit=100`,
       ),
       chamarGraph<{ data: InsightAdGraph[] }>(
-        `/${data.campanhaId}/insights?level=ad&fields=ad_id,spend,impressions,clicks,actions&date_preset=last_30d&limit=100`,
+        `/${data.campanhaId}/insights?level=ad&fields=ad_id,spend,impressions,clicks,actions&time_range=${timeRange30d()}&limit=100`,
       ),
     ]);
 

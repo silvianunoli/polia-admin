@@ -127,12 +127,7 @@ export const getProdutoAtivacao = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const p = resolverPeriodo(data);
-    const [todos, pagantesSet, { data: coortesData, error }] = await Promise.all([
-      perfis(),
-      pagantes(),
-      supabaseAdmin.rpc("founder_retencao_coortes", { p_semanas: 12 }),
-    ]);
-    if (error) throw error;
+    const [todos, pagantesSet] = await Promise.all([perfis(), pagantes()]);
     const desde = new Date(
       Math.min(Date.parse(p.iniAnterior), Date.now() - 90 * DIA_MS),
     ).toISOString();
@@ -166,16 +161,6 @@ export const getProdutoAtivacao = createServerFn({ method: "POST" })
         };
       });
 
-    const retencao = (coortesData ?? []) as {
-      coorte: string;
-      tamanho: number;
-      d1: number;
-      d7: number;
-      d30: number;
-    }[];
-    const soma = (k: "tamanho" | "d1" | "d7" | "d30") => retencao.reduce((s, c) => s + c[k], 0);
-    const total = soma("tamanho");
-
     const perfisPorId = new Map(todos.map((x) => [x.id, x]));
     const ultimo = new Map<string, string>();
     const dias = new Map<string, Set<string>>();
@@ -195,82 +180,9 @@ export const getProdutoAtivacao = createServerFn({ method: "POST" })
       ativadas: atual.ativadas.length,
       ttfvMedianaS: atual.ttfvMedianaS,
       comValor: atual.comValor,
-      retorno: {
-        d1: total ? (soma("d1") / total) * 100 : null,
-        d7: total ? (soma("d7") / total) * 100 : null,
-        d30: total ? (soma("d30") / total) * 100 : null,
-        base: total,
-      },
       coortesAtivacao,
       naoAtivadas: linhas(naoAtivadas, perfisPorId, pagantesSet, ultimo, dias),
     };
-  });
-
-export const getProdutoFunil = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .inputValidator((input: unknown) => periodoSearchSchema.parse(input))
-  .handler(async ({ context, data }) => {
-    await assertAdmin(context.userId);
-    const p = resolverPeriodo(data);
-    const [todos, pagantesSet] = await Promise.all([perfis(), pagantes()]);
-    const coorte = todos.filter((x) => x.created_at >= p.ini && x.created_at < p.fim);
-    const ids = new Set(coorte.map((x) => x.id));
-    const eventos = (await eventosDesde(p.ini)).filter((e) => e.user_id && ids.has(e.user_id));
-    const tem = (id: string, evento: string, feature?: string) =>
-      eventos.some(
-        (e) => e.user_id === id && e.evento === evento && (!feature || e.feature === feature),
-      );
-
-    const passos: { rotulo: string; cumpre: (x: Perfil) => boolean }[] = [
-      { rotulo: "Criou conta", cumpre: () => true },
-      {
-        rotulo: "Começou o onboarding",
-        cumpre: (x) => tem(x.id, "onboarding_started") || x.onboarding_completed,
-      },
-      {
-        rotulo: "Concluiu o onboarding",
-        cumpre: (x) => x.onboarding_completed || tem(x.id, "onboarding_completed"),
-      },
-      { rotulo: "Cadastrou o primeiro produto", cumpre: (x) => tem(x.id, "create_product") },
-      { rotulo: "Primeira ação de valor", cumpre: (x) => tem(x.id, "feature_completed") },
-      {
-        rotulo: "Voltou depois do 1º dia",
-        cumpre: (x) =>
-          eventos.some(
-            (e) =>
-              e.user_id === x.id && Date.parse(e.criado_em) > Date.parse(x.created_at) + DIA_MS,
-          ),
-      },
-    ];
-
-    const perfisPorId = new Map(todos.map((x) => [x.id, x]));
-    const ultimo = new Map<string, string>();
-    const dias = new Map<string, Set<string>>();
-    for (const e of eventos) {
-      const id = e.user_id as string;
-      ultimo.set(id, e.criado_em);
-      if (!dias.has(id)) dias.set(id, new Set());
-      dias.get(id)!.add(dataBRT(e.criado_em));
-    }
-
-    let restantes = coorte;
-    const resultado = passos.map((passo) => {
-      const passaram = restantes.filter(passo.cumpre);
-      const cairam = restantes.filter((x) => !passaram.includes(x));
-      restantes = passaram;
-      return {
-        rotulo: passo.rotulo,
-        total: passaram.length,
-        cairam: linhas(
-          cairam.map((x) => x.id),
-          perfisPorId,
-          pagantesSet,
-          ultimo,
-          dias,
-        ),
-      };
-    });
-    return { periodo: p, tamanhoCoorte: coorte.length, passos: resultado };
   });
 
 // ---------- Feedback ----------
@@ -281,7 +193,7 @@ export const getProdutoFeedback = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const p = resolverPeriodo(data);
-    const [{ data: fb }, { data: fbAnt }, { data: tk }, todos] = await Promise.all([
+    const [{ data: fb }, { data: fbAnt }, todos] = await Promise.all([
       supabaseAdmin
         .from("feedback_responses")
         .select("user_id, trigger_type, context_ref, score, comment, created_at")
@@ -295,12 +207,6 @@ export const getProdutoFeedback = createServerFn({ method: "POST" })
         .gte("created_at", p.iniAnterior)
         .lt("created_at", p.fimAnterior)
         .limit(500),
-      supabaseAdmin
-        .from("tickets")
-        .select("id, user_id, title, status, priority, module_ref, created_at, resolved_at")
-        .gte("created_at", new Date(Date.now() - 90 * DIA_MS).toISOString())
-        .order("created_at", { ascending: false })
-        .limit(300),
       perfis(),
     ]);
     const perfisPorId = new Map(todos.map((x) => [x.id, x]));
@@ -323,22 +229,6 @@ export const getProdutoFeedback = createServerFn({ method: "POST" })
       score: s,
       total: feedbacks.filter((f) => f.score === s).length,
     }));
-
-    const tickets = (tk ?? []) as {
-      id: string;
-      user_id: string;
-      title: string;
-      status: string;
-      priority: string | null;
-      module_ref: string | null;
-      created_at: string;
-      resolved_at: string | null;
-    }[];
-    const noPeriodo = tickets.filter((t) => t.created_at >= p.ini && t.created_at < p.fim);
-    const resolvidos = tickets.filter((t) => t.resolved_at);
-    const tempoResolucaoS = resolvidos.map(
-      (t) => (Date.parse(t.resolved_at as string) - Date.parse(t.created_at)) / 1000,
-    );
 
     return {
       periodo: p,
@@ -365,23 +255,6 @@ export const getProdutoFeedback = createServerFn({ method: "POST" })
           score: f.score,
           comentario: f.comment as string,
         })),
-      chamados: {
-        abertos: tickets.filter(
-          (t) => t.status !== "resolvido" && t.status !== "fechado" && !t.resolved_at,
-        ).length,
-        noPeriodo: noPeriodo.length,
-        resolvidos90d: resolvidos.length,
-        tempoMedioResolucaoS: media(tempoResolucaoS),
-        recentes: tickets.slice(0, 20).map((t) => ({
-          id: t.id,
-          titulo: t.title,
-          status: t.status,
-          prioridade: t.priority,
-          modulo: t.module_ref,
-          usuaria: nomeDe(perfisPorId.get(t.user_id)),
-          quando: t.created_at,
-        })),
-      },
     };
   });
 
