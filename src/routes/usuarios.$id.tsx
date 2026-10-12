@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { PlanoEAcesso } from "@/components/crm/PlanoEAcesso";
+import { ExcluirCadastro } from "@/components/crm/ExcluirCadastro";
 
 export const Route = createFileRoute("/usuarios/$id")({
   head: () => ({
@@ -137,6 +138,8 @@ function AdminUsuarioPerfil() {
           </div>
         </dl>
       </div>
+
+      <ExcluirCadastro userId={usuario.id} nome={usuario.full_name ?? "Essa usuária"} />
     </>
   );
 }

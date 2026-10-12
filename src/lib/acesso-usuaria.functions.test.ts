@@ -24,7 +24,7 @@ vi.mock("@tanstack/react-start", () => ({
 }));
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 
-const { filas, chamadas, from, logAcaoAdminServer } = vi.hoisted(() => {
+const { filas, chamadas, from, logAcaoAdminServer, auth, rpc, cancelar } = vi.hoisted(() => {
   const filas = new Map<string, { data?: unknown; error?: unknown }[]>();
   const chamadas: { tabela: string; metodo: string; args: unknown[] }[] = [];
   const METODOS = ["select", "eq", "order", "limit", "update", "maybeSingle"];
@@ -43,13 +43,30 @@ const { filas, chamadas, from, logAcaoAdminServer } = vi.hoisted(() => {
     };
     return cadeia;
   }
-  return { filas, chamadas, from, logAcaoAdminServer: vi.fn() };
+  const auth = { admin: { getUserById: vi.fn(), deleteUser: vi.fn() } };
+  return {
+    filas,
+    chamadas,
+    from,
+    logAcaoAdminServer: vi.fn(),
+    auth,
+    rpc: vi.fn(),
+    cancelar: vi.fn(),
+  };
 });
 
-vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from } }));
+vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from, auth, rpc } }));
 vi.mock("@/lib/audit-log.server", () => ({ logAcaoAdminServer }));
+vi.mock("@/lib/stripe.functions", () => ({
+  stripeClient: () => ({ subscriptions: { cancel: cancelar } }),
+}));
 
-import { atualizarAcessoDaUsuaria, lerAcessoDaUsuaria } from "./acesso-usuaria.functions";
+import {
+  atualizarAcessoDaUsuaria,
+  excluirCadastroDaUsuaria,
+  lerAcessoDaUsuaria,
+  mascararEmail,
+} from "./acesso-usuaria.functions";
 
 const ADMIN = "11111111-1111-4111-8111-111111111111";
 const ANA = "22222222-2222-4222-8222-222222222222";
@@ -57,6 +74,7 @@ const ANA = "22222222-2222-4222-8222-222222222222";
 type Chamada = (opts?: { data?: unknown; context?: { userId: string } }) => Promise<unknown>;
 const ler = lerAcessoDaUsuaria as unknown as Chamada;
 const atualizar = atualizarAcessoDaUsuaria as unknown as Chamada;
+const excluir = excluirCadastroDaUsuaria as unknown as Chamada;
 
 function enfileirar(tabela: string, ...rs: { data?: unknown; error?: unknown }[]) {
   filas.set(tabela, [...(filas.get(tabela) ?? []), ...rs]);
@@ -173,5 +191,129 @@ describe("atualizarAcessoDaUsuaria", () => {
       atualizar({ data: { userId: ANA, plano: "controle", is_admin: false } }),
     ).rejects.toThrow("Falha ao mudar");
     expect(logAcaoAdminServer).not.toHaveBeenCalled();
+  });
+});
+
+describe("excluirCadastroDaUsuaria", () => {
+  const alvo = (is_admin = false) =>
+    enfileirar("profiles", { data: { is_admin, full_name: "Ana" }, error: null });
+  const caminhoFeliz = () => {
+    auth.admin.getUserById.mockResolvedValue({ data: { user: { email: "ana.lima@gmail.com" } } });
+    rpc.mockResolvedValue({ error: null });
+    auth.admin.deleteUser.mockResolvedValue({ error: null });
+  };
+
+  it("bloqueia quem não é admin antes de apagar qualquer coisa", async () => {
+    admin(false);
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("Forbidden");
+    expect(rpc).not.toHaveBeenCalled();
+    expect(auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("recusa id que não é uuid antes de consultar", async () => {
+    await expect(excluir({ data: { userId: "1 or 1=1" } })).rejects.toThrow();
+    expect(chamadas).toHaveLength(0);
+  });
+
+  it("não exclui a própria conta", async () => {
+    admin();
+    await expect(excluir({ data: { userId: ADMIN } })).rejects.toThrow("própria conta");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("não exclui conta de administradora", async () => {
+    admin();
+    alvo(true);
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("administradora");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("usuária que não existe não vira exclusão", async () => {
+    admin();
+    enfileirar("profiles", { data: null, error: null });
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("Não achei");
+    expect(rpc).not.toHaveBeenCalled();
+  });
+
+  it("sem assinatura: apaga dados, depois login, e registra com e-mail mascarado", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    await expect(excluir({ data: { userId: ANA } })).resolves.toEqual({
+      ok: true,
+      assinaturaCancelada: false,
+    });
+    expect(cancelar).not.toHaveBeenCalled();
+    expect(rpc).toHaveBeenCalledWith("excluir_dados_da_usuaria", { alvo: ANA });
+    expect(auth.admin.deleteUser).toHaveBeenCalledWith(ANA);
+    expect(logAcaoAdminServer).toHaveBeenCalledWith(ADMIN, "usuaria_excluida", ANA, {
+      email: "ana***@gmail.com",
+      assinatura_cancelada: false,
+    });
+  });
+
+  it("assinatura cobrando é cancelada no Stripe antes de apagar", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    enfileirar("assinaturas", {
+      data: { stripe_subscription_id: "sub_123", status: "active" },
+      error: null,
+    });
+    const r = (await excluir({ data: { userId: ANA } })) as { assinaturaCancelada: boolean };
+    expect(cancelar).toHaveBeenCalledWith("sub_123");
+    expect(r.assinaturaCancelada).toBe(true);
+  });
+
+  it("assinatura já cancelada não chama o Stripe", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    enfileirar("assinaturas", {
+      data: { stripe_subscription_id: "sub_123", status: "canceled" },
+      error: null,
+    });
+    await excluir({ data: { userId: ANA } });
+    expect(cancelar).not.toHaveBeenCalled();
+  });
+
+  it("Stripe falhou: nada é apagado", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    enfileirar("assinaturas", {
+      data: { stripe_subscription_id: "sub_123", status: "past_due" },
+      error: null,
+    });
+    cancelar.mockRejectedValue(new Error("stripe fora"));
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("nada foi apagado");
+    expect(rpc).not.toHaveBeenCalled();
+    expect(auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it("falha ao apagar dados não chega a apagar o login", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    rpc.mockResolvedValue({ error: { message: "boom" } });
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("Nada foi apagado");
+    expect(auth.admin.deleteUser).not.toHaveBeenCalled();
+    expect(logAcaoAdminServer).not.toHaveBeenCalled();
+  });
+
+  it("login que não sai vira erro e fica no log como parcial", async () => {
+    admin();
+    alvo();
+    caminhoFeliz();
+    auth.admin.deleteUser.mockResolvedValue({ error: { message: "Database error" } });
+    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("login ainda existe");
+    expect(logAcaoAdminServer.mock.calls[0][1]).toBe("usuaria_excluida_parcial");
+  });
+});
+
+describe("mascararEmail", () => {
+  it("mostra só o começo do nome", () => {
+    expect(mascararEmail("silvia@gmail.com")).toBe("sil***@gmail.com");
+    expect(mascararEmail(null)).toBe("sem e-mail");
   });
 });

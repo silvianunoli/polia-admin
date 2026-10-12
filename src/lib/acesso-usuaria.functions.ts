@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { PLANOS_CONVITE, type PlanoConvite } from "@/lib/planos-convite";
+import { stripeClient } from "@/lib/stripe.functions";
 
 // CRM-10 (08/10/2026): mudar plano ou acesso de administradora de quem JÁ tem
 // conta. Até aqui isso era feito à mão no banco, porque o convite só vale no
@@ -112,4 +113,107 @@ export const atualizarAcessoDaUsuaria = createServerFn({ method: "POST" })
       },
     );
     return { ok: true };
+  });
+
+// Exclusão de cadastro pelo office (12/10/2026). Mesmas três etapas de
+// excluirMinhaConta no polia-app, na mesma ordem e pelo mesmo motivo: cancela o
+// Stripe ANTES (senão o cartão segue cobrando uma conta que não existe mais),
+// depois apaga os dados com a mesma varredura do produto
+// (excluir_dados_da_usuaria, migração 20261012120000 no polia-app) e só então o
+// login. Irreversível: não existe lixeira.
+
+// Status do Stripe em que a assinatura ainda está cobrando.
+const STATUS_COBRANDO = new Set(["active", "trialing", "past_due"]);
+
+// O log de auditoria guarda quem foi excluída sem guardar o e-mail inteiro de
+// quem pediu pra ser esquecida: dá pra reconhecer, não dá pra reaproveitar.
+export function mascararEmail(email: string | null | undefined): string {
+  if (!email || !email.includes("@")) return "sem e-mail";
+  const [nome, dominio] = email.split("@");
+  return `${nome.slice(0, 3)}***@${dominio}`;
+}
+
+export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => idInput.parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+
+    if (context.userId === data.userId) {
+      throw new Error("A sua própria conta não sai por aqui.");
+    }
+
+    const { data: perfil } = await supabaseAdmin
+      .from("profiles")
+      .select("is_admin, full_name")
+      .eq("id", data.userId)
+      .maybeSingle();
+    const alvo = perfil as { is_admin: boolean | null; full_name: string | null } | null;
+    if (!alvo) throw new Error("Não achei essa usuária.");
+    // Foi apagando a única admin que o office ficou sem dona em 15/09/2026.
+    // Tirar o admin primeiro é um passo a mais de propósito.
+    if (alvo.is_admin) {
+      throw new Error(
+        "Essa conta é de administradora. Tira o acesso de administradora primeiro e depois exclui.",
+      );
+    }
+
+    const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const emailMascarado = mascararEmail(authUser?.user?.email);
+
+    // 1) Stripe. Se não conseguir cancelar, para tudo antes de apagar qualquer coisa.
+    const { data: assinatura } = await supabaseAdmin
+      .from("assinaturas")
+      .select("stripe_subscription_id, status")
+      .eq("user_id", data.userId)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const sub = assinatura as { stripe_subscription_id: string | null; status: string } | null;
+    let assinaturaCancelada = false;
+    if (sub?.stripe_subscription_id && STATUS_COBRANDO.has(sub.status)) {
+      try {
+        await stripeClient().subscriptions.cancel(sub.stripe_subscription_id);
+        assinaturaCancelada = true;
+      } catch (err) {
+        console.error("[Usuárias] Falha ao cancelar assinatura na exclusão:", err);
+        throw new Error(
+          "Não consegui cancelar a assinatura dela no Stripe, então nada foi apagado. Cancela pelo painel do Stripe e tenta de novo.",
+        );
+      }
+    }
+
+    // 2) Dados (perfil, planejamento, finanças, chamados, tudo com user_id).
+    const { error: rpcError } = await supabaseAdmin.rpc(
+      "excluir_dados_da_usuaria" as never,
+      { alvo: data.userId } as never,
+    );
+    if (rpcError) {
+      console.error("[Usuárias] Falha ao apagar dados:", rpcError);
+      throw new Error(
+        assinaturaCancelada
+          ? "A assinatura foi cancelada, mas os dados não saíram. Tenta de novo: a exclusão retoma de onde parou."
+          : "Não consegui apagar os dados dela. Nada foi apagado, tenta de novo.",
+      );
+    }
+
+    // 3) Login.
+    const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
+    if (authError) {
+      console.error("[Usuárias] Dados apagados, mas o login ficou:", authError);
+      await logAcaoAdminServer(context.userId, "usuaria_excluida_parcial", data.userId, {
+        email: emailMascarado,
+        etapa: "auth.admin.deleteUser",
+        erro: authError.message,
+      });
+      throw new Error(
+        "Os dados dela foram apagados, mas o login ainda existe. Falta apagar em Authentication > Users no Supabase.",
+      );
+    }
+
+    await logAcaoAdminServer(context.userId, "usuaria_excluida", data.userId, {
+      email: emailMascarado,
+      assinatura_cancelada: assinaturaCancelada,
+    });
+    return { ok: true, assinaturaCancelada };
   });

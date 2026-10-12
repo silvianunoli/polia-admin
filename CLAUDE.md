@@ -182,7 +182,12 @@ Três coisas que não são óbvias e já custaram raciocínio:
    vez de aceitar em silêncio. Mudar plano/admin de quem já tem conta é na seção **"Plano e
    acesso"** de `/usuarios/$id` (CRM-10, 08/10/2026, `src/lib/acesso-usuaria.functions.ts`):
    server function com assertAdmin, log `usuaria_acesso`/`usuaria_acesso_admin` com antes e
-   depois, e trava pra ninguém tirar o próprio admin.
+   depois, e trava pra ninguém tirar o próprio admin. No fim da mesma ficha fica **"Excluir
+   cadastro"** (12/10/2026, `excluirCadastroDaUsuaria`): cancela Stripe, chama
+   `excluir_dados_da_usuaria(alvo)` (só service_role, migração 20261012120000 no polia-app) e
+   apaga o login. Recusa a própria conta e conta de admin. Log `usuaria_excluida` com e-mail
+   mascarado. O convite da pessoa continua marcado como usado, então com o cadastro fechado ela
+   não volta sozinha: precisa de convite novo.
 2. **A conta de teste não tem mais gatilho próprio.** Até 07/10/2026 existia
    `tmp_plano_beta_conta_teste`, com o e-mail oi.prismia@gmail.com escrito dentro da função.
    Saiu no CRM-11: agora ela nasce com `beta` pelo convite, como qualquer conta (plano
