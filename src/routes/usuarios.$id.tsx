@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { PlanoEAcesso } from "@/components/crm/PlanoEAcesso";
 import { ExcluirCadastro } from "@/components/crm/ExcluirCadastro";
+import { lerAcessoDaUsuaria } from "@/lib/acesso-usuaria.functions";
 
 export const Route = createFileRoute("/usuarios/$id")({
   head: () => ({
@@ -30,8 +31,13 @@ function AdminUsuarioPerfil() {
   const [totalTickets, setTotalTickets] = useState(0);
   const [totalEntregaveis, setTotalEntregaveis] = useState(0);
   const [moduloAtual, setModuloAtual] = useState(0);
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
+    // O e-mail mora em auth.users, que só o servidor lê.
+    lerAcessoDaUsuaria({ data: { userId: id } })
+      .then((a) => setEmail(a.email))
+      .catch(() => setEmail(null));
     (async () => {
       const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
       setUsuario(data ?? null);
@@ -85,6 +91,7 @@ function AdminUsuarioPerfil() {
             Usuária
           </p>
           <h1 className="font-cabinet text-[40px] text-[var(--ink)]">{usuario.full_name ?? "—"}</h1>
+          {email ? <p className="font-sans text-[14px] text-[var(--ink-soft)]">{email}</p> : null}
           <p className="font-sans text-[14px] text-[var(--muted)]">{usuario.business_name ?? ""}</p>
         </div>
       </div>
@@ -139,7 +146,11 @@ function AdminUsuarioPerfil() {
         </dl>
       </div>
 
-      <ExcluirCadastro userId={usuario.id} nome={usuario.full_name ?? "Essa usuária"} />
+      <ExcluirCadastro
+        userId={usuario.id}
+        nome={usuario.full_name ?? "Essa usuária"}
+        email={email}
+      />
     </>
   );
 }

@@ -34,6 +34,8 @@ async function assertAdmin(userId: string) {
 }
 
 export interface AcessoDaUsuaria {
+  /** E-mail do login (auth.users). null = login não achado. */
+  email: string | null;
   plano: string | null;
   is_admin: boolean;
   /** Assinatura mais recente no Stripe. null = nunca assinou. */
@@ -62,9 +64,12 @@ export const lerAcessoDaUsuaria = createServerFn({ method: "GET" })
       .limit(1)
       .maybeSingle();
 
+    const login = await supabaseAdmin.auth.admin.getUserById(data.userId);
+
     const p = perfil as { plano: string | null; is_admin: boolean | null };
     const a = assinatura as { status: string; cancel_at_period_end: boolean | null } | null;
     return {
+      email: login?.data?.user?.email ?? null,
       plano: p.plano,
       is_admin: Boolean(p.is_admin),
       assinatura: a
@@ -133,14 +138,25 @@ export function mascararEmail(email: string | null | undefined): string {
   return `${nome.slice(0, 3)}***@${dominio}`;
 }
 
+// Recusa esperada volta como valor, não como exceção: erro lançado em server
+// function chega na tela dependendo do caminho de serialização, e foi assim que
+// a recusa de conta admin apareceu como "erro" sem dizer qual (12/10/2026).
+export type ResultadoExclusao =
+  | { ok: true; assinaturaCancelada: boolean; error: null }
+  | { ok: false; assinaturaCancelada: false; error: string };
+
+function recusa(error: string): ResultadoExclusao {
+  return { ok: false, assinaturaCancelada: false, error };
+}
+
 export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => idInput.parse(input))
-  .handler(async ({ context, data }) => {
+  .handler(async ({ context, data }): Promise<ResultadoExclusao> => {
     await assertAdmin(context.userId);
 
     if (context.userId === data.userId) {
-      throw new Error("A sua própria conta não sai por aqui.");
+      return recusa("A sua própria conta não sai por aqui.");
     }
 
     const { data: perfil } = await supabaseAdmin
@@ -149,12 +165,12 @@ export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
       .eq("id", data.userId)
       .maybeSingle();
     const alvo = perfil as { is_admin: boolean | null; full_name: string | null } | null;
-    if (!alvo) throw new Error("Não achei essa usuária.");
+    if (!alvo) return recusa("Não achei essa usuária. Ela pode já ter sido excluída.");
     // Foi apagando a única admin que o office ficou sem dona em 15/09/2026.
     // Tirar o admin primeiro é um passo a mais de propósito.
     if (alvo.is_admin) {
-      throw new Error(
-        "Essa conta é de administradora. Tira o acesso de administradora primeiro e depois exclui.",
+      return recusa(
+        'Essa conta é de administradora. Desmarque "Acesso de administradora" em Plano e acesso, salve e depois exclua.',
       );
     }
 
@@ -177,8 +193,8 @@ export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
         assinaturaCancelada = true;
       } catch (err) {
         console.error("[Usuárias] Falha ao cancelar assinatura na exclusão:", err);
-        throw new Error(
-          "Não consegui cancelar a assinatura dela no Stripe, então nada foi apagado. Cancela pelo painel do Stripe e tenta de novo.",
+        return recusa(
+          "Não consegui cancelar a assinatura dela no Stripe, então nada foi apagado. Cancele pelo painel do Stripe e tente de novo.",
         );
       }
     }
@@ -190,10 +206,10 @@ export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
     );
     if (rpcError) {
       console.error("[Usuárias] Falha ao apagar dados:", rpcError);
-      throw new Error(
+      return recusa(
         assinaturaCancelada
-          ? "A assinatura foi cancelada, mas os dados não saíram. Tenta de novo: a exclusão retoma de onde parou."
-          : "Não consegui apagar os dados dela. Nada foi apagado, tenta de novo.",
+          ? "A assinatura foi cancelada, mas os dados não saíram. Tente de novo: a exclusão retoma de onde parou."
+          : "Não consegui apagar os dados dela. Nada foi apagado, tente de novo.",
       );
     }
 
@@ -206,7 +222,7 @@ export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
         etapa: "auth.admin.deleteUser",
         erro: authError.message,
       });
-      throw new Error(
+      return recusa(
         "Os dados dela foram apagados, mas o login ainda existe. Falta apagar em Authentication > Users no Supabase.",
       );
     }
@@ -215,5 +231,26 @@ export const excluirCadastroDaUsuaria = createServerFn({ method: "POST" })
       email: emailMascarado,
       assinatura_cancelada: assinaturaCancelada,
     });
-    return { ok: true, assinaturaCancelada };
+    return { ok: true, assinaturaCancelada, error: null };
+  });
+
+// E-mail de cada conta, pra lista de /crm/usuarias. O e-mail mora em
+// auth.users, que o client não lê; profiles não tem cópia dele.
+export const listarEmailsDasUsuarias = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<Record<string, string>> => {
+    await assertAdmin(context.userId);
+
+    const emails: Record<string, string> = {};
+    const porPagina = 1000;
+    for (let pagina = 1; pagina <= 50; pagina++) {
+      const { data, error } = await supabaseAdmin.auth.admin.listUsers({
+        page: pagina,
+        perPage: porPagina,
+      });
+      if (error) throw new Error("Falha ao ler os e-mails.");
+      for (const u of data.users) if (u.email) emails[u.id] = u.email;
+      if (data.users.length < porPagina) break;
+    }
+    return emails;
   });

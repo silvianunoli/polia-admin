@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { listarEmailsDasUsuarias } from "@/lib/acesso-usuaria.functions";
 
 // A aba "Convites" saiu daqui em 21/09/2026: virou /crm/convites, porque passou
 // a decidir plano e acesso de administradora e não cabia mais numa aba.
@@ -79,10 +80,16 @@ function CrmUsuarias() {
   // migração pro Planejamento e não tem ninguém escrevendo nela.
   const [moduloPorUsuaria, setModuloPorUsuaria] = useState<Map<string, number>>(new Map());
   const [espera, setEspera] = useState<EsperaItem[]>([]);
+  // id -> e-mail. Vem do servidor (auth.users), separado da lista pra uma
+  // falha aqui não esconder as clientes.
+  const [emails, setEmails] = useState<Record<string, string>>({});
   const [filtroStatus, setFiltroStatus] = useState("");
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
+    listarEmailsDasUsuarias()
+      .then(setEmails)
+      .catch(() => setEmails({}));
     (async () => {
       const [{ data: profs }, { data: esperaData }, { data: secoes }] = await Promise.all([
         supabase
@@ -133,10 +140,15 @@ function CrmUsuarias() {
   const filtrados = useMemo(() => {
     return clientes.filter((c) => {
       if (filtroStatus && statusKey(c) !== filtroStatus) return false;
-      if (busca && !c.full_name?.toLowerCase().includes(busca.toLowerCase())) return false;
+      if (busca) {
+        const termo = busca.toLowerCase();
+        const nome = c.full_name?.toLowerCase() ?? "";
+        const email = emails[c.id]?.toLowerCase() ?? "";
+        if (!nome.includes(termo) && !email.includes(termo)) return false;
+      }
       return true;
     });
-  }, [clientes, filtroStatus, busca]);
+  }, [clientes, filtroStatus, busca, emails]);
 
   return (
     <>
@@ -184,7 +196,7 @@ function CrmUsuarias() {
 
           <input
             type="text"
-            placeholder="Buscar por nome"
+            placeholder="Buscar por nome ou e-mail"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className={`mb-5 w-full sm:max-w-[320px] ${inputClass}`}
@@ -210,8 +222,15 @@ function CrmUsuarias() {
                       key={c.id}
                       className="border-b border-[var(--line)] hover:bg-[var(--surface)]"
                     >
-                      <td className="px-5 py-3 font-sans text-[14px] text-[var(--ink)]">
-                        {c.full_name ?? "—"}
+                      <td className="px-5 py-3 font-sans">
+                        <span className="block text-[14px] text-[var(--ink)]">
+                          {c.full_name ?? "—"}
+                        </span>
+                        {emails[c.id] ? (
+                          <span className="block text-[12px] text-[var(--muted)]">
+                            {emails[c.id]}
+                          </span>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3">
                         <span

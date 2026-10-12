@@ -43,7 +43,7 @@ const { filas, chamadas, from, logAcaoAdminServer, auth, rpc, cancelar } = vi.ho
     };
     return cadeia;
   }
-  const auth = { admin: { getUserById: vi.fn(), deleteUser: vi.fn() } };
+  const auth = { admin: { getUserById: vi.fn(), deleteUser: vi.fn(), listUsers: vi.fn() } };
   return {
     filas,
     chamadas,
@@ -65,6 +65,7 @@ import {
   atualizarAcessoDaUsuaria,
   excluirCadastroDaUsuaria,
   lerAcessoDaUsuaria,
+  listarEmailsDasUsuarias,
   mascararEmail,
 } from "./acesso-usuaria.functions";
 
@@ -103,7 +104,9 @@ describe("lerAcessoDaUsuaria", () => {
       data: { status: "active", cancel_at_period_end: true },
       error: null,
     });
+    auth.admin.getUserById.mockResolvedValue({ data: { user: { email: "ana@gmail.com" } } });
     await expect(ler({ data: { userId: ANA } })).resolves.toEqual({
+      email: "ana@gmail.com",
       plano: "controle",
       is_admin: false,
       assinatura: { status: "active", cancel_at_period_end: true },
@@ -217,21 +220,25 @@ describe("excluirCadastroDaUsuaria", () => {
 
   it("não exclui a própria conta", async () => {
     admin();
-    await expect(excluir({ data: { userId: ADMIN } })).rejects.toThrow("própria conta");
+    const r = (await excluir({ data: { userId: ADMIN } })) as { ok: boolean; error: string };
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain("própria conta");
     expect(rpc).not.toHaveBeenCalled();
   });
 
   it("não exclui conta de administradora", async () => {
     admin();
     alvo(true);
-    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("administradora");
+    const r = (await excluir({ data: { userId: ANA } })) as { ok: boolean; error: string };
+    expect(r).toMatchObject({ ok: false });
+    expect(r.error).toContain("Acesso de administradora");
     expect(rpc).not.toHaveBeenCalled();
   });
 
   it("usuária que não existe não vira exclusão", async () => {
     admin();
     enfileirar("profiles", { data: null, error: null });
-    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("Não achei");
+    await expect(excluir({ data: { userId: ANA } })).resolves.toMatchObject({ ok: false });
     expect(rpc).not.toHaveBeenCalled();
   });
 
@@ -242,6 +249,7 @@ describe("excluirCadastroDaUsuaria", () => {
     await expect(excluir({ data: { userId: ANA } })).resolves.toEqual({
       ok: true,
       assinaturaCancelada: false,
+      error: null,
     });
     expect(cancelar).not.toHaveBeenCalled();
     expect(rpc).toHaveBeenCalledWith("excluir_dados_da_usuaria", { alvo: ANA });
@@ -286,7 +294,8 @@ describe("excluirCadastroDaUsuaria", () => {
       error: null,
     });
     cancelar.mockRejectedValue(new Error("stripe fora"));
-    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("nada foi apagado");
+    const r = (await excluir({ data: { userId: ANA } })) as { error: string };
+    expect(r.error).toContain("nada foi apagado");
     expect(rpc).not.toHaveBeenCalled();
     expect(auth.admin.deleteUser).not.toHaveBeenCalled();
   });
@@ -296,7 +305,8 @@ describe("excluirCadastroDaUsuaria", () => {
     alvo();
     caminhoFeliz();
     rpc.mockResolvedValue({ error: { message: "boom" } });
-    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("Nada foi apagado");
+    const r = (await excluir({ data: { userId: ANA } })) as { error: string };
+    expect(r.error).toContain("Nada foi apagado");
     expect(auth.admin.deleteUser).not.toHaveBeenCalled();
     expect(logAcaoAdminServer).not.toHaveBeenCalled();
   });
@@ -306,8 +316,33 @@ describe("excluirCadastroDaUsuaria", () => {
     alvo();
     caminhoFeliz();
     auth.admin.deleteUser.mockResolvedValue({ error: { message: "Database error" } });
-    await expect(excluir({ data: { userId: ANA } })).rejects.toThrow("login ainda existe");
+    const r = (await excluir({ data: { userId: ANA } })) as { error: string };
+    expect(r.error).toContain("login ainda existe");
     expect(logAcaoAdminServer.mock.calls[0][1]).toBe("usuaria_excluida_parcial");
+  });
+});
+
+describe("listarEmailsDasUsuarias", () => {
+  const listar = listarEmailsDasUsuarias as unknown as Chamada;
+
+  it("bloqueia quem não é admin", async () => {
+    admin(false);
+    await expect(listar()).rejects.toThrow("Forbidden");
+    expect(auth.admin.listUsers).not.toHaveBeenCalled();
+  });
+
+  it("devolve id -> e-mail e pula conta sem e-mail", async () => {
+    admin();
+    auth.admin.listUsers.mockResolvedValue({
+      data: {
+        users: [
+          { id: ANA, email: "ana@gmail.com" },
+          { id: ADMIN, email: null },
+        ],
+      },
+      error: null,
+    });
+    await expect(listar()).resolves.toEqual({ [ANA]: "ana@gmail.com" });
   });
 });
 
