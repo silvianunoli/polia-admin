@@ -6,6 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { stripeClient } from "@/lib/stripe.functions";
 import { infoPreco } from "@/lib/founder-precos.server";
 import { calcularChurn } from "@/lib/founder-churn";
+import { eventoDeCortesia } from "@/lib/founder-cortesia";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
@@ -164,7 +165,7 @@ export const getNegocioAssinaturas = createServerFn({ method: "POST" })
       supabaseAdmin.from("profiles").select("id, full_name, display_name, business_name, plano"),
       supabaseAdmin
         .from("founder_eventos")
-        .select("user_id, evento, criado_em")
+        .select("user_id, evento, criado_em, propriedades")
         .in("evento", ["subscription_started", "subscription_cancelled", "payment_failed"])
         .gte("criado_em", p.iniAnterior)
         .order("criado_em", { ascending: false })
@@ -185,7 +186,14 @@ export const getNegocioAssinaturas = createServerFn({ method: "POST" })
       const x = perfis.get(id);
       return x?.display_name || x?.full_name || x?.business_name || id.slice(0, 8);
     };
-    const ev = (eventos ?? []) as { user_id: string; evento: string; criado_em: string }[];
+    const ev = (
+      (eventos ?? []) as {
+        user_id: string;
+        evento: string;
+        criado_em: string;
+        propriedades: unknown;
+      }[]
+    ).filter((e) => !eventoDeCortesia(e));
     const noPeriodo = (evento: string, ini: string, fim: string) =>
       ev.filter((e) => e.evento === evento && e.criado_em >= ini && e.criado_em < fim).length;
 
