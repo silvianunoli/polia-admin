@@ -33,7 +33,9 @@ async function assinaturas(): Promise<Assinatura[]> {
     .from("assinaturas")
     .select(
       "user_id, price_id, status, created_at, updated_at, current_period_end, cancel_at_period_end",
-    );
+    )
+    // Cortesia (cupom de 100%, campanha UGC) não é receita: fora do MRR, churn e inadimplência.
+    .eq("cortesia", false);
   return (data ?? []) as Assinatura[];
 }
 

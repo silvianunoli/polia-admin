@@ -229,7 +229,8 @@ async function calcularNumeros(p: PeriodoResolvido): Promise<NumerosPrincipais> 
     ativasPorEventos(p.iniAnterior, p.fimAnterior),
     contar("erros_app", "criado_em", p.ini, p.fim),
     contar("erros_app", "criado_em", p.iniAnterior, p.fimAnterior),
-    supabaseAdmin.from("assinaturas").select("price_id, status, updated_at"),
+    // Cortesia (cupom de 100%, campanha UGC) não é receita: fora do MRR e do churn.
+    supabaseAdmin.from("assinaturas").select("price_id, status, updated_at").eq("cortesia", false),
   ]);
 
   const assinaturas = (assinaturasData ?? []) as {

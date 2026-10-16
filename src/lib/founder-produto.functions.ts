@@ -54,7 +54,9 @@ async function pagantes(): Promise<Set<string>> {
   const { data } = await supabaseAdmin
     .from("assinaturas")
     .select("user_id, status")
-    .in("status", STATUS_PAGANTE);
+    .in("status", STATUS_PAGANTE)
+    // Cortesia (cupom de 100%, campanha UGC) tem o plano sem pagar: não é pagante.
+    .eq("cortesia", false);
   return new Set(((data ?? []) as { user_id: string }[]).map((a) => a.user_id));
 }
 
