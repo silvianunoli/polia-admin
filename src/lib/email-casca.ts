@@ -601,7 +601,7 @@ export interface DadosDiario {
   edicao: number;
   /** "terça, 20 out", montado por quem chama no fuso de Brasília. */
   dataEdicao: string;
-  /** Saudação pronta e escapada. No envio leva {{{FIRST_NAME|você}}}. */
+  /** Saudação pronta e escapada. No envio leva {{{contact.first_name|você}}}. */
   saudacao: string;
   /** Caixa "Pra fazer hoje". Texto escapado; url já validada. */
   acao?: { texto: string; rotulo?: string; url?: string };

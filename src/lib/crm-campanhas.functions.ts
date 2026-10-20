@@ -938,7 +938,7 @@ export const enviarTeste = createServerFn({ method: "POST" })
 
     // No teste nada passa pelo Resend como broadcast: o link de descadastro
     // vira âncora morta e a saudação usa o nome de quem tem esse e-mail no CRM
-    // (ou "você"), em vez de chegar com {{{FIRST_NAME}}} cru.
+    // (ou "você"), em vez de chegar com {{{contact.first_name}}} cru.
     const { data: contatoTeste } = await supabaseAdmin
       .from("crm_contatos")
       .select("nome")

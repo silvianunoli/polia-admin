@@ -73,9 +73,9 @@ export interface DiarioCampanha {
   ps?: string;
 }
 
-// Saudação de envio. O Resend troca FIRST_NAME pelo primeiro nome do contato
+// Saudação de envio. O Resend troca contact.first_name pelo primeiro nome do contato (sintaxe da doc de broadcasts, conferida em 20/10/2026)
 // (a sincronização da lista grava first_name); sem nome, vira "Oi, você.".
-export const SAUDACAO_ENVIO = "Oi, {{{FIRST_NAME|você}}}.";
+export const SAUDACAO_ENVIO = "Oi, {{{contact.first_name|você}}}.";
 
 const DIAS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];

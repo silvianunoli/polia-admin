@@ -118,7 +118,7 @@ describe("campanha no modelo Diário da Pólia", () => {
     expect(html).toMatch(/<h1[^>]*'Cabinet Grotesk'[^>]*>Prazer, eu sou a Sil<\/h1>/);
     const comFraunces = html.split("\n").filter((l) => l.includes("Fraunces"));
     expect(comFraunces).toHaveLength(1);
-    expect(comFraunces[0]).toContain("{{{FIRST_NAME|você}}}");
+    expect(comFraunces[0]).toContain("{{{contact.first_name|você}}}");
   });
 
   it("cabeçalho de edição com número e data de Brasília", () => {
