@@ -24,39 +24,42 @@ vi.mock("@tanstack/react-start", () => ({
 }));
 vi.mock("@/integrations/supabase/auth-middleware", () => ({ requireSupabaseAuth: {} }));
 
-const { filas, chamadas, from, logAcaoAdminServer, auth, rpc, cancelar } = vi.hoisted(() => {
-  const filas = new Map<string, { data?: unknown; error?: unknown }[]>();
-  const chamadas: { tabela: string; metodo: string; args: unknown[] }[] = [];
-  const METODOS = ["select", "eq", "order", "limit", "update", "maybeSingle"];
-  function from(tabela: string) {
-    const cadeia: Record<string, unknown> = {};
-    for (const m of METODOS) {
-      cadeia[m] = (...args: unknown[]) => {
-        chamadas.push({ tabela, metodo: m, args });
-        return cadeia;
+const { filas, chamadas, from, logAcaoAdminServer, auth, rpc, cancelar, testesAbertos } =
+  vi.hoisted(() => {
+    const filas = new Map<string, { data?: unknown; error?: unknown }[]>();
+    const chamadas: { tabela: string; metodo: string; args: unknown[] }[] = [];
+    const METODOS = ["select", "eq", "order", "limit", "update", "maybeSingle"];
+    function from(tabela: string) {
+      const cadeia: Record<string, unknown> = {};
+      for (const m of METODOS) {
+        cadeia[m] = (...args: unknown[]) => {
+          chamadas.push({ tabela, metodo: m, args });
+          return cadeia;
+        };
+      }
+      cadeia.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
+        const fila = filas.get(tabela);
+        const r = fila && fila.length ? fila.shift() : { data: null, error: null };
+        return Promise.resolve(r).then(res, rej);
       };
+      return cadeia;
     }
-    cadeia.then = (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
-      const fila = filas.get(tabela);
-      const r = fila && fila.length ? fila.shift() : { data: null, error: null };
-      return Promise.resolve(r).then(res, rej);
+    const auth = { admin: { getUserById: vi.fn(), deleteUser: vi.fn(), listUsers: vi.fn() } };
+    return {
+      filas,
+      chamadas,
+      from,
+      logAcaoAdminServer: vi.fn(),
+      auth,
+      rpc: vi.fn(),
+      cancelar: vi.fn(),
+      testesAbertos: vi.fn(),
     };
-    return cadeia;
-  }
-  const auth = { admin: { getUserById: vi.fn(), deleteUser: vi.fn(), listUsers: vi.fn() } };
-  return {
-    filas,
-    chamadas,
-    from,
-    logAcaoAdminServer: vi.fn(),
-    auth,
-    rpc: vi.fn(),
-    cancelar: vi.fn(),
-  };
-});
+  });
 
 vi.mock("@/integrations/supabase/client.server", () => ({ supabaseAdmin: { from, auth, rpc } }));
 vi.mock("@/lib/audit-log.server", () => ({ logAcaoAdminServer }));
+vi.mock("@/lib/teste-pro.server", () => ({ testesAbertos }));
 vi.mock("@/lib/stripe.functions", () => ({
   stripeClient: () => ({ subscriptions: { cancel: cancelar } }),
 }));
@@ -88,6 +91,7 @@ beforeEach(() => {
   filas.clear();
   chamadas.length = 0;
   vi.resetAllMocks();
+  testesAbertos.mockResolvedValue(new Map());
 });
 
 describe("lerAcessoDaUsuaria", () => {
@@ -110,7 +114,23 @@ describe("lerAcessoDaUsuaria", () => {
       plano: "controle",
       is_admin: false,
       assinatura: { status: "active", cancel_at_period_end: true },
+      testeProAte: null,
     });
+  });
+
+  it("conta no teste de 7 dias do Pro volta com a data de fim do teste", async () => {
+    admin();
+    enfileirar("profiles", { data: { plano: "projete", is_admin: false }, error: null });
+    testesAbertos.mockResolvedValue(new Map([[ANA, "2026-10-27T12:00:00.000Z"]]));
+    const r = (await ler({ data: { userId: ANA } })) as {
+      plano: string;
+      testeProAte: string | null;
+      assinatura: unknown;
+    };
+    expect(testesAbertos).toHaveBeenCalledWith([ANA]);
+    expect(r.plano).toBe("projete");
+    expect(r.testeProAte).toBe("2026-10-27T12:00:00.000Z");
+    expect(r.assinatura).toBeNull();
   });
 
   it("quem nunca assinou volta com assinatura null", async () => {

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
-import { getProdutoAtivacao } from "@/lib/founder-produto.functions";
+import { getAtivacaoReal, getProdutoAtivacao } from "@/lib/founder-produto.functions";
 import { CARD_CLASS, ALERTA_ERRO_CLASS, BTN_LINK, TH_CLASS } from "@/lib/botoes";
 import { formatarDataBRT, formatarDuracao, formatarPct } from "@/lib/founder-formato";
 import { StatCard } from "@/components/founder/StatCard";
@@ -17,8 +17,11 @@ function Ativacao() {
     () => getProdutoAtivacao({ data: search }),
     [search],
   );
+  // Janela fixa de 30 dias: não depende do filtro de período.
+  const real = useCarregar(() => getAtivacaoReal(), []);
   if (erro) return <div className={ALERTA_ERRO_CLASS}>Não consegui carregar a ativação.</div>;
   const a = dados;
+  const r = real.dados;
   const variacao =
     a && a.taxaAtivacao !== null && a.taxaAtivacaoAnterior !== null
       ? a.taxaAtivacaoAnterior === 0
@@ -30,6 +33,48 @@ function Ativacao() {
 
   return (
     <>
+      {/* GRW-66 (20/10/2026): a ativação que importa pro teste do Pro. Só aqui,
+          não repetir na Visão geral. */}
+      <p className="mb-2 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Ativação real · contas dos últimos {r?.janelaDias ?? 30} dias
+      </p>
+      {real.erro ? (
+        <div className={`mb-6 ${ALERTA_ERRO_CLASS}`}>Não consegui carregar a ativação real.</div>
+      ) : (
+        <div className="mb-3 grid grid-cols-2 gap-4 sm:grid-cols-3">
+          <StatCard
+            label="Contas novas"
+            valor={r?.contas}
+            descricao="sem administradoras"
+            carregando={real.carregando}
+          />
+          <StatCard
+            label="Ativadas"
+            valor={r ? formatarPct(r.taxa) : null}
+            semDados={r?.taxa === null}
+            descricao={r ? `${r.ativadas} de ${r.contas} contas` : undefined}
+            carregando={real.carregando}
+          />
+          <StatCard
+            label="Voltaram depois de 48h"
+            valor={r ? formatarPct(r.taxa48h) : null}
+            semDados={r?.taxa48h === null}
+            descricao={r ? `${r.voltaram48h} de ${r.base48h} contas com 3+ dias` : undefined}
+            carregando={real.carregando}
+          />
+        </div>
+      )}
+      <p className="mb-8 font-sans text-[13px] text-[var(--muted)]">
+        Ativada = salvou pelo menos um produto pela calculadora e voltou à Pólia num dia diferente
+        do cadastro, dentro dos 7 primeiros dias. Conta criada há menos de 7 dias entra na base e
+        ainda pode ativar. Voltaram depois de 48h = das contas com 3 dias ou mais, quantas usaram a
+        Pólia depois de 48 horas do cadastro. Janela fixa de 30 dias, não segue o filtro de período.
+        Cobrança do Stripe não conta como volta.
+      </p>
+
+      <p className="mb-2 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Ativação por onboarding · período do filtro
+      </p>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Ativada = concluiu o onboarding e fez a primeira ação de valor (produto, meta ou
         funcionalidade até o fim) em até 7 dias depois de criar a conta. Tempo até o primeiro valor
@@ -47,7 +92,7 @@ function Ativacao() {
           carregando={carregando}
         />
         <StatCard
-          label="Taxa de ativação"
+          label="Ativação por onboarding"
           valor={a ? formatarPct(a.taxaAtivacao) : null}
           semDados={a?.taxaAtivacao === null}
           variacaoPct={variacao}

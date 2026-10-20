@@ -72,8 +72,13 @@ export interface CampanhaDisponivel {
 
 const PLANOS_PAGOS = new Set(["controle", "projete"]); // Premium e Pro
 
-export function ehAssinante(plano: string | null | undefined): boolean {
-  return !!plano && PLANOS_PAGOS.has(plano);
+/**
+ * Assinante = plano Premium ou Pro hoje, FORA quem está no teste de 7 dias do
+ * Pro (GRW-66): durante o teste profiles.plano = 'projete' sem assinatura, e
+ * pra conversão ela ainda é Grátis.
+ */
+export function ehAssinante(plano: string | null | undefined, emTesteAberto = false): boolean {
+  return !emTesteAberto && !!plano && PLANOS_PAGOS.has(plano);
 }
 
 function texto(v: unknown): string | null {

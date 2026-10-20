@@ -1,12 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { getAnalyticsUsuaria } from "@/lib/founder-analytics.functions";
 import { CARD_CLASS, ALERTA_ERRO_CLASS, BTN_LINK } from "@/lib/botoes";
-import {
-  formatarDataBRT,
-  formatarDataHoraBRT,
-  formatarDuracao,
-  nomePlano,
-} from "@/lib/founder-formato";
+import { formatarDataBRT, formatarDataHoraBRT, formatarDuracao } from "@/lib/founder-formato";
+import { rotuloPlano } from "@/lib/teste-pro";
 import { StatCard } from "@/components/founder/StatCard";
 import { BarraLista } from "@/components/founder/Graficos";
 import { useCarregar } from "@/components/founder/useCarregar";
@@ -63,7 +59,7 @@ function PerfilUsuaria() {
           </h2>
           <p className="font-sans text-[13px] text-[var(--muted)]">
             {d.perfil.negocio ? `${d.perfil.negocio} · ` : ""}
-            plano {nomePlano(d.perfil.plano)}
+            plano {rotuloPlano(d.perfil.plano, d.perfil.testeAte)}
             {d.assinatura ? ` · assinatura ${d.assinatura.status}` : " · sem assinatura"} · conta
             criada em {formatarDataBRT(d.perfil.criadaEm)}
             {d.perfil.onboardingConcluido

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useConfirmacao } from "@/components/crm/Confirmar";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import { nomePlano } from "@/lib/founder-formato";
+import { diaMesBRT, rotuloPlano } from "@/lib/teste-pro";
 import { PLANOS_CONVITE, type PlanoConvite } from "@/lib/planos-convite";
 import {
   atualizarAcessoDaUsuaria,
@@ -109,7 +110,8 @@ export function PlanoEAcesso({ userId, nome }: { userId: string; nome: string })
         Plano e acesso
       </p>
       <p className="mb-5 font-sans text-[13px] text-[var(--ink-soft)]">
-        Hoje: <strong className="text-[var(--ink)]">{nomePlano(atual.plano)}</strong>
+        Hoje:{" "}
+        <strong className="text-[var(--ink)]">{rotuloPlano(atual.plano, atual.testeProAte)}</strong>
         {atual.is_admin ? " · administradora" : ""}
         {atual.assinatura
           ? ` · assinatura no Stripe: ${atual.assinatura.status}${
@@ -168,6 +170,9 @@ export function PlanoEAcesso({ userId, nome }: { userId: string; nome: string })
         Cancelada e a concessão feita aqui se perde.
         {cobrando
           ? " Ela tem assinatura cobrando agora: mudar o plano aqui não muda a cobrança, e a próxima renovação pode devolver o plano pago."
+          : ""}
+        {atual.testeProAte
+          ? ` Ela está no teste de 7 dias do Pro até ${diaMesBRT(atual.testeProAte)}, sem assinatura. No fim do teste, plano Pro sem assinatura volta sozinho pro Grátis, então deixar Pro aqui não segura o Pro depois dessa data.`
           : ""}
       </div>
       {dialogo}

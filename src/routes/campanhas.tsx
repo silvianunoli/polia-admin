@@ -369,7 +369,8 @@ function PainelCampanhas() {
 
       <p className="mt-4 font-sans text-[12px] text-[var(--muted)]">
         Ativada é quem salvou ao menos um produto pela calculadora. Assinante é plano Premium ou Pro
-        hoje. O gasto é cruzado pelo nome do anúncio no Meta igual ao utm_content.
+        hoje, fora quem ainda está no teste de 7 dias do Pro. O gasto é cruzado pelo nome do anúncio
+        no Meta igual ao utm_content.
       </p>
     </>
   );

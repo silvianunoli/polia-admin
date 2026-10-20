@@ -6,6 +6,8 @@ import { assertAdmin } from "@/lib/founder-auth.server";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
 import type { UsuariaLinha } from "@/components/founder/TabelaUsuarias";
+import { testesAbertos } from "@/lib/teste-pro.server";
+import { calcularAtivacaoReal, type ContaNova } from "@/lib/founder-ativacao";
 
 // Produto (seção 5 do direcionamento): ativação, funil de onboarding, tempo
 // até o primeiro valor, retorno por coorte, feedback e experimentos. Tudo
@@ -25,16 +27,21 @@ type Perfil = {
   created_at: string;
   onboarding_completed: boolean;
   onboarding_completed_at: string | null;
+  /** Fim do teste de 7 dias do Pro, se aberto agora (testes_pro, não coluna de profiles). */
+  teste_ate?: string | null;
 };
 
 async function perfis(): Promise<Perfil[]> {
-  const { data } = await supabaseAdmin
-    .from("profiles")
-    .select(
-      "id, full_name, display_name, business_name, plano, created_at, onboarding_completed, onboarding_completed_at",
-    )
-    .limit(5000);
-  return (data ?? []) as Perfil[];
+  const [{ data }, emTeste] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select(
+        "id, full_name, display_name, business_name, plano, created_at, onboarding_completed, onboarding_completed_at",
+      )
+      .limit(5000),
+    testesAbertos(),
+  ]);
+  return ((data ?? []) as Perfil[]).map((p) => ({ ...p, teste_ate: emTeste.get(p.id) ?? null }));
 }
 
 async function eventosDesde(ini: string, eventos?: string[]): Promise<Evento[]> {
@@ -85,6 +92,7 @@ function linhas(
         id,
         nome: nomeDe(p),
         plano: p?.plano ?? null,
+        testeAte: p?.teste_ate ?? null,
         pagante: pagantesSet.has(id),
         ultimoAcesso: ultimo.get(id) ?? null,
         diasAtivos: dias.get(id)?.size ?? 0,
@@ -184,6 +192,98 @@ export const getProdutoAtivacao = createServerFn({ method: "POST" })
       comValor: atual.comValor,
       coortesAtivacao,
       naoAtivadas: linhas(naoAtivadas, perfisPorId, pagantesSet, ultimo, dias),
+    };
+  });
+
+// ---------- Ativação real (GRW-66, 20/10/2026) ----------
+// Regra em founder-ativacao.ts. Janela fixa de 30 dias (não segue o filtro de
+// período da página), contas de administradora fora.
+
+const JANELA_ATIVACAO_DIAS = 30;
+const LOTE_IDS = 100; // .in() com mais que isso estoura o tamanho da URL do PostgREST
+const POR_PAGINA = 1000;
+
+function emLotes<T>(itens: T[], tamanho: number): T[][] {
+  const lotes: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) lotes.push(itens.slice(i, i + tamanho));
+  return lotes;
+}
+
+// Mesmo critério de /campanhas: produto sem calculadora_breakdown é item que o
+// Planejamento cria sozinho e não conta.
+async function quemCalculouPreco(ids: string[]): Promise<Set<string>> {
+  const quem = new Set<string>();
+  for (const lote of emLotes(ids, LOTE_IDS)) {
+    for (let de = 0; ; de += POR_PAGINA) {
+      const { data, error } = await supabaseAdmin
+        .from("produtos")
+        .select("user_id")
+        .in("user_id", lote)
+        .not("calculadora_breakdown", "is", null)
+        .range(de, de + POR_PAGINA - 1);
+      if (error) throw new Error("Falha ao ler os produtos.");
+      const linhas = (data ?? []) as { user_id: string }[];
+      for (const r of linhas) quem.add(r.user_id);
+      if (linhas.length < POR_PAGINA) break;
+    }
+  }
+  return quem;
+}
+
+// Eventos das contas novas, só o instante. Fora: heartbeat (só volume, toda
+// sessão já tem feature_opened) e origem webhook (Stripe renovando ou falhando
+// pagamento não é a usuária voltando).
+async function eventosDasContas(ids: string[], desde: string): Promise<Map<string, string[]>> {
+  const porConta = new Map<string, string[]>();
+  for (const lote of emLotes(ids, LOTE_IDS)) {
+    for (let de = 0; de < 50 * POR_PAGINA; de += POR_PAGINA) {
+      const { data, error } = await supabaseAdmin
+        .from("founder_eventos")
+        .select("user_id, criado_em")
+        .in("user_id", lote)
+        .gte("criado_em", desde)
+        .neq("origem", "webhook")
+        .neq("evento", "heartbeat")
+        .order("id", { ascending: true })
+        .range(de, de + POR_PAGINA - 1);
+      if (error) throw new Error("Falha ao ler os eventos.");
+      const linhas = (data ?? []) as { user_id: string; criado_em: string }[];
+      for (const e of linhas) {
+        const lista = porConta.get(e.user_id);
+        if (lista) lista.push(e.criado_em);
+        else porConta.set(e.user_id, [e.criado_em]);
+      }
+      if (linhas.length < POR_PAGINA) break;
+    }
+  }
+  return porConta;
+}
+
+export const getAtivacaoReal = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const agora = Date.now();
+    const desde = new Date(agora - JANELA_ATIVACAO_DIAS * DIA_MS).toISOString();
+    const { data, error } = await supabaseAdmin
+      .from("profiles")
+      .select("id, created_at, is_admin")
+      .gte("created_at", desde)
+      .limit(5000);
+    if (error) throw new Error("Falha ao ler as contas novas.");
+    const contas: ContaNova[] = (
+      (data ?? []) as { id: string; created_at: string; is_admin: boolean | null }[]
+    )
+      .filter((p) => !p.is_admin)
+      .map((p) => ({ id: p.id, criadaEm: p.created_at }));
+    const ids = contas.map((c) => c.id);
+    const [calcularam, eventos] = await Promise.all([
+      quemCalculouPreco(ids),
+      eventosDasContas(ids, desde),
+    ]);
+    return {
+      janelaDias: JANELA_ATIVACAO_DIAS,
+      ...calcularAtivacaoReal(contas, calcularam, eventos, agora),
     };
   });
 

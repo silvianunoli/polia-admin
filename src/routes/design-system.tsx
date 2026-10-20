@@ -181,7 +181,7 @@ function DesignSystemPage() {
             {/* Card */}
             <Bloco titulo="Card">
               <div className={`${CARD_CLASS} p-4`}>
-                <p className="text-[17px] text-[var(--ink)]">Quanto sobra este mês</p>
+                <p className="text-[17px] text-[var(--ink)]">Quanto a marca lucrou este mês</p>
                 <p className="mt-1 font-sans text-[13px] text-[var(--muted)]">
                   fundo branco, cantos suaves.
                 </p>

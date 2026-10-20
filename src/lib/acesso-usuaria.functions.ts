@@ -5,6 +5,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { PLANOS_CONVITE, type PlanoConvite } from "@/lib/planos-convite";
 import { stripeClient } from "@/lib/stripe.functions";
+import { testesAbertos } from "@/lib/teste-pro.server";
 
 // CRM-10 (08/10/2026): mudar plano ou acesso de administradora de quem JÁ tem
 // conta. Até aqui isso era feito à mão no banco, porque o convite só vale no
@@ -40,6 +41,11 @@ export interface AcessoDaUsuaria {
   is_admin: boolean;
   /** Assinatura mais recente no Stripe. null = nunca assinou. */
   assinatura: { status: string; cancel_at_period_end: boolean } | null;
+  /**
+   * Fim do teste de 7 dias do Pro, se estiver aberto (GRW-66). Durante o teste
+   * o plano é 'projete' sem assinatura; no fim o cron devolve pro Grátis.
+   */
+  testeProAte: string | null;
 }
 
 export const lerAcessoDaUsuaria = createServerFn({ method: "GET" })
@@ -65,6 +71,7 @@ export const lerAcessoDaUsuaria = createServerFn({ method: "GET" })
       .maybeSingle();
 
     const login = await supabaseAdmin.auth.admin.getUserById(data.userId);
+    const emTeste = await testesAbertos([data.userId]);
 
     const p = perfil as { plano: string | null; is_admin: boolean | null };
     const a = assinatura as { status: string; cancel_at_period_end: boolean | null } | null;
@@ -75,6 +82,7 @@ export const lerAcessoDaUsuaria = createServerFn({ method: "GET" })
       assinatura: a
         ? { status: a.status, cancel_at_period_end: Boolean(a.cancel_at_period_end) }
         : null,
+      testeProAte: emTeste.get(data.userId) ?? null,
     };
   });
 

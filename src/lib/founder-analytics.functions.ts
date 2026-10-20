@@ -11,6 +11,7 @@ import {
   type PeriodoResolvido,
 } from "@/lib/founder-periodo";
 import type { UsuariaLinha } from "@/components/founder/TabelaUsuarias";
+import { testesAbertos } from "@/lib/teste-pro.server";
 
 // Analytics de uso do Founder Dashboard (seção 4 do direcionamento), tudo
 // sobre founder_eventos + as funções SQL de agregação (founder_sessoes_calc,
@@ -57,6 +58,8 @@ type PerfilLinha = {
   plano: string | null;
   created_at: string;
   onboarding_completed: boolean;
+  /** Fim do teste de 7 dias do Pro, se aberto agora (testes_pro, não coluna de profiles). */
+  teste_ate?: string | null;
 };
 
 async function eventosNoPeriodo(
@@ -88,11 +91,17 @@ async function sessoesNoPeriodo(ini: string, fim: string): Promise<SessaoLinha[]
 }
 
 async function perfis(): Promise<PerfilLinha[]> {
-  const { data } = await supabaseAdmin
-    .from("profiles")
-    .select("id, full_name, display_name, business_name, plano, created_at, onboarding_completed")
-    .limit(5000);
-  return (data ?? []) as PerfilLinha[];
+  const [{ data }, emTeste] = await Promise.all([
+    supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, display_name, business_name, plano, created_at, onboarding_completed")
+      .limit(5000),
+    testesAbertos(),
+  ]);
+  return ((data ?? []) as PerfilLinha[]).map((p) => ({
+    ...p,
+    teste_ate: emTeste.get(p.id) ?? null,
+  }));
 }
 
 async function pagantes(): Promise<Set<string>> {
@@ -140,6 +149,7 @@ function montarLinhas(
       id,
       nome: nomeDe(p),
       plano: p?.plano ?? null,
+      testeAte: p?.teste_ate ?? null,
       pagante: pagantesSet.has(id),
       ultimoAcesso: ultimoAcesso.get(id) ?? null,
       diasAtivos: diasAtivos.get(id)?.size ?? 0,
@@ -309,6 +319,7 @@ export const getAnalyticsUsuaria = createServerFn({ method: "POST" })
       sessoes30,
       { data: erros },
       { data: ia },
+      emTeste,
     ] = await Promise.all([
       supabaseAdmin
         .from("profiles")
@@ -341,6 +352,7 @@ export const getAnalyticsUsuaria = createServerFn({ method: "POST" })
         .eq("user_id", data.id)
         .order("criado_em", { ascending: false })
         .limit(30),
+      testesAbertos([data.id]),
     ]);
 
     if (!perfil) return { encontrada: false as const };
@@ -402,6 +414,7 @@ export const getAnalyticsUsuaria = createServerFn({ method: "POST" })
         nome: nomeDe(pf),
         negocio: pf.business_name,
         plano: pf.plano,
+        testeAte: emTeste.get(pf.id) ?? null,
         criadaEm: pf.created_at,
         onboardingConcluido: pf.onboarding_completed,
         onboardingEm: pf.onboarding_completed_at,

@@ -10,6 +10,8 @@ import { eventoDeCortesia } from "@/lib/founder-cortesia";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
+import { lerTestesProComStatus } from "@/lib/teste-pro.server";
+import { resumirTestesPro } from "@/lib/teste-pro";
 
 // Negócio (seção 7): receita realizada (faturas pagas no Stripe), MRR,
 // assinaturas, conversão e churn. Assinatura = tabela assinaturas (espelho do
@@ -335,6 +337,17 @@ export const getNegocioConversao = createServerFn({ method: "POST" })
         { rotulo: "Assinantes ativas agora", total: pagantesSet.size },
       ],
     };
+  });
+
+// Teste de 7 dias do Pro (reverse trial, GRW-66). Base inteira, não segue o
+// filtro de período: o teste começou em 20/10/2026. Tabela ausente ou leitura
+// falhando = leituraOk false e tudo zero, sem derrubar a página.
+export const getTesteProResumo = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertAdmin(context.userId);
+    const { ok, testes } = await lerTestesProComStatus();
+    return { leituraOk: ok, ...resumirTestesPro(testes) };
   });
 
 export const getNegocioChurn = createServerFn({ method: "POST" })

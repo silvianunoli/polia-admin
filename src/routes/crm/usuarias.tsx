@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { moduloInfo } from "@/lib/planejamento-constants";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { listarEmailsDasUsuarias } from "@/lib/acesso-usuaria.functions";
+import { diaMesBRT, testesAbertosPorUsuaria, type TesteProLinha } from "@/lib/teste-pro";
 
 // A aba "Convites" saiu daqui em 21/09/2026: virou /crm/convites, porque passou
 // a decidir plano e acesso de administradora e não cabia mais numa aba.
@@ -63,6 +64,13 @@ const PLANO_LABEL: Record<string, string> = {
   beta: "Beta",
 };
 
+// Conta no teste de 7 dias do Pro (GRW-66) tem plano 'projete' sem assinatura:
+// aparece como Pro com a data de fim, pra ninguém ler como assinante.
+function rotuloPlanoCrm(plano: string | null, testeAte: string | undefined): string {
+  if (testeAte && plano === "projete") return `Pro (teste até ${diaMesBRT(testeAte)})`;
+  return PLANO_LABEL[plano ?? "beta"] ?? plano ?? "";
+}
+
 const inputClass =
   "rounded-xl border border-[var(--line)] bg-white px-4 py-2 font-sans text-[14px] text-[var(--ink)] placeholder:text-[var(--muted)] focus:border-[var(--secondary)] focus:outline-none";
 const btnOutline =
@@ -80,6 +88,9 @@ function CrmUsuarias() {
   // migração pro Planejamento e não tem ninguém escrevendo nela.
   const [moduloPorUsuaria, setModuloPorUsuaria] = useState<Map<string, number>>(new Map());
   const [espera, setEspera] = useState<EsperaItem[]>([]);
+  // user_id -> fim do teste do Pro aberto. testes_pro é de 20/10/2026: se a
+  // leitura falhar (tabela ainda não existe), fica vazio e a lista segue.
+  const [testeAte, setTesteAte] = useState<Map<string, string>>(new Map());
   // id -> e-mail. Vem do servidor (auth.users), separado da lista pra uma
   // falha aqui não esconder as clientes.
   const [emails, setEmails] = useState<Record<string, string>>({});
@@ -91,7 +102,7 @@ function CrmUsuarias() {
       .then(setEmails)
       .catch(() => setEmails({}));
     (async () => {
-      const [{ data: profs }, { data: esperaData }, { data: secoes }] = await Promise.all([
+      const [{ data: profs }, { data: esperaData }, { data: secoes }, testes] = await Promise.all([
         supabase
           .from("profiles")
           .select("id,full_name,plano,onboarding_completed,updated_at,created_at")
@@ -103,7 +114,18 @@ function CrmUsuarias() {
           .order("criado_em", { ascending: false })
           .limit(300),
         supabase.from("planejamento_secoes").select("user_id,modulo").eq("concluido", true),
+        supabase
+          .from("testes_pro")
+          .select("user_id, inicio, fim, origem, encerrado_em, resultado")
+          .is("encerrado_em", null)
+          .then(
+            (r) => r,
+            () => ({ data: null, error: true }),
+          ),
       ]);
+      setTesteAte(
+        testes.error ? new Map() : testesAbertosPorUsuaria((testes.data ?? []) as TesteProLinha[]),
+      );
       setClientes((profs ?? []) as Cliente[]);
       setEspera((esperaData ?? []) as EsperaItem[]);
 
@@ -241,7 +263,7 @@ function CrmUsuarias() {
                       </td>
                       <td className="px-5 py-3">
                         <span className="rounded-full bg-[var(--line)] px-2 py-1 font-mono text-[10px] uppercase tracking-[1px] text-[var(--ink-soft)]">
-                          {PLANO_LABEL[c.plano ?? "beta"] ?? c.plano}
+                          {rotuloPlanoCrm(c.plano, testeAte.get(c.id))}
                         </span>
                       </td>
                       <td className="px-5 py-3 font-sans text-[13px]">

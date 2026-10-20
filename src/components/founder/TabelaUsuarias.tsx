@@ -1,11 +1,14 @@
 import { Link } from "@tanstack/react-router";
 import { TH_CLASS } from "@/lib/botoes";
-import { formatarDataHoraBRT, nomePlano } from "@/lib/founder-formato";
+import { formatarDataHoraBRT } from "@/lib/founder-formato";
+import { rotuloPlano } from "@/lib/teste-pro";
 
 export interface UsuariaLinha {
   id: string;
   nome: string;
   plano: string | null;
+  /** Fim do teste de 7 dias do Pro, se estiver aberto (GRW-66). */
+  testeAte?: string | null;
   pagante: boolean;
   ultimoAcesso: string | null;
   diasAtivos: number;
@@ -52,7 +55,7 @@ export function TabelaUsuarias({
                 </Link>
               </td>
               <td className="px-5 py-2.5 font-sans text-[12px] text-[var(--ink-soft)]">
-                {nomePlano(u.plano)}
+                {rotuloPlano(u.plano, u.testeAte)}
                 {u.pagante ? " · paga" : ""}
               </td>
               <td className="px-5 py-2.5 font-sans text-[12px] text-[var(--muted)]">

@@ -1,5 +1,5 @@
 import { createFileRoute, useSearch } from "@tanstack/react-router";
-import { getNegocioConversao } from "@/lib/founder-negocio.functions";
+import { getNegocioConversao, getTesteProResumo } from "@/lib/founder-negocio.functions";
 import { ALERTA_ERRO_CLASS, TH_CLASS } from "@/lib/botoes";
 import { formatarPct, formatarReais } from "@/lib/founder-formato";
 import { StatCard } from "@/components/founder/StatCard";
@@ -17,15 +17,19 @@ function Conversao() {
     () => getNegocioConversao({ data: search }),
     [search],
   );
+  // Teste do Pro: base inteira, não segue o filtro de período.
+  const teste = useCarregar(() => getTesteProResumo(), []);
   if (erro) return <div className={ALERTA_ERRO_CLASS}>Não consegui carregar a conversão.</div>;
   const d = dados;
+  const t = teste.dados;
 
   return (
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Da conta criada até a assinatura ativa. "Coorte do período" = contas criadas dentro do
         período que hoje têm assinatura ativa. O funil olha a base inteira, desde o primeiro
-        cadastro. Pagamento que ficou pela metade no checkout não conta como assinatura.
+        cadastro. Pagamento que ficou pela metade no checkout não conta como assinatura. Conta no
+        teste de 7 dias do Pro não tem assinatura, então conta aqui como Grátis.
       </p>
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -43,7 +47,7 @@ function Conversao() {
           carregando={carregando}
         />
         <StatCard
-          label="Teste → paga"
+          label="Trial do Stripe → paga"
           valor={d?.trialParaPaga}
           descricao={d ? `de ${d.trialsNoPeriodo} iniciadas no período` : undefined}
           carregando={carregando}
@@ -56,6 +60,54 @@ function Conversao() {
           carregando={carregando}
         />
       </div>
+      {/* GRW-66 (20/10/2026): teste de 7 dias do Pro, sem cartão. Fonte:
+          testes_pro (encerrado_em + resultado). */}
+      <p className="mb-2 font-accent text-[11px] font-bold uppercase tracking-[2px] text-[var(--muted)]">
+        Teste do Pro · 7 dias, desde 20/10/2026
+      </p>
+      {teste.erro ? (
+        <div className={`mb-6 ${ALERTA_ERRO_CLASS}`}>Não consegui carregar o teste do Pro.</div>
+      ) : (
+        <>
+          <div className="mb-3 grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <StatCard
+              label="Em teste agora"
+              valor={t?.emTeste}
+              descricao={
+                t && t.aguardandoFechamento > 0
+                  ? `+ ${t.aguardandoFechamento} vencido(s) esperando o fechamento`
+                  : "teste aberto"
+              }
+              carregando={teste.carregando}
+            />
+            <StatCard
+              label="Encerrados"
+              valor={t?.encerrados}
+              descricao={t ? `${t.voltaramGratis} voltaram pro Grátis` : undefined}
+              carregando={teste.carregando}
+            />
+            <StatCard
+              label="Assinaram"
+              valor={t?.assinaram}
+              descricao="Premium ou Pro, no teste ou no fim dele"
+              carregando={teste.carregando}
+            />
+            <StatCard
+              label="Conversão do teste"
+              valor={t ? formatarPct(t.taxaConversao, 1) : null}
+              semDados={t?.taxaConversao === null}
+              descricao={t ? `${t.assinaram} de ${t.encerrados} encerrados` : undefined}
+              carregando={teste.carregando}
+            />
+          </div>
+          <p className="mb-6 font-sans text-[13px] text-[var(--muted)]">
+            {t && !t.leituraOk
+              ? "A tabela do teste não respondeu (a migração pode ainda não estar no banco). Os números ficam zerados até ela existir."
+              : "Conversão = assinaram dividido pelos testes encerrados. Teste aberto ainda não entra na conta. Base inteira, não segue o filtro de período."}
+          </p>
+        </>
+      )}
+
       <Secao titulo="Funil de conversão (base total)" carregando={carregando} altura="h-48">
         {d ? <Funil passos={d.funil} /> : null}
       </Secao>

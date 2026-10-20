@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { testesAbertos } from "@/lib/teste-pro.server";
 import {
   campanhaPadrao,
   ehAssinante,
@@ -212,7 +213,11 @@ export const getFunilCampanhas = createServerFn({ method: "POST" })
 
     const doRecorte = filtrarCadastros(contas, campanha, janela.iniMs);
     const ids = doRecorte.map((c) => c.id);
-    const [perfis, calcularam] = await Promise.all([perfisPorId(ids), quemCalculouPreco(ids)]);
+    const [perfis, calcularam, emTeste] = await Promise.all([
+      perfisPorId(ids),
+      quemCalculouPreco(ids),
+      testesAbertos(ids),
+    ]);
 
     const cadastros: CadastroCampanha[] = doRecorte.map((c) => {
       const p = perfis.get(c.id);
@@ -222,7 +227,7 @@ export const getFunilCampanhas = createServerFn({ method: "POST" })
         criadoEm: c.criadoEm,
         fezOnboarding: p?.onboarding ?? false,
         calculouPreco: calcularam.has(c.id),
-        assinante: ehAssinante(p?.plano),
+        assinante: ehAssinante(p?.plano, emTeste.has(c.id)),
       };
     });
 

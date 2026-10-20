@@ -69,6 +69,12 @@ describe("ehAssinante", () => {
     expect(ehAssinante("cancelada")).toBe(false);
     expect(ehAssinante(null)).toBe(false);
   });
+
+  it("conta no teste de 7 dias do Pro não é assinante, mesmo com plano projete", () => {
+    expect(ehAssinante("projete", true)).toBe(false);
+    expect(ehAssinante("controle", true)).toBe(false);
+    expect(ehAssinante("projete", false)).toBe(true);
+  });
 });
 
 describe("janelaDoPeriodo", () => {
