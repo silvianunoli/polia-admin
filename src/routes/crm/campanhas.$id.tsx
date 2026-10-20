@@ -13,7 +13,11 @@ import {
 } from "@/lib/crm-campanhas.functions";
 import { EditorEmail } from "@/components/crm/EditorEmail";
 import { useConfirmacao } from "@/components/crm/Confirmar";
-import { montarHtmlCampanha } from "@/lib/crm-email-html";
+import {
+  montarHtmlCampanha,
+  type DiarioCampanha,
+  type ModeloCampanha,
+} from "@/lib/crm-email-html";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   btnOutline,
@@ -42,6 +46,8 @@ function EditorCampanha() {
   const [preheader, setPreheader] = useState("");
   const [corpo, setCorpo] = useState("");
   const [listaId, setListaId] = useState("");
+  const [modelo, setModelo] = useState<ModeloCampanha>("padrao");
+  const [diario, setDiario] = useState<DiarioCampanha>({});
 
   const [salvando, setSalvando] = useState(false);
   const [enviando, setEnviando] = useState(false);
@@ -67,6 +73,8 @@ function EditorCampanha() {
       setPreheader(r.campanha.preheader ?? "");
       setCorpo(r.campanha.corpo_html);
       setListaId(r.campanha.lista_id ?? "");
+      setModelo(r.campanha.modelo ?? "padrao");
+      setDiario(r.campanha.diario ?? {});
     } catch (err) {
       toastErro(err instanceof Error ? err.message : "Não consegui abrir essa campanha.");
     } finally {
@@ -121,28 +129,43 @@ function EditorCampanha() {
 
   const htmlPrevia = useMemo(
     () =>
-      montarHtmlCampanha({ assunto, preheader: preheader || null, corpo }).replace(
-        "{{{RESEND_UNSUBSCRIBE_URL}}}",
-        "#",
-      ),
-    [assunto, preheader, corpo],
+      montarHtmlCampanha({
+        assunto,
+        preheader: preheader || null,
+        corpo,
+        modelo,
+        diario,
+        // Prévia mostra um nome de exemplo; no envio entra o de cada pessoa.
+        saudacao: "Oi, Ana.",
+        quando: agendarPara ? new Date(agendarPara) : new Date(),
+      }).replace("{{{RESEND_UNSUBSCRIBE_URL}}}", "#"),
+    [assunto, preheader, corpo, modelo, diario, agendarPara],
   );
 
   const jaSaiu = campanha?.status === "enviada" || campanha?.status === "enviando";
 
+  // O que vai pro salvarCampanha, igual nos três lugares que salvam.
+  function dados(listaObrigatoria = false) {
+    return {
+      id,
+      nome,
+      assunto,
+      preheader,
+      corpo_html: corpo,
+      lista_id: listaObrigatoria ? listaId : listaId || null,
+      modelo,
+      diario: modelo === "diario" ? diario : null,
+    };
+  }
+
+  function campoDiario<K extends keyof DiarioCampanha>(chave: K, valor: DiarioCampanha[K]) {
+    setDiario((d) => ({ ...d, [chave]: valor }));
+  }
+
   async function salvar() {
     setSalvando(true);
     try {
-      await salvarCampanha({
-        data: {
-          id,
-          nome,
-          assunto,
-          preheader,
-          corpo_html: corpo,
-          lista_id: listaId || null,
-        },
-      });
+      await salvarCampanha({ data: dados() });
       toastSucesso("Rascunho salvo.");
       carregar();
     } catch (err) {
@@ -182,9 +205,7 @@ function EditorCampanha() {
 
     setEnviando(true);
     try {
-      await salvarCampanha({
-        data: { id, nome, assunto, preheader, corpo_html: corpo, lista_id: listaId },
-      });
+      await salvarCampanha({ data: dados(true) });
       const r = await enviarCampanha({
         data: { id, agendada_para: agendarPara ? new Date(agendarPara).toISOString() : "" },
       });
@@ -375,6 +396,111 @@ function EditorCampanha() {
         </label>
       </div>
 
+      <div className={`${cardClass} grid gap-4 p-5 sm:grid-cols-2`}>
+        <label className="block sm:col-span-2">
+          <span className={labelClass}>Modelo</span>
+          <select
+            value={modelo}
+            onChange={(e) => setModelo(e.target.value as ModeloCampanha)}
+            disabled={jaSaiu}
+            className={inputClass}
+          >
+            <option value="padrao">Padrão (cartão branco, igual aos avisos)</option>
+            <option value="diario">Diário da Pólia (carta de terça e quinta)</option>
+          </select>
+          {modelo === "diario" && (
+            <span className="mt-1 block font-sans text-[12px] text-[var(--muted)]">
+              A saudação com o primeiro nome e a assinatura entram sozinhas. No corpo, o
+              marca-texto vira o amarelo da edição: use em um trecho só.
+            </span>
+          )}
+        </label>
+        {modelo === "diario" && (
+          <>
+            <label className="block">
+              <span className={labelClass}>Título dentro do e-mail</span>
+              <input
+                value={diario.titulo ?? ""}
+                onChange={(e) => campoDiario("titulo", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={200}
+                placeholder="Em branco, usa o assunto"
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Nº da edição</span>
+              <input
+                type="number"
+                min={1}
+                value={diario.edicao ?? ""}
+                onChange={(e) =>
+                  campoDiario("edicao", e.target.value ? Number(e.target.value) : undefined)
+                }
+                disabled={jaSaiu}
+                className={inputClass}
+              />
+            </label>
+            <label className="block sm:col-span-2">
+              <span className={labelClass}>Pra fazer hoje</span>
+              <textarea
+                value={diario.acao_texto ?? ""}
+                onChange={(e) => campoDiario("acao_texto", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={600}
+                rows={2}
+                placeholder="Em branco, a caixa não aparece"
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Texto do botão</span>
+              <input
+                value={diario.acao_rotulo ?? ""}
+                onChange={(e) => campoDiario("acao_rotulo", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={60}
+                placeholder="Quero..."
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Link do botão</span>
+              <input
+                value={diario.acao_url ?? ""}
+                onChange={(e) => campoDiario("acao_url", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={500}
+                placeholder="https://one.usepolia.com.br/..."
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>Despedida</span>
+              <input
+                value={diario.despedida ?? ""}
+                onChange={(e) => campoDiario("despedida", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={80}
+                placeholder="Até quinta,"
+                className={inputClass}
+              />
+            </label>
+            <label className="block">
+              <span className={labelClass}>PS</span>
+              <input
+                value={diario.ps ?? ""}
+                onChange={(e) => campoDiario("ps", e.target.value)}
+                disabled={jaSaiu}
+                maxLength={600}
+                placeholder="O que vem na próxima edição"
+                className={inputClass}
+              />
+            </label>
+          </>
+        )}
+      </div>
+
       {jaSaiu ? (
         <div className={`${cardClass} p-5`}>
           <p className={labelClass}>O que foi enviado</p>
@@ -425,16 +551,7 @@ function EditorCampanha() {
                 disabled={!emailTeste}
                 onClick={async () => {
                   try {
-                    await salvarCampanha({
-                      data: {
-                        id,
-                        nome,
-                        assunto,
-                        preheader,
-                        corpo_html: corpo,
-                        lista_id: listaId || null,
-                      },
-                    });
+                    await salvarCampanha({ data: dados() });
                     await enviarTeste({ data: { id, para: emailTeste } });
                     toastSucesso("Teste enviado.");
                   } catch (err) {

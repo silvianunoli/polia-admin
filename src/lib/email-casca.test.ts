@@ -89,6 +89,74 @@ describe.each(variantes)("casca de e-mail: %s", (nome, html) => {
   });
 });
 
+// O Diário da Pólia (20/10/2026) é a única peça com Fraunces: na saudação, que
+// é o uso permitido dela. E é a única com --surface (#F9EFEE), a folha da carta.
+describe("campanha no modelo Diário da Pólia", () => {
+  const html = montarHtmlCampanha({
+    assunto: "Cliente nunca faltou. Faltou outra coisa.",
+    preheader: "Prazer, eu sou a Sil.",
+    corpo: "<p>Texto com <mark>um trecho marcado</mark>.</p>",
+    modelo: "diario",
+    diario: {
+      titulo: "Prazer, eu sou a Sil",
+      edicao: 1,
+      acao_texto: "Responde este e-mail.",
+      acao_rotulo: "Quero continuar meu Planejamento",
+      acao_url: "https://one.usepolia.com.br/planejamento",
+      despedida: "Até quinta,",
+      ps: "Na quinta, o frete.",
+    },
+    quando: new Date("2026-10-20T13:00:00Z"),
+  });
+
+  it("só usa token da paleta, incluindo a folha --surface", () => {
+    const fora = hexesDe(html).filter((h) => !PALETA.includes(h) && h !== "#F9EFEE");
+    expect(fora).toEqual([]);
+  });
+
+  it("título em Cabinet Grotesk; Fraunces só na saudação", () => {
+    expect(html).toMatch(/<h1[^>]*'Cabinet Grotesk'[^>]*>Prazer, eu sou a Sil<\/h1>/);
+    const comFraunces = html.split("\n").filter((l) => l.includes("Fraunces"));
+    expect(comFraunces).toHaveLength(1);
+    expect(comFraunces[0]).toContain("{{{FIRST_NAME|você}}}");
+  });
+
+  it("cabeçalho de edição com número e data de Brasília", () => {
+    expect(html).toContain("Diário da Pólia");
+    expect(html).toContain("Nº 01 · terça, 20 out");
+  });
+
+  it("título da edição separado do assunto", () => {
+    expect(html).toContain("<title>Prazer, eu sou a Sil</title>");
+    expect(html).not.toContain("<h1 class=\"polia-h1\" style=\"margin:0 0 28px");
+  });
+
+  it("botão escuro, sem o turquesa dos avisos", () => {
+    expect(html).not.toContain("#7CCBCD");
+    expect(html).toContain("Quero continuar meu Planejamento");
+  });
+
+  it("um único amarelo: o marca-texto", () => {
+    expect(html.match(/#FFC629/g)).toHaveLength(1);
+  });
+
+  it("assinatura e descadastro", () => {
+    expect(html).toContain("usepolia.com.br/marketing/assinatura-sil.png");
+    expect(html).toContain("{{{RESEND_UNSUBSCRIBE_URL}}}");
+  });
+
+  it("botão sem https não entra", () => {
+    const outro = montarHtmlCampanha({
+      assunto: "a",
+      preheader: null,
+      corpo: "<p>b</p>",
+      modelo: "diario",
+      diario: { acao_texto: "x", acao_rotulo: "y", acao_url: "javascript:alert(1)" },
+    });
+    expect(outro).not.toContain("javascript:");
+  });
+});
+
 describe("campanha", () => {
   const html = montarHtmlCampanha({
     assunto: "Novidades de outubro",

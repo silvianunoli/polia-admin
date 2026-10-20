@@ -473,6 +473,7 @@ export function emailPoliaCampanha({
   headline,
   corpoHtml,
   descadastroUrl,
+  diario,
 }: {
   preheader: string;
   rotulo?: string;
@@ -480,7 +481,11 @@ export function emailPoliaCampanha({
   /** HTML do editor, já com estilo inline (ver crm-email-html.ts). */
   corpoHtml: string;
   descadastroUrl?: string;
+  /** Presente = modelo Diário da Pólia (ver emailDiario lá embaixo). */
+  diario?: DadosDiario;
 }): string {
+  if (diario) return emailDiario({ preheader, corpoHtml, descadastroUrl, diario });
+
   const blocoRotulo = rotulo
     ? `
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
@@ -548,6 +553,163 @@ export function emailPoliaCampanha({
                   Alguma dúvida? <a href="${CONTATO_MARCA}" style="color:${COR_MUTED};text-decoration:underline;">Fale com a gente</a>
                 </p>
                 ${linhaDescadastro}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+}
+
+// ── Modelo Diário da Pólia (newsletter de terça e quinta, 20/10/2026) ──────
+// Entra pela campanha como parâmetro (`diario`), não como quarta função
+// pública. Pedido da Sil: o Diário não pode parecer aviso de conta. Os avisos
+// são cartão branco com borda, logo centralizado, título grande e botão
+// turquesa. O Diário é uma carta, e cada diferença marca isso:
+//
+// - folha --surface (#F9EFEE) sem borda e com raio pequeno, como papel;
+// - logo "pólia" alinhado à esquerda, fora da folha;
+// - cabeçalho de edição: "Diário da Pólia" + "Nº 01 · terça, 20 out" + filete
+//   de 2px em tinta;
+// - saudação em Fraunces itálico (o uso permitido da Fraunces é saudação; o
+//   título continua Cabinet Grotesk);
+// - caixa "Pra fazer hoje" em --surface-pink com botão ESCURO (tinta, texto
+//   branco). O turquesa fica reservado pros avisos da conta;
+// - assinatura "Sil" manuscrita em Anzylna, como PNG hospedado no biolink
+//   (fonte paga: vai a imagem do texto, nunca o arquivo da fonte);
+// - PS depois de um filete fino, e rodapé dizendo quando o Diário chega.
+//
+// O único amarelo da peça é o <mark> do corpo (ver crm-email-html.ts).
+
+const COR_FOLHA = "#F9EFEE"; // --surface
+const FONTE_ITALICO = "'Fraunces',Georgia,'Times New Roman',serif";
+
+// Gerada de polia-app/public/fonts/Anzylna-Regular.ttf, 150px, achatada sobre
+// o #F9EFEE da folha (110x104, exibida em 55x52). Mudou a cor da folha,
+// regere a imagem. Mesma origem do logo da campanha: só existe depois do
+// deploy do polia-biolink.
+const ASSINATURA_URL = "https://usepolia.com.br/marketing/assinatura-sil.png";
+// 77x30 mantém a proporção do logo-email-polia.png (103x40).
+const LOGO_DIARIO_LARGURA = 77;
+const LOGO_DIARIO_ALTURA = 30;
+
+export interface DadosDiario {
+  /** Título da edição, dentro da folha. O assunto do e-mail pode ser outro. Escapado. */
+  titulo: string;
+  edicao: number;
+  /** "terça, 20 out", montado por quem chama no fuso de Brasília. */
+  dataEdicao: string;
+  /** Saudação pronta e escapada. No envio leva {{{FIRST_NAME|você}}}. */
+  saudacao: string;
+  /** Caixa "Pra fazer hoje". Texto escapado; url já validada. */
+  acao?: { texto: string; rotulo?: string; url?: string };
+  /** "Até quinta," etc. Escapada. */
+  despedida: string;
+  /** Escapado. */
+  ps?: string;
+}
+
+function emailDiario({
+  preheader,
+  corpoHtml,
+  descadastroUrl,
+  diario,
+}: {
+  preheader: string;
+  corpoHtml: string;
+  descadastroUrl?: string;
+  diario: DadosDiario;
+}): string {
+  const rotulo = `font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;text-transform:uppercase;`;
+  const nEdicao = String(diario.edicao).padStart(2, "0");
+
+  const botaoAcao =
+    diario.acao?.rotulo && diario.acao?.url
+      ? `
+                      <table role="presentation" cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="background-color:${COR_INK};border:1.5px solid ${COR_INK};border-radius:${RAIO_BOTAO}px;">
+                            <a href="${diario.acao.url}" style="display:inline-block;padding:12px 24px;font-family:${FONTE_CORPO};font-size:15px;font-weight:600;color:${COR_CARTAO};text-decoration:none;border-radius:${RAIO_BOTAO - 2}px;">${diario.acao.rotulo}</a>
+                          </td>
+                        </tr>
+                      </table>`
+      : "";
+
+  const caixaAcao = diario.acao?.texto
+    ? `
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:10px 0 32px;">
+                  <tr>
+                    <td style="background-color:${COR_DESTAQUE};border-radius:${RAIO_CARTAO}px;padding:22px 24px;">
+                      <p style="margin:0 0 8px;${rotulo}letter-spacing:0.14em;color:${COR_INK};">Pra fazer hoje</p>
+                      <p style="margin:0 0 ${botaoAcao ? 18 : 0}px;font-family:${FONTE_CORPO};font-size:16px;line-height:1.6;color:${COR_INK_SOFT};">${diario.acao.texto}</p>${botaoAcao}
+                    </td>
+                  </tr>
+                </table>`
+    : "";
+
+  const blocoPs = diario.ps
+    ? `
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;">
+                  <tr><td style="height:1px;background-color:${COR_BORDA};font-size:0;line-height:0;">&nbsp;</td></tr>
+                </table>
+                <p style="margin:0;font-family:${FONTE_CORPO};font-size:15px;line-height:1.65;color:${COR_INK_SOFT};"><b style="color:${COR_INK};">PS.</b> ${diario.ps}</p>`
+    : "";
+
+  const linkSaida = descadastroUrl
+    ? `<a href="${descadastroUrl}" style="color:${COR_MUTED};text-decoration:underline;">Não quero mais receber</a> &nbsp;·&nbsp; `
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <meta name="supported-color-schemes" content="light" />
+    <title>${diario.titulo}</title>
+    <style>
+      @media only screen and (max-width: 600px) {
+        .polia-folha { padding: 28px 22px !important; }
+        .polia-h1 { font-size: 26px !important; }
+      }
+    </style>
+  </head>
+  <body style="margin:0;padding:0;background-color:${COR_BG};">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;">${preheader}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${COR_BG};">
+      <tr>
+        <td align="center" style="padding:32px 16px 40px;">
+          <table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px;width:100%;">
+            <tr>
+              <td style="padding:0 4px 18px;text-align:left;">
+                <img src="${LOGO_POLIA_URL}" width="${LOGO_DIARIO_LARGURA}" height="${LOGO_DIARIO_ALTURA}" alt="Pólia" style="display:block;border:0;outline:none;text-decoration:none;width:${LOGO_DIARIO_LARGURA}px;height:${LOGO_DIARIO_ALTURA}px;font-family:${FONTE_TITULO};font-size:18px;font-weight:700;letter-spacing:-0.02em;color:${COR_INK};" />
+              </td>
+            </tr>
+            <tr>
+              <td class="polia-folha" style="background-color:${COR_FOLHA};border-radius:4px;padding:36px 40px 40px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="${rotulo}letter-spacing:0.16em;color:${COR_INK};padding-bottom:10px;">Diário da Pólia</td>
+                    <td style="${rotulo}letter-spacing:0.08em;color:${COR_MUTED};padding-bottom:10px;text-align:right;">Nº ${nEdicao} · ${diario.dataEdicao}</td>
+                  </tr>
+                  <tr><td colspan="2" style="height:2px;background-color:${COR_INK};font-size:0;line-height:0;">&nbsp;</td></tr>
+                </table>
+                <h1 class="polia-h1" style="margin:30px 0 22px;font-family:${FONTE_TITULO};font-size:32px;font-weight:700;line-height:1.1;letter-spacing:-0.02em;color:${COR_INK};">${diario.titulo}</h1>
+                <p style="margin:0 0 18px;font-family:${FONTE_ITALICO};font-style:italic;font-size:21px;line-height:1.4;color:${COR_INK};">${diario.saudacao}</p>
+                ${corpoHtml}
+                ${caixaAcao}
+                <p style="margin:0 0 4px;font-family:${FONTE_CORPO};font-size:17px;line-height:1.7;color:${COR_INK_SOFT};">${diario.despedida}</p>
+                <img src="${ASSINATURA_URL}" width="55" height="52" alt="Sil" style="display:block;border:0;outline:none;text-decoration:none;width:55px;height:52px;margin:2px 0 6px;font-family:${FONTE_TITULO};font-size:22px;font-weight:700;color:${COR_INK};" />
+                <p style="margin:0 0 28px;${rotulo}letter-spacing:0.14em;color:${COR_MUTED};">Fundadora da Pólia</p>
+                ${blocoPs}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:22px 4px 0;text-align:left;">
+                <p style="margin:0 0 6px;font-family:${FONTE_CORPO};font-size:13px;line-height:1.55;color:${COR_MUTED};">O Diário da Pólia chega às terças e quintas, às 10h, pra quem tem conta na Pólia One. Dá pra desligar aqui embaixo ou em Configurações, na Pólia One.</p>
+                <p style="margin:0;font-family:${FONTE_ROTULO};font-size:11px;font-weight:700;letter-spacing:0.06em;color:${COR_MUTED};">${linkSaida}${DOMINIO_MARCA}</p>
               </td>
             </tr>
           </table>

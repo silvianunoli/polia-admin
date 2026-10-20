@@ -4,7 +4,12 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import { resendApiKey } from "@/lib/email-template";
-import { montarHtmlCampanha, textoDoHtml } from "@/lib/crm-email-html";
+import {
+  montarHtmlCampanha,
+  textoDaCampanha,
+  type DiarioCampanha,
+  type ModeloCampanha,
+} from "@/lib/crm-email-html";
 
 // E-mail marketing da Pólia: lista (= filtro salvo espelhado num segment do
 // Resend) + campanha (= broadcast). O descadastro e o header List-Unsubscribe
@@ -45,18 +50,34 @@ interface RespostaResend<T> {
   erro: string | null;
 }
 
+// O Resend aceita 2 chamadas por segundo por conta. Sincronizar a base inteira
+// (90 pessoas em 20/10/2026, uma chamada por contato) estourava isso e o 429
+// virava "falha" silenciosa na lista. Espaçar e tentar de novo resolve.
+const INTERVALO_RESEND_MS = 550;
+let ultimaChamadaResend = 0;
+const esperar = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 async function chamarResend<T>(
   caminho: string,
   init: { method: string; body?: unknown },
 ): Promise<RespostaResend<T>> {
-  const resp = await fetch(`${RESEND}${caminho}`, {
-    method: init.method,
-    headers: {
-      Authorization: `Bearer ${resendApiKey()}`,
-      "Content-Type": "application/json",
-    },
-    ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
-  });
+  let resp: Response | null = null;
+  for (let tentativa = 0; tentativa < 4; tentativa += 1) {
+    const falta = ultimaChamadaResend + INTERVALO_RESEND_MS - Date.now();
+    if (falta > 0) await esperar(falta);
+    ultimaChamadaResend = Date.now();
+    resp = await fetch(`${RESEND}${caminho}`, {
+      method: init.method,
+      headers: {
+        Authorization: `Bearer ${resendApiKey()}`,
+        "Content-Type": "application/json",
+      },
+      ...(init.body === undefined ? {} : { body: JSON.stringify(init.body) }),
+    });
+    if (resp.status !== 429) break;
+    await esperar(1000 * (tentativa + 1));
+  }
+  if (!resp) return { ok: false, status: 0, dados: null, erro: "sem resposta" };
 
   const texto = await resp.text();
   let dados: T | null = null;
@@ -90,6 +111,9 @@ export interface FiltroLista {
   status?: string[];
   origem?: string[];
   tags?: string[];
+  /** Tira quem recebeu e-mail da régua de ativação nas últimas 20 horas
+   *  (lembretes_conta). Quem sai agora recebe a edição seguinte. */
+  pausa_regua?: boolean;
 }
 
 export interface Campanha {
@@ -98,6 +122,8 @@ export interface Campanha {
   assunto: string;
   preheader: string | null;
   corpo_html: string;
+  modelo: ModeloCampanha;
+  diario: DiarioCampanha | null;
   lista_id: string | null;
   status: "rascunho" | "agendada" | "enviando" | "enviada" | "erro";
   resend_broadcast_id: string | null;
@@ -119,7 +145,26 @@ const filtroSchema = z.object({
   status: z.array(z.string().max(30)).max(10).optional(),
   origem: z.array(z.string().max(40)).max(20).optional(),
   tags: z.array(z.string().max(40)).max(20).optional(),
+  pausa_regua: z.boolean().optional(),
 });
+
+const diarioSchema = z
+  .object({
+    titulo: z.string().trim().max(200).optional(),
+    edicao: z.number().int().min(1).max(9999).optional(),
+    acao_texto: z.string().trim().max(600).optional(),
+    acao_rotulo: z.string().trim().max(60).optional(),
+    acao_url: z
+      .string()
+      .trim()
+      .max(500)
+      .refine((u) => u === "" || u.startsWith("https://"), "O link do botão precisa começar com https://")
+      .optional(),
+    despedida: z.string().trim().max(80).optional(),
+    ps: z.string().trim().max(600).optional(),
+  })
+  .nullable()
+  .optional();
 
 export const listarListas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -183,6 +228,21 @@ interface ContatoElegivel {
   id: string;
   nome: string;
   email: string;
+  user_id: string | null;
+  reinscrito_em: string | null;
+}
+
+// Quem recebeu e-mail da régua de ativação (lembretes_conta) nas últimas 20
+// horas. O Diário não sai no mesmo dia que um lembrete pra mesma pessoa.
+async function usuariasComLembreteRecente(): Promise<Set<string>> {
+  const desde = new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("lembretes_conta")
+    .select("user_id")
+    .gt("enviado_em", desde)
+    .limit(5000);
+  if (error) throw new Error("Falha ao conferir os lembretes de hoje.");
+  return new Set(((data ?? []) as { user_id: string }[]).map((l) => l.user_id));
 }
 
 // Quem pode receber campanha: tem e-mail, deu consentimento e não se
@@ -190,7 +250,7 @@ interface ContatoElegivel {
 async function contatosDoFiltro(filtro: FiltroLista): Promise<ContatoElegivel[]> {
   let q = supabaseAdmin
     .from("crm_contatos")
-    .select("id, nome, email, status, origem, tags")
+    .select("id, nome, email, status, origem, tags, user_id, reinscrito_em")
     .eq("consent_marketing", true)
     .is("descadastrado_em", null)
     .not("email", "is", null)
@@ -203,9 +263,26 @@ async function contatosDoFiltro(filtro: FiltroLista): Promise<ContatoElegivel[]>
   const { data, error } = await q;
   if (error) throw new Error("Falha ao montar o público.");
 
-  return ((data ?? []) as unknown as { id: string; nome: string; email: string | null }[])
+  const emPausa = filtro.pausa_regua ? await usuariasComLembreteRecente() : new Set<string>();
+
+  return (
+    (data ?? []) as unknown as {
+      id: string;
+      nome: string;
+      email: string | null;
+      user_id: string | null;
+      reinscrito_em: string | null;
+    }[]
+  )
     .filter((c): c is ContatoElegivel => Boolean(c.email))
-    .map((c) => ({ id: c.id, nome: c.nome, email: c.email.toLowerCase() }));
+    .filter((c) => !(c.user_id && emPausa.has(c.user_id)))
+    .map((c) => ({
+      id: c.id,
+      nome: c.nome,
+      email: c.email.toLowerCase(),
+      user_id: c.user_id,
+      reinscrito_em: c.reinscrito_em,
+    }));
 }
 
 export const previaPublico = createServerFn({ method: "POST" })
@@ -281,10 +358,13 @@ export const opcoesDeFiltro = createServerFn({ method: "GET" })
     };
   });
 
+// O primeiro nome vira a saudação do Diário ("Oi, Ana."). Tem conta com o nome
+// todo em minúscula; a inicial sobe pra não chegar "Oi, ana.".
 function partesDoNome(nome: string): { first_name: string; last_name: string } {
   const partes = nome.trim().split(/\s+/);
+  const primeiro = partes[0] ?? "";
   return {
-    first_name: partes[0] ?? "",
+    first_name: primeiro ? primeiro.charAt(0).toLocaleUpperCase("pt-BR") + primeiro.slice(1) : "",
     last_name: partes.length > 1 ? partes.slice(1).join(" ") : "",
   };
 }
@@ -296,11 +376,20 @@ export const sincronizarLista = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
+    const r = await sincronizar(data.id);
+    await logAcaoAdminServer(context.userId, "crm_sincronizar_lista", r.nome);
+    return { total: r.total, adicionados: r.adicionados, removidos: r.removidos, descadastrados: r.descadastrados, falhas: r.falhas };
+  });
 
+// O corpo da sincronização, fora do handler pra o envio poder chamar também:
+// lista com pausa_regua precisa ser recalculada na hora de sair, senão a
+// pausa vale pro momento da última sincronização, não pro do envio.
+async function sincronizar(listaId: string) {
+  {
     const { data: listaRaw } = await supabaseAdmin
       .from("crm_listas")
       .select("*")
-      .eq("id", data.id)
+      .eq("id", listaId)
       .maybeSingle();
     if (!listaRaw) throw new Error("Lista não encontrada.");
     const lista = listaRaw as unknown as Lista;
@@ -344,20 +433,43 @@ export const sincronizarLista = createServerFn({ method: "POST" })
       if (!after) break;
     }
 
-    // 2. Descadastro feito lá vira descadastro aqui.
+    // 2. Descadastro feito lá vira descadastro aqui, e desliga o Diário em
+    //    Configurações pra tela da usuária não mentir. A exceção é quem
+    //    religou o Diário em Configurações depois de sair (reinscrito_em):
+    //    aí é o Resend que precisa destravar o contato.
     let descadastrados = 0;
     for (const [email, info] of noResend) {
       if (!info.unsubscribed) continue;
       const contato = elegiveisPorEmail.get(email);
       if (!contato) continue;
+      if (contato.reinscrito_em) {
+        const destravado = await chamarResend(`/contacts/${encodeURIComponent(email)}`, {
+          method: "PATCH",
+          body: { unsubscribed: false },
+        });
+        if (destravado.ok) {
+          await supabaseAdmin
+            .from("crm_contatos")
+            .update({ reinscrito_em: null })
+            .eq("id", contato.id);
+          continue;
+        }
+      }
       await supabaseAdmin
         .from("crm_contatos")
         .update({
           descadastrado_em: new Date().toISOString(),
           consent_marketing: false,
+          reinscrito_em: null,
           atualizado_em: new Date().toISOString(),
         })
         .eq("id", contato.id);
+      if (contato.user_id) {
+        await supabaseAdmin
+          .from("profiles")
+          .update({ notif_novidades: false })
+          .eq("id", contato.user_id);
+      }
       elegiveisPorEmail.delete(email);
       descadastrados += 1;
     }
@@ -382,13 +494,20 @@ export const sincronizarLista = createServerFn({ method: "POST" })
         adicionados += 1;
         continue;
       }
-      // Contato que já existe na conta só precisa entrar neste segment.
+      // Contato que já existe na conta só precisa entrar neste segment. O nome
+      // lá pode ser de outra época (ou em minúscula): atualiza junto, porque é
+      // ele que vira a saudação do Diário.
       const anexado = await chamarResend(
         `/contacts/${encodeURIComponent(contato.email)}/segments/${segmentId}`,
         { method: "POST" },
       );
-      if (anexado.ok) adicionados += 1;
-      else falhas.push(contato.email);
+      if (anexado.ok) {
+        adicionados += 1;
+        await chamarResend(`/contacts/${encodeURIComponent(contato.email)}`, {
+          method: "PATCH",
+          body: { first_name: nome.first_name, last_name: nome.last_name },
+        });
+      } else falhas.push(contato.email);
     }
 
     // 4. Sai quem não se qualifica mais.
@@ -412,9 +531,9 @@ export const sincronizarLista = createServerFn({ method: "POST" })
       })
       .eq("id", lista.id);
 
-    await logAcaoAdminServer(context.userId, "crm_sincronizar_lista", lista.nome);
-    return { total, adicionados, removidos, descadastrados, falhas };
-  });
+    return { nome: lista.nome, segmentId, total, adicionados, removidos, descadastrados, falhas };
+  }
+}
 
 export const listarCampanhas = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -457,6 +576,8 @@ export const salvarCampanha = createServerFn({ method: "POST" })
         preheader: z.string().trim().max(200).optional().or(z.literal("")),
         corpo_html: z.string().max(200_000).default(""),
         lista_id: z.string().uuid().nullable().optional(),
+        modelo: z.enum(["padrao", "diario"]).default("padrao"),
+        diario: diarioSchema,
       })
       .parse(input),
   )
@@ -481,6 +602,8 @@ export const salvarCampanha = createServerFn({ method: "POST" })
       preheader: data.preheader?.trim() || null,
       corpo_html: data.corpo_html,
       lista_id: data.lista_id ?? null,
+      modelo: data.modelo,
+      diario: data.modelo === "diario" ? (data.diario ?? {}) : null,
       atualizado_em: new Date().toISOString(),
     };
 
@@ -530,6 +653,12 @@ export const duplicarCampanha = createServerFn({ method: "POST" })
         preheader: origem.preheader,
         corpo_html: origem.corpo_html,
         lista_id: origem.lista_id,
+        modelo: origem.modelo,
+        // Duplicar uma edição do Diário já prepara a próxima.
+        diario:
+          origem.modelo === "diario"
+            ? { ...(origem.diario ?? {}), edicao: (origem.diario?.edicao ?? 0) + 1 }
+            : null,
       })
       .select("id")
       .single();
@@ -576,15 +705,31 @@ export const enviarCampanha = createServerFn({ method: "POST" })
       throw new Error("Sincronize a lista antes de enviar — ela ainda não existe no Resend.");
     }
 
+    // Lista com pausa da régua: o segment é refeito agora, pra quem recebeu
+    // lembrete nas últimas 20 horas ficar de fora desta edição. Agendada, a
+    // pausa vale pra hora em que foi agendada.
+    if (lista.filtro?.pausa_regua) {
+      const r = await sincronizar(lista.id);
+      if (r.falhas.length) {
+        throw new Error(
+          `A lista não sincronizou inteira (${r.falhas.length} falha(s)). Nada foi enviado; tente de novo.`,
+        );
+      }
+    }
+
     const destinatarios = (await contatosDoFiltro(lista.filtro ?? {})).length;
     if (destinatarios === 0) {
       throw new Error("Ninguém se encaixa nessa lista agora. Nada foi enviado.");
     }
 
+    const agendada = data.agendada_para?.trim() || null;
     const html = montarHtmlCampanha({
       assunto: campanha.assunto,
       preheader: campanha.preheader,
       corpo: campanha.corpo_html,
+      modelo: campanha.modelo,
+      diario: campanha.diario,
+      quando: agendada ? new Date(agendada) : new Date(),
     });
 
     const criado = await chamarResend<{ id: string }>("/broadcasts", {
@@ -597,7 +742,11 @@ export const enviarCampanha = createServerFn({ method: "POST" })
         name: campanha.nome,
         ...(campanha.preheader ? { preview_text: campanha.preheader } : {}),
         html,
-        text: textoDoHtml(campanha.corpo_html),
+        text: textoDaCampanha({
+          corpo: campanha.corpo_html,
+          modelo: campanha.modelo,
+          diario: campanha.diario,
+        }),
       },
     });
 
@@ -611,7 +760,6 @@ export const enviarCampanha = createServerFn({ method: "POST" })
     }
 
     const broadcastId = criado.dados.id;
-    const agendada = data.agendada_para?.trim() || null;
 
     const enviado = await chamarResend(`/broadcasts/${broadcastId}/send`, {
       method: "POST",
@@ -779,21 +927,31 @@ export const enviarTeste = createServerFn({ method: "POST" })
 
     const { data: campanhaRaw } = await supabaseAdmin
       .from("crm_campanhas")
-      .select("assunto, preheader, corpo_html")
+      .select("assunto, preheader, corpo_html, modelo, diario")
       .eq("id", data.id)
       .maybeSingle();
     if (!campanhaRaw) throw new Error("Campanha não encontrada.");
     const campanha = campanhaRaw as unknown as Pick<
       Campanha,
-      "assunto" | "preheader" | "corpo_html"
+      "assunto" | "preheader" | "corpo_html" | "modelo" | "diario"
     >;
 
-    // No teste o link de descadastro não é substituído pelo Resend (não é
-    // broadcast), então vira âncora morta em vez de token quebrado.
+    // No teste nada passa pelo Resend como broadcast: o link de descadastro
+    // vira âncora morta e a saudação usa o nome de quem tem esse e-mail no CRM
+    // (ou "você"), em vez de chegar com {{{FIRST_NAME}}} cru.
+    const { data: contatoTeste } = await supabaseAdmin
+      .from("crm_contatos")
+      .select("nome")
+      .ilike("email", data.para)
+      .maybeSingle();
+    const nomeTeste = partesDoNome((contatoTeste as { nome?: string } | null)?.nome ?? "").first_name;
     const html = montarHtmlCampanha({
       assunto: campanha.assunto,
       preheader: campanha.preheader,
       corpo: campanha.corpo_html,
+      modelo: campanha.modelo,
+      diario: campanha.diario,
+      saudacao: `Oi, ${nomeTeste || "você"}.`,
     }).replace("{{{RESEND_UNSUBSCRIBE_URL}}}", "#");
 
     const resp = await chamarResend("/emails", {
@@ -804,7 +962,11 @@ export const enviarTeste = createServerFn({ method: "POST" })
         reply_to: RESPONDER_PARA,
         subject: `[teste] ${campanha.assunto}`,
         html,
-        text: textoDoHtml(campanha.corpo_html),
+        text: textoDaCampanha({
+          corpo: campanha.corpo_html,
+          modelo: campanha.modelo,
+          diario: campanha.diario,
+        }),
       },
     });
     if (!resp.ok) throw new Error(`Não saiu: ${resp.erro ?? "sem detalhe"}`);

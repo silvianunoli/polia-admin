@@ -366,6 +366,7 @@ function FormularioLista(props: {
   const [status, setStatus] = useState<string[]>(l?.filtro?.status ?? []);
   const [origem, setOrigem] = useState<string[]>(l?.filtro?.origem ?? []);
   const [tags, setTags] = useState<string[]>(l?.filtro?.tags ?? []);
+  const [pausaRegua, setPausaRegua] = useState<boolean>(Boolean(l?.filtro?.pausa_regua));
   const [opcoes, setOpcoes] = useState<Awaited<ReturnType<typeof opcoesDeFiltro>> | null>(null);
   const [previa, setPrevia] = useState<{ total: number } | null>(null);
   const [salvando, setSalvando] = useState(false);
@@ -374,6 +375,7 @@ function FormularioLista(props: {
     ...(status.length ? { status } : {}),
     ...(origem.length ? { origem } : {}),
     ...(tags.length ? { tags } : {}),
+    ...(pausaRegua ? { pausa_regua: true } : {}),
   };
 
   useEffect(() => {
@@ -391,7 +393,7 @@ function FormularioLista(props: {
       vivo = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status.join(","), origem.join(","), tags.join(",")]);
+  }, [status.join(","), origem.join(","), tags.join(","), pausaRegua]);
 
   function alternar(lista: string[], set: (v: string[]) => void, valor: string) {
     set(lista.includes(valor) ? lista.filter((v) => v !== valor) : [...lista, valor]);
@@ -506,6 +508,23 @@ function FormularioLista(props: {
           set={setTags}
         />
       </div>
+
+      <label className="mt-4 flex items-start gap-2 font-sans text-[13px] text-[var(--ink-soft)]">
+        <input
+          id="lista-pausa-regua"
+          type="checkbox"
+          checked={pausaRegua}
+          onChange={(e) => setPausaRegua(e.target.checked)}
+          className="mt-0.5"
+        />
+        <span>
+          Pular quem recebeu lembrete da conta nas últimas 20 horas
+          <span className="block text-[12px] text-[var(--muted)]">
+            Pra newsletter não chegar no mesmo dia de um lembrete. A lista é refeita na hora do
+            envio, e quem ficou de fora recebe a edição seguinte.
+          </span>
+        </span>
+      </label>
 
       <p
         className={`mt-4 font-sans text-[13px] ${vazia ? "text-[var(--danger)]" : "text-[var(--ink-soft)]"}`}

@@ -1,9 +1,28 @@
 import { useEffect } from "react";
-import { EditorContent, useEditor } from "@tiptap/react";
+import { EditorContent, Mark, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
-import { Bold, Italic, Heading2, List, ListOrdered, Quote, Link as LinkIcon } from "lucide-react";
+import {
+  Bold,
+  Italic,
+  Heading2,
+  List,
+  ListOrdered,
+  Quote,
+  Link as LinkIcon,
+  Highlighter,
+} from "lucide-react";
+
+// Marca-texto do Diário da Pólia: vira <mark>, que no modelo Diário sai em
+// amarelo (o único da peça) e nos outros modelos sai sem cor. Mark próprio em
+// vez de @tiptap/extension-highlight porque a instalação dele esbarra num
+// conflito de peer dependency do projeto (20/10/2026).
+const Marcador = Mark.create({
+  name: "marcador",
+  parseHTML: () => [{ tag: "mark" }],
+  renderHTML: ({ HTMLAttributes }) => ["mark", HTMLAttributes, 0],
+});
 
 // Editor do corpo da campanha. Diferente do TiptapEditor do blog: aqui a saída
 // é HTML direto (getHTML), porque é isso que o Resend manda. Sem imagem e sem
@@ -46,6 +65,7 @@ export function EditorEmail({
       StarterKit.configure({ heading: { levels: [2, 3] } }),
       Link.configure({ openOnClick: false, autolink: true }),
       Placeholder.configure({ placeholder: "Escreva o e-mail aqui." }),
+      Marcador,
     ],
     content: html || "",
     onUpdate: ({ editor: ed }) => onChange(ed.getHTML()),
@@ -82,6 +102,13 @@ export function EditorEmail({
           onClick={() => editor.chain().focus().toggleItalic().run()}
         >
           <Italic size={15} />
+        </Botao>
+        <Botao
+          label="Marca-texto (amarelo, só no Diário)"
+          ativo={editor.isActive("marcador")}
+          onClick={() => editor.chain().focus().toggleMark("marcador").run()}
+        >
+          <Highlighter size={15} />
         </Botao>
         <Botao
           label="Subtítulo"
