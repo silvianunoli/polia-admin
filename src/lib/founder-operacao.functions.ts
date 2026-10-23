@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { assertAdmin } from "@/lib/founder-auth.server";
 import { dataBRT, periodoSearchSchema, resolverPeriodo, variacaoPct } from "@/lib/founder-periodo";
 import type { Json } from "@/integrations/supabase/types";
+import { classificarErro, GRAVIDADE, nomeNavegador, type Gravidade } from "@/lib/founder-erros";
 
 // Operação (seção 6): erros do app, eventos de sistema, jobs do pg_cron e
 // integrações. Diagnóstico, não decoração: cada lista tem o link pro contexto.
@@ -37,7 +38,7 @@ export const getOperacaoErros = createServerFn({ method: "POST" })
     const [{ data: atual }, { count: anterior }] = await Promise.all([
       supabaseAdmin
         .from("erros_app")
-        .select("id, origem, mensagem, pagina, user_id, criado_em")
+        .select("id, origem, mensagem, pagina, user_id, contexto, criado_em")
         .gte("criado_em", p.ini)
         .lt("criado_em", p.fim)
         .order("criado_em", { ascending: false })
@@ -48,14 +49,25 @@ export const getOperacaoErros = createServerFn({ method: "POST" })
         .gte("criado_em", p.iniAnterior)
         .lt("criado_em", p.fimAnterior),
     ]);
-    const erros = (atual ?? []) as {
-      id: string;
-      origem: string;
-      mensagem: string;
-      pagina: string | null;
-      user_id: string | null;
-      criado_em: string;
-    }[];
+    const erros = (
+      (atual ?? []) as {
+        id: string;
+        origem: string;
+        mensagem: string;
+        pagina: string | null;
+        user_id: string | null;
+        contexto: Json | null;
+        criado_em: string;
+      }[]
+    ).map((e) => {
+      const ctx = (e.contexto ?? {}) as { navegador?: string; versao?: string };
+      return {
+        ...e,
+        ...classificarErro(e.mensagem, e.origem),
+        navegador: nomeNavegador(ctx.navegador),
+        versao: ctx.versao ?? null,
+      };
+    });
     const agrupar = (chave: (e: (typeof erros)[number]) => string) => {
       const m = new Map<string, number>();
       for (const e of erros) m.set(chave(e), (m.get(chave(e)) ?? 0) + 1);
@@ -63,14 +75,35 @@ export const getOperacaoErros = createServerFn({ method: "POST" })
         .map(([rotulo, valor]) => ({ rotulo, valor }))
         .sort((a, b) => b.valor - a.valor);
     };
+    // Tipo de erro = título em português. A categoria e a gravidade vão no
+    // detalhe pra a lista se ler sozinha.
+    const porTipo = new Map<string, { valor: number; detalhe: string }>();
+    for (const e of erros) {
+      const atual = porTipo.get(e.titulo);
+      porTipo.set(e.titulo, {
+        valor: (atual?.valor ?? 0) + 1,
+        detalhe: GRAVIDADE[e.gravidade].rotulo.toLowerCase(),
+      });
+    }
+    const gravidades = agrupar((e) => e.gravidade);
     return {
       periodo: p,
       total: erros.length,
       variacao: variacaoPct(erros.length, anterior ?? 0),
       usuariasAfetadas: new Set(erros.filter((e) => e.user_id).map((e) => e.user_id)).size,
-      porOrigem: agrupar((e) => e.origem),
+      quebram: erros.filter((e) => e.gravidade === "quebra").length,
+      porGravidade: gravidades
+        .map((g) => ({ ...g, gravidade: g.rotulo as Gravidade }))
+        .sort((a, b) => GRAVIDADE[a.gravidade].ordem - GRAVIDADE[b.gravidade].ordem)
+        .map((g) => ({ rotulo: GRAVIDADE[g.gravidade].rotulo, valor: g.valor })),
+      porCategoria: agrupar((e) => e.categoria).slice(0, 12),
+      porOrigem: agrupar((e) => (e.origem === "server" ? "servidor" : "navegador")),
       porPagina: agrupar((e) => e.pagina ?? "sem página").slice(0, 12),
-      porMensagem: agrupar((e) => e.mensagem.slice(0, 90)).slice(0, 12),
+      porNavegador: agrupar((e) => e.navegador ?? "não gravado").slice(0, 12),
+      porTipo: [...porTipo.entries()]
+        .map(([rotulo, v]) => ({ rotulo, ...v }))
+        .sort((a, b) => b.valor - a.valor)
+        .slice(0, 12),
       serie: serie(
         p.ini,
         p.fim,
@@ -79,8 +112,13 @@ export const getOperacaoErros = createServerFn({ method: "POST" })
       recentes: erros.slice(0, 40).map((e) => ({
         id: e.id,
         origem: e.origem,
+        titulo: e.titulo,
+        categoria: e.categoria,
+        gravidade: e.gravidade,
         mensagem: e.mensagem.slice(0, 200),
         pagina: e.pagina,
+        navegador: e.navegador,
+        versao: e.versao,
         userId: e.user_id,
         quando: e.criado_em,
       })),

@@ -3,6 +3,8 @@ import { getOperacaoErros } from "@/lib/founder-operacao.functions";
 import { ALERTA_ERRO_CLASS, BTN_LINK, TH_CLASS } from "@/lib/botoes";
 import { formatarDataHoraBRT } from "@/lib/founder-formato";
 import { StatCard } from "@/components/founder/StatCard";
+import { EstadoPill } from "@/components/founder/EstadoPill";
+import { GRAVIDADE } from "@/lib/founder-erros";
 import { BarraLista, BarrasDiarias } from "@/components/founder/Graficos";
 import { Secao, Vazio } from "@/components/founder/Secao";
 import { useCarregar } from "@/components/founder/useCarregar";
@@ -24,10 +26,11 @@ function Erros() {
     <>
       <p className="mb-6 font-sans text-[14px] text-[var(--muted)]">
         Erros capturados pelo app em produção (client e server), da tabela{" "}
-        <code className="font-mono text-[12px]">erros_app</code>. Agrupados por origem, página e
-        mensagem pra achar o padrão antes do caso.
+        <code className="font-mono text-[12px]">erros_app</code>. Cada mensagem conhecida ganha um
+        nome em português, uma categoria e uma gravidade; a mensagem original fica embaixo, pra
+        investigar.
       </p>
-      <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-xl">
+      <div className="mb-6 grid grid-cols-2 gap-4 sm:max-w-3xl sm:grid-cols-3">
         <StatCard
           label="Erros"
           valor={d?.total}
@@ -43,6 +46,13 @@ function Erros() {
           carregando={carregando}
           invertido
         />
+        <StatCard
+          label="Quebram a tela"
+          valor={d?.quebram}
+          descricao="precisam de correção"
+          carregando={carregando}
+          invertido
+        />
       </div>
 
       <Secao titulo="Erros por dia" carregando={carregando} className="mb-6">
@@ -53,15 +63,25 @@ function Erros() {
         )}
       </Secao>
 
+      <Secao titulo="Tipos de erro mais comuns" carregando={carregando} className="mb-6">
+        <BarraLista itens={d?.porTipo ?? []} vazio="Nenhum erro no período." />
+      </Secao>
+
       <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Secao titulo="Por origem" carregando={carregando}>
-          <BarraLista itens={d?.porOrigem ?? []} vazio="Nenhum erro no período." />
+        <Secao titulo="Por gravidade" carregando={carregando}>
+          <BarraLista itens={d?.porGravidade ?? []} vazio="Nenhum erro no período." />
+        </Secao>
+        <Secao titulo="Por categoria" carregando={carregando}>
+          <BarraLista itens={d?.porCategoria ?? []} vazio="Nenhum erro no período." />
         </Secao>
         <Secao titulo="Por página" carregando={carregando}>
           <BarraLista itens={d?.porPagina ?? []} vazio="Nenhum erro no período." />
         </Secao>
-        <Secao titulo="Mensagens mais comuns" carregando={carregando}>
-          <BarraLista itens={d?.porMensagem ?? []} vazio="Nenhum erro no período." />
+        <Secao titulo="Por navegador" carregando={carregando}>
+          <BarraLista itens={d?.porNavegador ?? []} vazio="Nenhum erro no período." />
+        </Secao>
+        <Secao titulo="Por origem" carregando={carregando}>
+          <BarraLista itens={d?.porOrigem ?? []} vazio="Nenhum erro no período." />
         </Secao>
       </div>
 
@@ -74,9 +94,10 @@ function Erros() {
               <thead className="border-b border-[var(--line)]">
                 <tr>
                   <th className={TH_CLASS}>Quando</th>
-                  <th className={TH_CLASS}>Origem</th>
+                  <th className={TH_CLASS}>Gravidade</th>
+                  <th className={TH_CLASS}>Erro</th>
                   <th className={TH_CLASS}>Página</th>
-                  <th className={TH_CLASS}>Mensagem</th>
+                  <th className={TH_CLASS}>Navegador</th>
                   <th className={TH_CLASS}>Usuária</th>
                 </tr>
               </thead>
@@ -86,14 +107,34 @@ function Erros() {
                     <td className="whitespace-nowrap px-5 py-2.5 font-sans text-[12px] text-[var(--muted)]">
                       {formatarDataHoraBRT(e.quando)}
                     </td>
-                    <td className="px-5 py-2.5 font-sans text-[12px] text-[var(--ink-soft)]">
-                      {e.origem}
+                    <td className="whitespace-nowrap px-5 py-2.5">
+                      <EstadoPill
+                        estado={GRAVIDADE[e.gravidade].estado}
+                        texto={GRAVIDADE[e.gravidade].rotulo}
+                      />
+                    </td>
+                    <td className="px-5 py-2.5">
+                      <p className="font-sans text-[13px] text-[var(--ink)]">{e.titulo}</p>
+                      <p className="font-sans text-[12px] text-[var(--muted)]">
+                        {e.categoria} · {e.origem === "server" ? "servidor" : "navegador"}
+                      </p>
+                      <details className="mt-1">
+                        <summary className="cursor-pointer font-sans text-[12px] text-[var(--secondary-text)]">
+                          mensagem original
+                        </summary>
+                        <p className="mt-1 break-all font-mono text-[11px] text-[var(--ink-soft)]">
+                          {e.mensagem}
+                        </p>
+                      </details>
                     </td>
                     <td className="px-5 py-2.5 font-mono text-[12px] text-[var(--ink-soft)]">
                       {e.pagina ?? "—"}
                     </td>
-                    <td className="px-5 py-2.5 font-sans text-[13px] text-[var(--ink)]">
-                      {e.mensagem}
+                    <td className="px-5 py-2.5 font-sans text-[12px] text-[var(--ink-soft)]">
+                      {e.navegador ?? <span className="text-[var(--muted)]">não gravado</span>}
+                      {e.versao ? (
+                        <p className="font-mono text-[11px] text-[var(--muted)]">{e.versao}</p>
+                      ) : null}
                     </td>
                     <td className="px-5 py-2.5 font-sans text-[12px]">
                       {e.userId ? (
