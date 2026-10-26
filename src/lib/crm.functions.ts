@@ -205,7 +205,17 @@ export const salvarContato = createServerFn({ method: "POST" })
     const email = limpar(data.email);
     const telefone = normalizarTelefone(data.telefone);
     if (!email && !telefone) {
-      throw new Error("Precisa de e-mail ou de um WhatsApp válido com DDD.");
+      // Quem chegou pelo Direct ou pelo WhatsApp já tem o ID do canal: pode ficar sem os dois.
+      const { data: canal } = data.id
+        ? await supabaseAdmin
+            .from("crm_contatos")
+            .select("ig_id, wa_id")
+            .eq("id", data.id)
+            .maybeSingle()
+        : { data: null };
+      if (!canal?.ig_id && !canal?.wa_id) {
+        throw new Error("Precisa de e-mail ou de um WhatsApp válido com DDD.");
+      }
     }
 
     const linha = {

@@ -9,7 +9,9 @@ import {
   Plus,
   Instagram,
   Phone,
+  MessagesSquare,
 } from "lucide-react";
+import { conversasDoContato } from "@/lib/conversas.functions";
 import {
   obterContato,
   excluirContato,
@@ -73,6 +75,7 @@ function PerfilContato() {
   const [carregando, setCarregando] = useState(true);
   const [editando, setEditando] = useState(false);
   const [aba, setAba] = useState<Aba>("timeline");
+  const [conversas, setConversas] = useState<{ id: string; canal: string }[]>([]);
   const { confirmar, dialogo } = useConfirmacao();
 
   async function carregar() {
@@ -95,6 +98,9 @@ function PerfilContato() {
     listarModelos()
       .then((r) => setModelos(r.modelos))
       .catch(() => setModelos([]));
+    conversasDoContato({ data: { contatoId: id } })
+      .then((r) => setConversas(r.conversas))
+      .catch(() => setConversas([]));
   }, [id]);
 
   async function handleExcluir() {
@@ -226,6 +232,17 @@ function PerfilContato() {
             </div>
 
             <div className="flex shrink-0 flex-wrap gap-2">
+              {conversas.map((c) => (
+                <Link
+                  key={c.id}
+                  to="/crm/conversas"
+                  search={{ c: c.id }}
+                  className={`inline-flex items-center gap-2 no-underline ${btnOutline}`}
+                >
+                  <MessagesSquare size={14} />
+                  Conversa no {rotulo(CANAL_LABEL, c.canal)}
+                </Link>
+              ))}
               {wa && (
                 <a
                   href={wa}

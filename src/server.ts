@@ -33,6 +33,17 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     const url = new URL(request.url);
     if (url.pathname === "/health") return respostaHealth();
+    // Webhook da Meta (Instagram e WhatsApp) não passa pelo TanStack: precisa do corpo cru
+    // pra conferir a assinatura e do waitUntil pra responder antes de processar.
+    if (url.pathname === "/api/meta/webhook") {
+      try {
+        const { tratarWebhookMeta } = await import("./lib/conversas-meta.server");
+        return await tratarWebhookMeta(request, ctx);
+      } catch (error) {
+        console.error("[webhook meta]", error);
+        return new Response("Erro", { status: 500 });
+      }
+    }
 
     try {
       const handler = await getServerEntry();

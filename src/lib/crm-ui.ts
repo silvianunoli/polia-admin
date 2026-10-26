@@ -50,6 +50,7 @@ export const ORIGEM_LABEL: Record<string, string> = {
   app: "Usa o app",
   indicacao: "Indicação",
   instagram: "Instagram",
+  whatsapp: "WhatsApp",
 };
 
 export const CANAL_LABEL: Record<string, string> = {
