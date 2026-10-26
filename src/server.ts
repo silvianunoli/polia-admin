@@ -35,6 +35,16 @@ export default {
     if (url.pathname === "/health") return respostaHealth();
     // Webhook da Meta (Instagram e WhatsApp) não passa pelo TanStack: precisa do corpo cru
     // pra conferir a assinatura e do waitUntil pra responder antes de processar.
+    // Botão de link das automações: conta o clique e redireciona (CRM-27).
+    if (url.pathname === "/api/link") {
+      try {
+        const { tratarCliqueLink } = await import("./lib/automacoes.server");
+        return await tratarCliqueLink(request);
+      } catch (error) {
+        console.error("[link]", error);
+        return Response.redirect("https://usepolia.com.br", 302);
+      }
+    }
     if (url.pathname === "/api/meta/webhook") {
       try {
         const { tratarWebhookMeta } = await import("./lib/conversas-meta.server");

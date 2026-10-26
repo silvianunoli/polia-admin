@@ -1,6 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Instagram, MessageCircle, Plus, Workflow } from "lucide-react";
+import { Instagram, MessageCircle, MessageSquareReply, Plus, Workflow } from "lucide-react";
 import {
   alternarAutomacao,
   criarDoModelo,
@@ -86,7 +86,7 @@ function ListaAutomacoes() {
     }
   }
 
-  async function criarModelo(modelo: "fala_instagram" | "fala_whatsapp") {
+  async function criarModelo(modelo: "comentario" | "fala_instagram" | "fala_whatsapp") {
     setCriando(true);
     try {
       const r = await criarDoModelo({ data: { modelo } });
@@ -119,6 +119,15 @@ function ListaAutomacoes() {
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={() => criarModelo("comentario")}
+            disabled={criando}
+            className={`inline-flex items-center gap-1.5 ${btnPrimary}`}
+          >
+            <MessageSquareReply size={15} />
+            Comentário → Direct
+          </button>
+          <button
+            type="button"
             onClick={() => criarModelo("fala_instagram")}
             disabled={criando}
             className={btnOutline}
@@ -137,10 +146,10 @@ function ListaAutomacoes() {
             type="button"
             onClick={criarEmBranco}
             disabled={criando}
-            className={`inline-flex items-center gap-1.5 ${btnPrimary}`}
+            className={`inline-flex items-center gap-1.5 ${btnOutline}`}
           >
             <Plus size={15} />
-            Nova automação
+            Automação em lista
           </button>
         </div>
       </div>
@@ -182,7 +191,9 @@ function ListaAutomacoes() {
               </div>
               <div className="flex items-center gap-5">
                 <p className="font-sans text-[12px] text-[var(--muted)]">
-                  {a.execucoes} {a.execucoes === 1 ? "vez" : "vezes"}
+                  {a.execucoes} {a.execucoes === 1 ? "vez" : "vezes"} · {a.cliques}{" "}
+                  {a.cliques === 1 ? "clique" : "cliques"}
+                  {a.execucoes > 0 ? ` (${Math.round((a.cliques / a.execucoes) * 100)}%)` : ""}
                   {a.ativas_agora > 0 ? ` · ${a.ativas_agora} em andamento` : ""}
                 </p>
                 <label className="inline-flex cursor-pointer items-center gap-2 font-sans text-[13px] text-[var(--ink-soft)]">

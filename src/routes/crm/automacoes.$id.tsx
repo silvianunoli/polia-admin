@@ -12,6 +12,7 @@ import {
   Plus,
   Tag,
   Trash2,
+  UserPlus,
 } from "lucide-react";
 import {
   excluirAutomacao,
@@ -30,6 +31,7 @@ import {
 } from "@/lib/automacoes";
 import type { PostInstagram } from "@/lib/conversas-meta.server";
 import { useConfirmacao } from "@/components/crm/Confirmar";
+import { EditorComentarioGuiado } from "@/components/crm/EditorComentarioGuiado";
 import { toastErro, toastSucesso } from "@/lib/toast";
 import {
   btnDanger,
@@ -69,6 +71,12 @@ const TIPOS_PASSO: {
   },
   { tipo: "tag", rotulo: "Tag", icone: Tag, ajuda: "Põe ou tira tag do contato" },
   { tipo: "crm", rotulo: "Ação no CRM", icone: Briefcase, ajuda: "Negócio, lembrete, status" },
+  {
+    tipo: "seguir",
+    rotulo: "Pedir pra seguir",
+    icone: UserPlus,
+    ajuda: "Confere se segue (Instagram)",
+  },
   { tipo: "notificar", rotulo: "Avisar a equipe", icone: Bell, ajuda: "E-mail pro oi@" },
 ];
 
@@ -96,11 +104,24 @@ function passoNovo(tipo: TipoPasso): Passo {
       return { id, tipo, negocio: null, lembrete: null, status: null };
     case "notificar":
       return { id, tipo, texto: "" };
+    case "seguir":
+      return {
+        id,
+        tipo,
+        texto: "Antes de continuar: você já segue a Pólia? Segue e toca no botão.",
+        botao: "Já segui",
+        texto_nao_segue: "Ainda não apareceu aqui que você segue. Segue o perfil e toca de novo.",
+      };
   }
 }
 
 function resumoPasso(p: Passo): string {
-  if (p.tipo === "mensagem" || p.tipo === "pergunta" || p.tipo === "notificar") {
+  if (
+    p.tipo === "mensagem" ||
+    p.tipo === "pergunta" ||
+    p.tipo === "notificar" ||
+    p.tipo === "seguir"
+  ) {
     return p.texto.split("\n")[0].slice(0, 50) || "(sem texto)";
   }
   if (p.tipo === "midia") return p.nome || p.midia;
@@ -153,6 +174,7 @@ function EditorAutomacao() {
     Awaited<ReturnType<typeof obterAutomacao>>["execucoes"]
   >([]);
   const [contagem, setContagem] = useState(0);
+  const [cliques, setCliques] = useState(0);
   const [alterado, setAlterado] = useState(false);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -160,9 +182,17 @@ function EditorAutomacao() {
   async function carregar() {
     try {
       const r = await obterAutomacao({ data: { id } });
-      const { id: _id, execucoes: n, ativas_agora: _x, atualizado_em: _t, ...resto } = r.automacao;
+      const {
+        id: _id,
+        execucoes: n,
+        ativas_agora: _x,
+        cliques: c,
+        atualizado_em: _t,
+        ...resto
+      } = r.automacao;
       setA(resto);
       setContagem(n);
+      setCliques(c);
       setExecucoes(r.execucoes);
       setAlterado(false);
     } catch (e) {
@@ -242,6 +272,7 @@ function EditorAutomacao() {
   if (!a) return <p className="font-sans text-[14px] text-[var(--muted)]">Carregando...</p>;
 
   const deComentario = a.gatilho.tipo === "comentario";
+  const guiado = a.gatilho.tipo === "comentario" && a.gatilho.guiado;
 
   return (
     <div className="flex flex-col gap-5 pb-24">
@@ -297,83 +328,95 @@ function EditorAutomacao() {
         </label>
       </section>
 
-      {/* Gatilho */}
-      <section className={`${cardClass} flex flex-col gap-4 p-5`} aria-labelledby="titulo-gatilho">
-        <div>
-          <h2 id="titulo-gatilho" className="font-cabinet text-[18px] text-[var(--ink)]">
-            Quando começa
-          </h2>
-          <p className="font-sans text-[13px] text-[var(--muted)]">{resumoGatilho(a.gatilho)}</p>
-        </div>
-        <EditorGatilho
-          gatilho={a.gatilho}
-          canal={a.canal}
-          onMudar={(gatilho) => mudar({ gatilho })}
-        />
-      </section>
-
-      {/* Passos */}
-      <section className="flex flex-col gap-3" aria-labelledby="titulo-passos">
-        <div className="flex items-baseline justify-between">
-          <h2 id="titulo-passos" className="font-cabinet text-[18px] text-[var(--ink)]">
-            O que acontece, em ordem
-          </h2>
-          <p className="font-sans text-[12px] text-[var(--muted)]">
-            Variáveis: {"{primeiro_nome}"}, {"{nome}"} e qualquer resposta guardada, como{" "}
-            {"{marca_instagram}"}
-          </p>
-        </div>
-        {deComentario && (
-          <p className="rounded-xl border border-[var(--line)] bg-white px-4 py-3 font-sans text-[13px] text-[var(--ink-soft)]">
-            A primeira mensagem vai como resposta privada ao comentário. O Instagram só deixa mandar
-            a próxima depois que a pessoa responder no Direct: se tiver mais mensagens na lista, a
-            automação espera ela escrever. Botões ajudam, porque um toque já conta como resposta.
-          </p>
-        )}
-
-        <ol className="flex flex-col gap-3">
-          {a.passos.map((p, i) => (
-            <CartaoPasso
-              key={p.id}
-              passo={p}
-              indice={i}
-              total={a.passos.length}
-              todos={a.passos}
+      {guiado ? (
+        <EditorComentarioGuiado automacao={a} onMudar={mudar} />
+      ) : (
+        <>
+          {/* Gatilho */}
+          <section
+            className={`${cardClass} flex flex-col gap-4 p-5`}
+            aria-labelledby="titulo-gatilho"
+          >
+            <div>
+              <h2 id="titulo-gatilho" className="font-cabinet text-[18px] text-[var(--ink)]">
+                Quando começa
+              </h2>
+              <p className="font-sans text-[13px] text-[var(--muted)]">
+                {resumoGatilho(a.gatilho)}
+              </p>
+            </div>
+            <EditorGatilho
+              gatilho={a.gatilho}
               canal={a.canal}
-              onMudar={(novo) => mudarPasso(i, novo)}
-              onMover={(d) => moverPasso(i, d)}
-              onApagar={() => mudar({ passos: a.passos.filter((_, j) => j !== i) })}
+              onMudar={(gatilho) => mudar({ gatilho })}
             />
-          ))}
-        </ol>
+          </section>
 
-        <div className={`${cardClass} p-4`}>
-          <p className={labelClass}>Adicionar passo</p>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
-            {TIPOS_PASSO.map((t) => {
-              const Icone = t.icone;
-              return (
-                <button
-                  key={t.tipo}
-                  type="button"
-                  onClick={() => mudar({ passos: [...a.passos, passoNovo(t.tipo)] })}
-                  className="flex items-start gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-left hover:border-[var(--secondary)]"
-                >
-                  <Icone size={15} className="mt-0.5 text-[var(--muted)]" />
-                  <span>
-                    <span className="block font-sans text-[13px] font-medium text-[var(--ink)]">
-                      {t.rotulo}
-                    </span>
-                    <span className="block font-sans text-[12px] text-[var(--muted)]">
-                      {t.ajuda}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </section>
+          {/* Passos */}
+          <section className="flex flex-col gap-3" aria-labelledby="titulo-passos">
+            <div className="flex items-baseline justify-between">
+              <h2 id="titulo-passos" className="font-cabinet text-[18px] text-[var(--ink)]">
+                O que acontece, em ordem
+              </h2>
+              <p className="font-sans text-[12px] text-[var(--muted)]">
+                Variáveis: {"{primeiro_nome}"}, {"{nome}"} e qualquer resposta guardada, como{" "}
+                {"{marca_instagram}"}
+              </p>
+            </div>
+            {deComentario && (
+              <p className="rounded-xl border border-[var(--line)] bg-white px-4 py-3 font-sans text-[13px] text-[var(--ink-soft)]">
+                A primeira mensagem vai como resposta privada ao comentário. O Instagram só deixa
+                mandar a próxima depois que a pessoa responder no Direct: se tiver mais mensagens na
+                lista, a automação espera ela escrever. Botões ajudam, porque um toque já conta como
+                resposta.
+              </p>
+            )}
+
+            <ol className="flex flex-col gap-3">
+              {a.passos.map((p, i) => (
+                <CartaoPasso
+                  key={p.id}
+                  passo={p}
+                  indice={i}
+                  total={a.passos.length}
+                  todos={a.passos}
+                  canal={a.canal}
+                  onMudar={(novo) => mudarPasso(i, novo)}
+                  onMover={(d) => moverPasso(i, d)}
+                  onApagar={() => mudar({ passos: a.passos.filter((_, j) => j !== i) })}
+                />
+              ))}
+            </ol>
+
+            <div className={`${cardClass} p-4`}>
+              <p className={labelClass}>Adicionar passo</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-3">
+                {TIPOS_PASSO.map((t) => {
+                  const Icone = t.icone;
+                  return (
+                    <button
+                      key={t.tipo}
+                      type="button"
+                      onClick={() => mudar({ passos: [...a.passos, passoNovo(t.tipo)] })}
+                      className="flex items-start gap-2 rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-left hover:border-[var(--secondary)]"
+                    >
+                      <Icone size={15} className="mt-0.5 text-[var(--muted)]" />
+                      <span>
+                        <span className="block font-sans text-[13px] font-medium text-[var(--ink)]">
+                          {t.rotulo}
+                        </span>
+                        <span className="block font-sans text-[12px] text-[var(--muted)]">
+                          {t.ajuda}
+                        </span>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
 
       {/* Execuções */}
       <section className={cardClass} aria-labelledby="titulo-execucoes">
@@ -382,7 +425,10 @@ function EditorAutomacao() {
             Quem passou por aqui
           </h2>
           <p className="font-sans text-[12px] text-[var(--muted)]">
-            {contagem} {contagem === 1 ? "vez" : "vezes"} no total. As 30 mais recentes:
+            {contagem} {contagem === 1 ? "vez" : "vezes"} no total · {cliques}{" "}
+            {cliques === 1 ? "clique" : "cliques"} no link
+            {contagem > 0 ? ` (${Math.round((cliques / contagem) * 100)}%)` : ""}. As 30 mais
+            recentes:
           </p>
         </div>
         <ul>
@@ -451,7 +497,15 @@ function EditorGatilho(props: {
   function trocarTipo(tipo: Gatilho["tipo"]) {
     if (tipo === g.tipo) return;
     if (tipo === "comentario") {
-      props.onMudar({ tipo, posts: [], palavras: [], respostas_publicas: [] });
+      props.onMudar({
+        tipo,
+        posts: [],
+        proximo_post: false,
+        proximo_desde: null,
+        palavras: [],
+        respostas_publicas: [],
+        guiado: false,
+      });
     } else if (tipo === "palavra_chave") {
       props.onMudar({ tipo, palavras: ["oi"], modo: "contem" });
     } else {
@@ -717,6 +771,41 @@ function CartaoPasso(props: {
             className={`${inputClass} resize-y`}
           />
         </label>
+      )}
+
+      {p.tipo === "seguir" && (
+        <div className="flex flex-col gap-3">
+          <label htmlFor={`${prefixo}-seguir`}>
+            <span className={labelClass}>Pedido</span>
+            <textarea
+              id={`${prefixo}-seguir`}
+              rows={3}
+              value={p.texto}
+              onChange={(e) => props.onMudar({ ...p, texto: e.target.value })}
+              className={`${inputClass} resize-y`}
+            />
+          </label>
+          <label htmlFor={`${prefixo}-seguir-botao`}>
+            <span className={labelClass}>Botão (até 20 letras)</span>
+            <input
+              id={`${prefixo}-seguir-botao`}
+              value={p.botao}
+              maxLength={20}
+              onChange={(e) => props.onMudar({ ...p, botao: e.target.value })}
+              className={inputClass}
+            />
+          </label>
+          <label htmlFor={`${prefixo}-seguir-nao`}>
+            <span className={labelClass}>Se ainda não seguir</span>
+            <textarea
+              id={`${prefixo}-seguir-nao`}
+              rows={2}
+              value={p.texto_nao_segue}
+              onChange={(e) => props.onMudar({ ...p, texto_nao_segue: e.target.value })}
+              className={`${inputClass} resize-y`}
+            />
+          </label>
+        </div>
       )}
 
       {p.tipo === "mensagem" && (
@@ -1018,7 +1107,7 @@ function EditorBotoes(props: {
           onClick={() =>
             props.onMudar({
               ...p,
-              botoes: [...p.botoes, { id: novoId(), titulo: "", ir_para: null }],
+              botoes: [...p.botoes, { id: novoId(), titulo: "", ir_para: null, url: null }],
             })
           }
           disabled={p.botoes.length >= 10}

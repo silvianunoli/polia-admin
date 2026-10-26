@@ -1,6 +1,11 @@
 import { describe, it, expect } from "vitest";
 import {
+  LINK_WHATSAPP_FALA,
+  automacaoComentarioEmBranco,
   automacaoSchema,
+  guiadoEmBranco,
+  guiadoParaPassos,
+  passosParaGuiado,
   botaoEscolhido,
   gatilhoCasa,
   interpolar,
@@ -87,6 +92,9 @@ describe("gatilhoCasa", () => {
       posts: ["M1"],
       palavras: ["fala"],
       respostas_publicas: [],
+      proximo_post: false,
+      proximo_desde: null,
+      guiado: false,
     };
     expect(gatilhoCasa(g, comentario("FALA!"))).toBe(true);
     expect(gatilhoCasa(g, comentario("Fála comigo"))).toBe(true);
@@ -95,7 +103,15 @@ describe("gatilhoCasa", () => {
   });
 
   it("comentário sem filtro casa qualquer comentário, mas nunca uma DM", () => {
-    const g = { tipo: "comentario" as const, posts: [], palavras: [], respostas_publicas: [] };
+    const g = {
+      tipo: "comentario" as const,
+      posts: [],
+      palavras: [],
+      respostas_publicas: [],
+      proximo_post: false,
+      proximo_desde: null,
+      guiado: false,
+    };
     expect(gatilhoCasa(g, comentario("qualquer coisa"))).toBe(true);
     expect(gatilhoCasa(g, { canal: "instagram", tipo: "texto", texto: "oi", mediaId: null })).toBe(
       false,
@@ -173,5 +189,31 @@ describe("interpolar", () => {
       "Oi.",
     );
     expect(interpolar("Oi, {primeiro_nome}.", { nome: "+5511999990000", campos: {} })).toBe("Oi.");
+  });
+});
+
+describe("comentário guiado", () => {
+  it("formulário vira passos e volta igual, com os passos ligados e desligados", () => {
+    const g = guiadoEmBranco();
+    g.seguir.ativo = true;
+    g.tags = ["veio do post"];
+    const passos = guiadoParaPassos(g);
+    expect(passos.map((p) => p.id)).toEqual(["boas_vindas", "seguir", "link", "tags"]);
+    expect(passosParaGuiado(passos)).toEqual(g);
+  });
+
+  it("o modelo FALA traz o texto do ManyChat, 3 respostas públicas e o botão de link", () => {
+    const a = modeloFalaInstagram();
+    const volta = passosParaGuiado(a.passos);
+    expect(volta.boasVindas.botao).toBe("Quero continuar");
+    expect(volta.link.botoes[0]).toEqual({ titulo: "Abrir o WhatsApp", url: LINK_WHATSAPP_FALA });
+    expect(a.gatilho.tipo === "comentario" && a.gatilho.respostas_publicas).toHaveLength(3);
+  });
+
+  it("botão de link sem endereço não salva", () => {
+    const a = automacaoComentarioEmBranco();
+    const g = guiadoEmBranco();
+    g.link.botoes = [{ titulo: "Abrir", url: "" }];
+    expect(automacaoSchema.safeParse({ ...a, passos: guiadoParaPassos(g) }).success).toBe(false);
   });
 });

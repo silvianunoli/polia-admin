@@ -11,8 +11,10 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { emailPolia, enviarEmailResend, escapeHtml } from "@/lib/email-template";
 import { resumoMensagem, type Canal, type MensagemRecebida } from "@/lib/conversas-meta";
 import {
+  dataDoPost,
   enviarPeloCanal,
   responderComentarioEmPublico,
+  seguePerfil,
   type Envio,
 } from "@/lib/conversas-meta.server";
 import {
@@ -31,6 +33,29 @@ import {
 } from "@/lib/automacoes";
 
 const JANELA_RESPOSTA_PADRAO_MS = 24 * 60 * 60 * 1000;
+const MAX_TENTATIVAS_SEGUIR = 3;
+const BASE_OFFICE = "https://office.usepolia.com.br";
+
+// Link do botão passa por /api/link: conta o clique e redireciona pro endereço que está na
+// automação (nunca pra um endereço que veio na URL, então não vira redirecionamento aberto).
+export function linkRastreado(execucaoId: string, passoId: string, botaoId: string): string {
+  const q = new URLSearchParams({ e: execucaoId, p: passoId, b: botaoId });
+  return `${BASE_OFFICE}/api/link?${q.toString()}`;
+}
+
+async function preencherEmail(contatoId: string, email: string) {
+  const { data } = await supabaseAdmin
+    .from("crm_contatos")
+    .select("email")
+    .eq("id", contatoId)
+    .maybeSingle();
+  if ((data as { email: string | null } | null)?.email) return;
+  // E-mail que já é de outro contato (índice único) fica só no campo guardado.
+  await supabaseAdmin
+    .from("crm_contatos")
+    .update({ email, atualizado_em: new Date().toISOString() })
+    .eq("id", contatoId);
+}
 // Execução esperando há mais que isso não prende mais a pessoa: a próxima mensagem é nova.
 const VALIDADE_ESPERA_MS = 24 * 60 * 60 * 1000;
 const MAX_TENTATIVAS = 2;
@@ -233,7 +258,10 @@ async function executar(ctx: Contexto, automacao: AutomacaoLinha, exec: Execucao
       // quando a pessoa escrever. A execução espera, sem gastar o passo.
       const precisaJanela =
         exec.dados.comentario_usado &&
-        (passo.tipo === "mensagem" || passo.tipo === "pergunta" || passo.tipo === "midia");
+        (passo.tipo === "mensagem" ||
+          passo.tipo === "pergunta" ||
+          passo.tipo === "midia" ||
+          passo.tipo === "seguir");
       if (precisaJanela && !(await janelaAberta(ctx.conversaId))) {
         await atualizarExecucao(exec.id, {
           estado: "aguardando",
@@ -243,23 +271,50 @@ async function executar(ctx: Contexto, automacao: AutomacaoLinha, exec: Execucao
         return;
       }
 
-      if (passo.tipo === "mensagem" || passo.tipo === "pergunta") {
+      if (passo.tipo === "seguir") {
+        // Seguir só existe no Instagram: no WhatsApp o passo é pulado.
+        if (ctx.canal === "instagram") {
+          const texto = interpolar(passo.texto, contato);
+          const botoes = [{ payload: payloadBotao(passo.id, "seguir"), titulo: passo.botao }];
+          await enviar(
+            ctx,
+            exec,
+            { tipo: "texto", texto, botoes },
+            {
+              tipo: "texto",
+              texto,
+              dados: { botoes: [passo.botao] },
+            },
+          );
+          await atualizarExecucao(exec.id, {
+            estado: "aguardando",
+            aguardando: "resposta",
+            passo_idx: idx,
+            tentativas: 0,
+          });
+          return;
+        }
+      } else if (passo.tipo === "mensagem" || passo.tipo === "pergunta") {
         const texto = interpolar(passo.texto, contato);
-        const botoes =
-          passo.tipo === "mensagem"
-            ? passo.botoes.map((b) => ({ payload: payloadBotao(passo.id, b.id), titulo: b.titulo }))
-            : [];
+        const botoesPasso = passo.tipo === "mensagem" ? passo.botoes : [];
+        const botoes = botoesPasso
+          .filter((b) => !b.url)
+          .map((b) => ({ payload: payloadBotao(passo.id, b.id), titulo: b.titulo }));
+        // Botão de link passa pelo office antes de abrir: é assim que o clique é contado.
+        const links = botoesPasso
+          .filter((b) => b.url)
+          .map((b) => ({ titulo: b.titulo, url: linkRastreado(exec.id, passo.id, b.id) }));
         await enviar(
           ctx,
           exec,
-          { tipo: "texto", texto, botoes },
+          { tipo: "texto", texto, botoes, links },
           {
             tipo: "texto",
             texto,
-            dados: botoes.length ? { botoes: botoes.map((b) => b.titulo) } : {},
+            dados: botoesPasso.length ? { botoes: botoesPasso.map((b) => b.titulo) } : {},
           },
         );
-        const espera = passo.tipo === "pergunta" || passo.botoes.length > 0;
+        const espera = passo.tipo === "pergunta" || botoes.length > 0;
         if (espera) {
           await atualizarExecucao(exec.id, {
             estado: "aguardando",
@@ -411,6 +466,34 @@ async function responder(ctx: Contexto, exec: ExecucaoLinha, m: MensagemRecebida
       // Duas tentativas sem formato certo: guarda o que veio e segue, sem prender a pessoa.
     }
     if (texto) await salvarCampo(ctx.contatoId, passo.salvar_em, texto);
+    // "DM solicitando o endereço de e-mail": o e-mail certo também vira o e-mail do contato,
+    // que é o que as listas e campanhas do CRM usam.
+    if (passo.validacao === "email" && respostaValida("email", texto)) {
+      await preencherEmail(ctx.contatoId, texto.toLowerCase());
+    }
+  } else if (passo.tipo === "seguir") {
+    const segue = await seguePerfil(ctx.externoId);
+    if (!segue && exec.tentativas < MAX_TENTATIVAS_SEGUIR) {
+      const aviso = passo.texto_nao_segue;
+      const botoes = [{ payload: payloadBotao(passo.id, "seguir"), titulo: passo.botao }];
+      try {
+        await enviar(
+          ctx,
+          exec,
+          { tipo: "texto", texto: aviso, botoes },
+          {
+            tipo: "texto",
+            texto: aviso,
+            dados: { botoes: [passo.botao] },
+          },
+        );
+      } catch {
+        // A falha já ficou gravada na conversa.
+      }
+      await atualizarExecucao(exec.id, { tentativas: exec.tentativas + 1 });
+      return;
+    }
+    // Seguiu, ou já pediu 3 vezes: segue em frente sem prender a pessoa.
   }
 
   const seguinte = {
@@ -479,6 +562,62 @@ async function respostaPadraoRecente(conversaId: string, automacaoId: string): P
   return (data ?? []).length > 0;
 }
 
+async function fixarProximoPost(ativas: AutomacaoLinha[], mediaId: string) {
+  const esperando = ativas.filter(
+    (a) =>
+      a.gatilho.tipo === "comentario" && a.gatilho.proximo_post && a.gatilho.posts.length === 0,
+  );
+  if (esperando.length === 0) return;
+  const publicado = await dataDoPost(mediaId);
+  if (!publicado) return;
+  for (const a of esperando) {
+    const g = a.gatilho as Extract<Gatilho, { tipo: "comentario" }>;
+    if (g.proximo_desde && publicado < g.proximo_desde) continue;
+    const novo = { ...g, posts: [mediaId], proximo_post: false };
+    await supabaseAdmin
+      .from("auto_automacoes")
+      .update({ gatilho: novo, atualizado_em: new Date().toISOString() })
+      .eq("id", a.id);
+    // Atualiza na memória também, pra este mesmo comentário já casar.
+    a.gatilho = novo;
+  }
+}
+
+// Clique num botão de link (/api/link?e=&p=&b=): conta e manda pro endereço da automação.
+export async function tratarCliqueLink(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  const e = url.searchParams.get("e") ?? "";
+  const p = url.searchParams.get("p") ?? "";
+  const b = url.searchParams.get("b") ?? "";
+  const naoAchou = () => Response.redirect("https://usepolia.com.br", 302);
+  if (!/^[0-9a-f-]{36}$/i.test(e) || !p || !b) return naoAchou();
+
+  const { data: exec } = await supabaseAdmin
+    .from("auto_execucoes")
+    .select("id, automacao_id, dados")
+    .eq("id", e)
+    .maybeSingle();
+  if (!exec) return naoAchou();
+  const linha = exec as { id: string; automacao_id: string; dados: Record<string, unknown> };
+  const automacao = await carregarAutomacao(linha.automacao_id);
+  const passo = automacao?.passos.find((x) => x.id === p);
+  const destino = passo?.tipo === "mensagem" ? passo.botoes.find((x) => x.id === b)?.url : null;
+  if (!destino) return naoAchou();
+
+  const cliques = Number(linha.dados.cliques ?? 0) + 1;
+  await supabaseAdmin
+    .from("auto_execucoes")
+    .update({
+      dados: {
+        ...linha.dados,
+        cliques,
+        clicou_em: linha.dados.clicou_em ?? new Date().toISOString(),
+      },
+    })
+    .eq("id", linha.id);
+  return Response.redirect(destino, 302);
+}
+
 export async function aoReceberMensagem(chegada: ChegadaMensagem): Promise<void> {
   const { mensagem: m, ...ctx } = chegada;
   if (m.direcao !== "entrada") return;
@@ -514,6 +653,11 @@ export async function aoReceberMensagem(chegada: ChegadaMensagem): Promise<void>
     texto: m.texto,
     mediaId: typeof m.dados.media_id === "string" ? m.dados.media_id : null,
   };
+
+  // "Próxima publicação": o 1º comentário num post publicado depois de salvar fixa o post.
+  if (m.tipo === "comentario" && entrada.mediaId) {
+    await fixarProximoPost(ativas, entrada.mediaId);
+  }
 
   // 3 e 4. Comentário ou palavra-chave: a primeira automação que casar (mais antiga primeiro).
   const casou = ativas.find(

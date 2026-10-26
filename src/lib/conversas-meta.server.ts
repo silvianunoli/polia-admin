@@ -108,8 +108,14 @@ export interface BotaoEnvio {
   titulo: string;
 }
 
+// Botão que abre um link ("Abrir o WhatsApp"). Não volta no webhook.
+export interface LinkEnvio {
+  titulo: string;
+  url: string;
+}
+
 export type Envio =
-  | { tipo: "texto"; texto: string; botoes?: BotaoEnvio[] }
+  | { tipo: "texto"; texto: string; botoes?: BotaoEnvio[]; links?: LinkEnvio[] }
   | {
       tipo: "imagem" | "video" | "audio" | "arquivo";
       url: string;
@@ -136,32 +142,84 @@ export async function enviarPeloCanal(
     if (envio.tipo !== "texto" && envio.tipo !== "imagem") {
       throw new ErroMeta("No Instagram dá pra mandar texto e foto.");
     }
-    const message =
-      envio.tipo === "texto"
+    const recipient = comentarioId ? { comment_id: comentarioId } : { id: externoId };
+    const mandar = async (message: unknown) => {
+      const r = (await chamarGraph(`${GRAPH_IG}/me/messages`, tokenInstagram(), {
+        recipient,
+        message,
+      })) as { message_id?: string };
+      if (!r.message_id) throw new ErroMeta("A Meta não devolveu o ID da mensagem.");
+      return r.message_id;
+    };
+
+    if (envio.tipo !== "texto") {
+      return mandar({ attachment: { type: "image", payload: { url: envio.url } } });
+    }
+
+    const respostas = (envio.botoes ?? []).slice(0, 13);
+    const links = envio.links ?? [];
+    // Botão de link = "button template" (texto até 640 e até 3 botões, link ou de resposta).
+    // Se a Meta recusar o template, cai pra texto com o link escrito: a pessoa recebe do mesmo jeito.
+    if (links.length > 0) {
+      try {
+        return await mandar({
+          attachment: {
+            type: "template",
+            payload: {
+              template_type: "button",
+              text: envio.texto.slice(0, 640),
+              buttons: [
+                ...links.map((l) => ({
+                  type: "web_url",
+                  url: l.url,
+                  title: l.titulo.slice(0, 20),
+                })),
+                ...respostas.map((b) => ({
+                  type: "postback",
+                  title: b.titulo.slice(0, 20),
+                  payload: b.payload,
+                })),
+              ].slice(0, 3),
+            },
+          },
+        });
+      } catch (e) {
+        console.warn("[conversas] template de botão recusado, mandando como texto", e);
+      }
+    }
+    const texto = [envio.texto, ...links.map((l) => `${l.titulo}: ${l.url}`)].join("\n\n");
+    return mandar({
+      text: texto,
+      ...(respostas.length
         ? {
-            text: envio.texto,
-            ...(envio.botoes?.length
-              ? {
-                  quick_replies: envio.botoes.slice(0, 13).map((b) => ({
-                    content_type: "text",
-                    title: b.titulo.slice(0, 20),
-                    payload: b.payload,
-                  })),
-                }
-              : {}),
+            quick_replies: respostas.map((b) => ({
+              content_type: "text",
+              title: b.titulo.slice(0, 20),
+              payload: b.payload,
+            })),
           }
-        : { attachment: { type: "image", payload: { url: envio.url } } };
-    const r = (await chamarGraph(`${GRAPH_IG}/me/messages`, tokenInstagram(), {
-      recipient: comentarioId ? { comment_id: comentarioId } : { id: externoId },
-      message,
-    })) as { message_id?: string };
-    if (!r.message_id) throw new ErroMeta("A Meta não devolveu o ID da mensagem.");
-    return r.message_id;
+        : {}),
+    });
   }
 
   const { token, numeroId } = configWhatsapp();
   let corpo: Record<string, unknown>;
-  if (envio.tipo === "texto" && envio.botoes?.length) {
+  if (envio.tipo === "texto" && envio.links?.length) {
+    // WhatsApp aceita um botão de link por mensagem; os outros vão escritos no texto.
+    const [primeiro, ...resto] = envio.links;
+    const texto = [envio.texto, ...resto.map((l) => `${l.titulo}: ${l.url}`)].join("\n\n");
+    corpo = {
+      type: "interactive",
+      interactive: {
+        type: "cta_url",
+        body: { text: texto },
+        action: {
+          name: "cta_url",
+          parameters: { display_text: primeiro.titulo.slice(0, 20), url: primeiro.url },
+        },
+      },
+    };
+  } else if (envio.tipo === "texto" && envio.botoes?.length) {
     const botoes = envio.botoes.slice(0, 10);
     corpo = {
       type: "interactive",
@@ -208,6 +266,34 @@ export async function enviarPeloCanal(
   const id = r.messages?.[0]?.id;
   if (!id) throw new ErroMeta("A Meta não devolveu o ID da mensagem.");
   return id;
+}
+
+// "Antes de receber o link, segue o perfil": a Meta diz se a pessoa segue a conta conectada.
+// Se a Meta não responder, deixa passar (melhor mandar o link do que travar a pessoa).
+export async function seguePerfil(igsid: string): Promise<boolean> {
+  try {
+    const p = (await chamarGraph(
+      `${GRAPH_IG}/${encodeURIComponent(igsid)}?fields=is_user_follow_business`,
+      tokenInstagram(),
+    )) as { is_user_follow_business?: boolean };
+    return p.is_user_follow_business !== false;
+  } catch (e) {
+    console.warn("[conversas] não deu pra conferir se segue", igsid, e);
+    return true;
+  }
+}
+
+// Data de publicação de um post (pra "próxima publicação" saber se o post é novo).
+export async function dataDoPost(mediaId: string): Promise<string | null> {
+  try {
+    const p = (await chamarGraph(
+      `${GRAPH_IG}/${encodeURIComponent(mediaId)}?fields=timestamp`,
+      tokenInstagram(),
+    )) as { timestamp?: string };
+    return p.timestamp ? new Date(p.timestamp).toISOString() : null;
+  } catch {
+    return null;
+  }
 }
 
 // Resposta pública num comentário ("Te mandei no Direct"), opcional no gatilho de comentário.

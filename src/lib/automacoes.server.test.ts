@@ -5,8 +5,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 type Linha = Record<string, unknown>;
 
-const { db, envios, publicas, emails } = vi.hoisted(() => ({
+const { db, envios, publicas, emails, meta } = vi.hoisted(() => ({
   db: {} as Record<string, Linha[]>,
+  // Respostas falsas da Meta: se a pessoa segue e a data de publicação de cada post.
+  meta: { segue: true, datas: {} as Record<string, string> },
   envios: [] as {
     canal: string;
     externoId: string;
@@ -113,6 +115,8 @@ vi.mock("@/lib/conversas-meta.server", () => ({
   responderComentarioEmPublico: vi.fn(async (comentarioId: string, texto: string) => {
     publicas.push({ comentarioId, texto });
   }),
+  seguePerfil: vi.fn(async () => meta.segue),
+  dataDoPost: vi.fn(async (id: string) => meta.datas[id] ?? null),
 }));
 
 vi.mock("@/lib/email-template", () => ({
@@ -124,8 +128,16 @@ vi.mock("@/lib/email-template", () => ({
   escapeHtml: (s: string) => s,
 }));
 
-import { aoReceberMensagem } from "@/lib/automacoes.server";
-import { modeloFalaInstagram, modeloFalaWhatsapp, payloadBotao } from "@/lib/automacoes";
+import { aoReceberMensagem, tratarCliqueLink } from "@/lib/automacoes.server";
+import {
+  LINK_WHATSAPP_FALA,
+  automacaoComentarioEmBranco,
+  guiadoEmBranco,
+  guiadoParaPassos,
+  modeloFalaInstagram,
+  modeloFalaWhatsapp,
+  payloadBotao,
+} from "@/lib/automacoes";
 import type { MensagemRecebida } from "@/lib/conversas-meta";
 
 let contador = 0;
@@ -266,57 +278,149 @@ describe("FALA no WhatsApp, de ponta a ponta", () => {
   });
 });
 
-describe("FALA no Instagram: comentário vira Direct", () => {
+describe("comentário vira Direct (igual ao ManyChat)", () => {
   beforeEach(() => {
     preparar("instagram", false);
-    ligar(modeloFalaInstagram(), "a-ig");
+    meta.segue = true;
+    meta.datas = {};
   });
 
-  const comentario = (texto: string) =>
+  const comentario = (texto: string, mediaId = "M1") =>
     msg(texto, {
       tipo: "comentario",
       abreJanela: false,
-      dados: { comment_id: "C1", media_id: "M1" },
+      dados: { comment_id: "C1", media_id: mediaId },
     });
 
-  it("responde em privado ao comentário, responde em público e marca a tag", async () => {
+  // Toque num botão: no app real o webhook grava a mensagem e abre a janela antes do motor.
+  const toque = (payload: string, titulo: string) => {
+    db.conv_conversas[0].ultima_entrada_em = new Date().toISOString();
+    return msg(titulo, { tipo: "botao", dados: { payload } });
+  };
+
+  it("FALA: boas-vindas com botão em privado, resposta pública, e o toque libera a DM com link", async () => {
+    ligar(modeloFalaInstagram(), "a-ig");
     await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("FALA!") });
+
     expect(envios).toHaveLength(1);
     expect(envios[0].comentarioId).toBe("C1");
-    expect(ultimoTexto()).toContain("wa.me/5511996963296");
-    expect(publicas).toEqual([{ comentarioId: "C1", texto: "Te mandei no Direct." }]);
+    expect((envios[0].envio.botoes as { titulo: string }[]).map((b) => b.titulo)).toEqual([
+      "Quero continuar",
+    ]);
+    expect(publicas).toHaveLength(1);
+    const g = modeloFalaInstagram().gatilho as { respostas_publicas: string[] };
+    expect(g.respostas_publicas).toContain(publicas[0].texto);
+    expect(exec()).toMatchObject({ estado: "aguardando", aguardando: "resposta", passo_idx: 0 });
+
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("boas_vindas", "continuar"), "Quero continuar"),
+    });
+    expect(envios).toHaveLength(2);
+    expect(envios[1].comentarioId).toBeUndefined();
+    const links = envios[1].envio.links as { titulo: string; url: string }[];
+    expect(links).toHaveLength(1);
+    expect(links[0].titulo).toBe("Abrir o WhatsApp");
+    // O link passa pelo office pra contar o clique.
+    expect(links[0].url.startsWith("https://office.usepolia.com.br/api/link?e=")).toBe(true);
     expect(contato().tags).toContain("FALA comentou");
     expect(exec()).toMatchObject({ estado: "concluida" });
   });
 
-  it("comentário sem a palavra não dispara", async () => {
+  it("clique no link conta e redireciona só pro endereço da automação", async () => {
+    ligar(modeloFalaInstagram(), "a-ig");
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("fala") });
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("boas_vindas", "continuar"), "Quero continuar"),
+    });
+    const url = (envios[1].envio.links as { url: string }[])[0].url;
+    // O id falso do banco em memória não tem formato de UUID: troca por um que tenha.
+    const uuid = "00000000-0000-4000-8000-000000000001";
+    exec().id = uuid;
+    const real = url.replace(/e=[^&]+/, `e=${uuid}`);
+
+    const r = await tratarCliqueLink(new Request(real));
+    expect(r.status).toBe(302);
+    expect(r.headers.get("location")).toBe(LINK_WHATSAPP_FALA);
+    expect((exec().dados as { cliques: number }).cliques).toBe(1);
+
+    const errado = await tratarCliqueLink(new Request(real.replace(/b=[^&]+/, "b=outro")));
+    expect(errado.headers.get("location")).toBe("https://usepolia.com.br/");
+  });
+
+  it("comentário sem a palavra escolhida não dispara", async () => {
+    const a = modeloFalaInstagram();
+    if (a.gatilho.tipo === "comentario") a.gatilho.palavras = ["fala"];
+    ligar(a, "a-ig");
     await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("que lindo") });
     expect(envios).toHaveLength(0);
   });
 
-  it("com mais mensagens depois da resposta privada, espera a pessoa escrever e continua", async () => {
-    const a = modeloFalaInstagram();
-    a.passos.splice(1, 0, {
-      id: "dm2",
-      tipo: "mensagem",
-      texto: "Segunda mensagem",
-      botoes: [],
-      salvar_em: null,
+  it("pedido pra seguir: só manda o link depois que a pessoa segue", async () => {
+    const a = automacaoComentarioEmBranco();
+    const g = guiadoEmBranco();
+    g.seguir.ativo = true;
+    a.passos = guiadoParaPassos(g);
+    ligar(a, "a-seguir");
+
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("quero") });
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("boas_vindas", "continuar"), g.boasVindas.botao),
     });
-    db.auto_automacoes = [];
-    ligar(a, "a-ig");
+    expect(ultimoTexto()).toBe(g.seguir.texto);
 
-    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("fala") });
-    expect(envios).toHaveLength(1);
-    expect(exec()).toMatchObject({ estado: "aguardando", aguardando: "janela", passo_idx: 1 });
+    meta.segue = false;
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("seguir", "seguir"), g.seguir.botao),
+    });
+    expect(ultimoTexto()).toBe(g.seguir.textoNaoSegue);
+    expect(exec()).toMatchObject({ estado: "aguardando", tentativas: 1 });
 
-    // A pessoa responde no Direct: a janela abre e a fila anda, sem tratar como resposta.
-    db.conv_conversas[0].ultima_entrada_em = new Date().toISOString();
-    await aoReceberMensagem({ ...ctx("instagram"), mensagem: msg("oi") });
-    expect(envios).toHaveLength(2);
-    expect(envios[1].comentarioId).toBeUndefined();
-    expect(ultimoTexto()).toBe("Segunda mensagem");
+    meta.segue = true;
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("seguir", "seguir"), g.seguir.botao),
+    });
+    expect(ultimoTexto()).toBe(g.link.texto);
     expect(exec()).toMatchObject({ estado: "concluida" });
+  });
+
+  it("pedido de e-mail: o e-mail vira o e-mail do contato", async () => {
+    const a = automacaoComentarioEmBranco();
+    const g = guiadoEmBranco();
+    g.email.ativo = true;
+    a.passos = guiadoParaPassos(g);
+    ligar(a, "a-email");
+
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("quero") });
+    await aoReceberMensagem({
+      ...ctx("instagram"),
+      mensagem: toque(payloadBotao("boas_vindas", "continuar"), g.boasVindas.botao),
+    });
+    expect(ultimoTexto()).toBe(g.email.texto);
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: msg("Ana@Marca.com.br") });
+    expect((db.crm_contatos[0] as { email?: string }).email).toBe("ana@marca.com.br");
+    expect(ultimoTexto()).toBe(g.link.texto);
+  });
+
+  it("próxima publicação: post antigo não conta, o primeiro post novo vira o post da automação", async () => {
+    const a = automacaoComentarioEmBranco();
+    if (a.gatilho.tipo === "comentario") {
+      a.gatilho.proximo_post = true;
+      a.gatilho.proximo_desde = "2026-10-26T12:00:00.000Z";
+    }
+    ligar(a, "a-proximo");
+    meta.datas = { VELHO: "2026-10-20T10:00:00.000Z", NOVO: "2026-10-27T09:00:00.000Z" };
+
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("oi", "VELHO") });
+    expect(envios).toHaveLength(0);
+
+    await aoReceberMensagem({ ...ctx("instagram"), mensagem: comentario("oi", "NOVO") });
+    expect(envios).toHaveLength(1);
+    expect(db.auto_automacoes[0].gatilho).toMatchObject({ posts: ["NOVO"], proximo_post: false });
   });
 });
 

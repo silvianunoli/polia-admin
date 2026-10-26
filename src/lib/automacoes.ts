@@ -19,10 +19,16 @@ export const gatilhoSchema = z.discriminatedUnion("tipo", [
     tipo: z.literal("comentario"),
     // Vazio = qualquer post. Senão, IDs de mídia do Instagram.
     posts: z.array(z.string().trim().min(1).max(40)).max(20).default([]),
+    // "Próxima publicação ou Reel" do ManyChat: o 1º post publicado depois de salvar vira o
+    // post da automação (o motor grava o ID dele em `posts` no primeiro comentário).
+    proximo_post: z.boolean().default(false),
+    proximo_desde: z.string().nullable().default(null),
     // Vazio = qualquer comentário.
     palavras: listaPalavras.default([]),
     // Uma é sorteada pra responder em público ("Te mandei no Direct"). Vazio = não responde.
     respostas_publicas: z.array(z.string().trim().min(1).max(300)).max(5).default([]),
+    // true = editada pela tela guiada "Comentário → Direct", igual ao construtor do ManyChat.
+    guiado: z.boolean().default(false),
   }),
   z.object({
     tipo: z.literal("palavra_chave"),
@@ -38,6 +44,8 @@ export const botaoSchema = z.object({
   titulo: z.string().trim().min(1, "Botão sem texto.").max(20, "Botão com mais de 20 letras."),
   // ID do passo pra onde pula. null = segue pro próximo da lista.
   ir_para: id.nullable().default(null),
+  // Botão de link ("Abrir o WhatsApp"): abre o endereço e não espera resposta.
+  url: z.string().trim().url("Link do botão inválido.").max(1000).nullable().default(null),
 });
 export type Botao = z.infer<typeof botaoSchema>;
 
@@ -91,6 +99,15 @@ export const passoSchema = z.discriminatedUnion("tipo", [
     id,
     tipo: z.literal("notificar"),
     texto: z.string().trim().min(1).max(500),
+  }),
+  // "DM solicitando que sigam seu perfil antes de receberem o link" (só Instagram): manda o
+  // pedido com um botão; no toque, confere se a pessoa segue e só então segue em frente.
+  z.object({
+    id,
+    tipo: z.literal("seguir"),
+    texto: textoMsg,
+    botao: z.string().trim().min(1, "Botão sem texto.").max(20, "Botão com mais de 20 letras."),
+    texto_nao_segue: textoMsg,
   }),
 ]);
 export type Passo = z.infer<typeof passoSchema>;
@@ -156,6 +173,8 @@ export interface EntradaGatilho {
 export function gatilhoCasa(g: Gatilho, e: EntradaGatilho): boolean {
   if (g.tipo === "comentario") {
     if (e.tipo !== "comentario" || e.canal !== "instagram") return false;
+    // "Próxima publicação" ainda sem post definido: quem decide é o servidor (olha a data do post).
+    if (g.proximo_post && g.posts.length === 0) return false;
     if (g.posts.length > 0 && (!e.mediaId || !g.posts.includes(e.mediaId))) return false;
     return g.palavras.length === 0 || contemPalavra(e.texto ?? "", g.palavras, "contem");
   }
@@ -252,6 +271,139 @@ export function novoId(): string {
 // negócio e lembrete no CRM em vez de só mandar e-mail.
 export const LINK_WHATSAPP_FALA = "https://wa.me/5511996963296?text=Comentei%20FALA";
 
+// ---------------------------------------------------------------- comentário → Direct (guiado)
+
+// Os 4 blocos do construtor de comentário do ManyChat ("Automação instantânea"), na mesma
+// ordem: quando alguém comenta → e o comentário tem → eles receberão → e então receberão.
+// Vira uma lista de passos com IDs fixos, então o motor é o mesmo das outras automações.
+export interface ComentarioGuiado {
+  boasVindas: { ativo: boolean; texto: string; botao: string };
+  seguir: { ativo: boolean; texto: string; botao: string; textoNaoSegue: string };
+  email: { ativo: boolean; texto: string };
+  link: { texto: string; botoes: { titulo: string; url: string }[] };
+  tags: string[];
+}
+
+export const PASSOS_GUIADOS = ["boas_vindas", "seguir", "email", "link", "tags"] as const;
+
+export function guiadoParaPassos(g: ComentarioGuiado): Passo[] {
+  const passos: Passo[] = [];
+  if (g.boasVindas.ativo) {
+    passos.push({
+      id: "boas_vindas",
+      tipo: "mensagem",
+      texto: g.boasVindas.texto,
+      botoes: [{ id: "continuar", titulo: g.boasVindas.botao, ir_para: null, url: null }],
+      salvar_em: null,
+    });
+  }
+  if (g.seguir.ativo) {
+    passos.push({
+      id: "seguir",
+      tipo: "seguir",
+      texto: g.seguir.texto,
+      botao: g.seguir.botao,
+      texto_nao_segue: g.seguir.textoNaoSegue,
+    });
+  }
+  if (g.email.ativo) {
+    passos.push({
+      id: "email",
+      tipo: "pergunta",
+      texto: g.email.texto,
+      salvar_em: "email",
+      validacao: "email",
+    });
+  }
+  passos.push({
+    id: "link",
+    tipo: "mensagem",
+    texto: g.link.texto,
+    botoes: g.link.botoes.map((b, i) => ({
+      id: `link${i + 1}`,
+      titulo: b.titulo,
+      ir_para: null,
+      url: b.url,
+    })),
+    salvar_em: null,
+  });
+  if (g.tags.length > 0) {
+    passos.push({ id: "tags", tipo: "tag", adicionar: g.tags, remover: [] });
+  }
+  return passos;
+}
+
+export function passosParaGuiado(passos: Passo[]): ComentarioGuiado {
+  const achar = <T extends Passo["tipo"]>(id: string, tipo: T) =>
+    passos.find((p): p is Extract<Passo, { tipo: T }> => p.id === id && p.tipo === tipo);
+  const bv = achar("boas_vindas", "mensagem");
+  const sg = achar("seguir", "seguir");
+  const em = achar("email", "pergunta");
+  const lk = achar("link", "mensagem");
+  const tg = achar("tags", "tag");
+  const padrao = guiadoEmBranco();
+  return {
+    boasVindas: bv
+      ? { ativo: true, texto: bv.texto, botao: bv.botoes[0]?.titulo ?? padrao.boasVindas.botao }
+      : { ...padrao.boasVindas, ativo: false },
+    seguir: sg
+      ? { ativo: true, texto: sg.texto, botao: sg.botao, textoNaoSegue: sg.texto_nao_segue }
+      : { ...padrao.seguir, ativo: false },
+    email: em ? { ativo: true, texto: em.texto } : { ...padrao.email, ativo: false },
+    link: lk
+      ? {
+          texto: lk.texto,
+          // Botão recém-adicionado ainda sem link continua na tela (o zod cobra o link ao salvar).
+          botoes: lk.botoes.map((b) => ({ titulo: b.titulo, url: b.url ?? "" })),
+        }
+      : padrao.link,
+    tags: tg?.adicionar ?? [],
+  };
+}
+
+// Ponto de partida de uma automação nova, no espírito dos padrões do ManyChat.
+export function guiadoEmBranco(): ComentarioGuiado {
+  return {
+    boasVindas: {
+      ativo: true,
+      texto: "Oi. Que bom que você comentou. Toca no botão aqui embaixo que eu te mando o link.",
+      botao: "Quero o link",
+    },
+    seguir: {
+      ativo: false,
+      texto: "Antes de mandar o link: você já segue a Pólia? Segue e depois toca no botão.",
+      botao: "Já segui",
+      textoNaoSegue: "Ainda não apareceu aqui que você segue. Segue o perfil e toca de novo.",
+    },
+    email: { ativo: false, texto: "Qual é o seu melhor e-mail? Mando tudo por lá também." },
+    link: {
+      texto: "Aqui está o link.",
+      botoes: [{ titulo: "Abrir", url: "https://usepolia.com.br" }],
+    },
+    tags: [],
+  };
+}
+
+export function automacaoComentarioEmBranco(): AutomacaoEntrada {
+  return {
+    nome: "Comentário vira Direct",
+    canal: "instagram",
+    ativa: false,
+    gatilho: {
+      tipo: "comentario",
+      posts: [],
+      proximo_post: false,
+      proximo_desde: null,
+      palavras: [],
+      respostas_publicas: ["Te mandei no Direct.", "Olha o Direct.", "Mandei no seu Direct."],
+      guiado: true,
+    },
+    passos: guiadoParaPassos(guiadoEmBranco()),
+  };
+}
+
+// O "Auto-DM de links dos comentários" do ManyChat, com o texto que está lá hoje (lido em
+// 26/10/2026, inclusive as 3 respostas públicas e o botão "Quero continuar").
 export function modeloFalaInstagram(): AutomacaoEntrada {
   return {
     nome: "FALA: comentário vira Direct",
@@ -260,27 +412,38 @@ export function modeloFalaInstagram(): AutomacaoEntrada {
     gatilho: {
       tipo: "comentario",
       posts: [],
-      palavras: ["fala"],
-      respostas_publicas: ["Te mandei no Direct."],
+      proximo_post: false,
+      proximo_desde: null,
+      palavras: [],
+      respostas_publicas: [
+        "Oiee! Por favor, veja DM!!",
+        "Olá!! Te enviei uma mensagem! Dá uma olhada!",
+        "Oiee! Verifica as sua DM!",
+      ],
+      guiado: true,
     },
-    passos: [
-      {
-        id: "dm1",
-        tipo: "mensagem",
+    passos: guiadoParaPassos({
+      boasVindas: {
+        ativo: true,
         texto:
-          "Oi. Vi seu comentário.\n\nQuando uma cliente fala que está caro, o que você costuma responder?\n\nMe conta a sua resposta no WhatsApp da Pólia Lab. É lá que a conversa sobre a sua marca continua:\n" +
-          LINK_WHATSAPP_FALA,
-        botoes: [],
-        salvar_em: null,
+          "Oi. Vi seu comentário.\n\nQuando uma cliente fala que está caro, o que você costuma responder?\n\nToca no botão aqui embaixo que eu te mostro onde a conversa continua.",
+        botao: "Quero continuar",
       },
-      { id: "tag1", tipo: "tag", adicionar: ["FALA comentou"], remover: [] },
-    ],
+      seguir: { ...guiadoEmBranco().seguir, ativo: false },
+      email: { ...guiadoEmBranco().email, ativo: false },
+      link: {
+        texto:
+          "Me conta a sua resposta no WhatsApp da Pólia Lab. É lá que a conversa sobre a sua marca continua.",
+        botoes: [{ titulo: "Abrir o WhatsApp", url: LINK_WHATSAPP_FALA }],
+      },
+      tags: ["FALA comentou"],
+    }),
   };
 }
 
 export function modeloFalaWhatsapp(): AutomacaoEntrada {
   const botoes = (titulos: string[]) =>
-    titulos.map((titulo, i) => ({ id: `b${i + 1}`, titulo, ir_para: null }));
+    titulos.map((titulo, i) => ({ id: `b${i + 1}`, titulo, ir_para: null, url: null }));
   return {
     nome: "FALA no WhatsApp: briefing",
     canal: "whatsapp",
@@ -374,10 +537,17 @@ export function modeloFalaWhatsapp(): AutomacaoEntrada {
 // Resumo de uma linha pra lista de automações.
 export function resumoGatilho(g: Gatilho): string {
   if (g.tipo === "comentario") {
-    const onde = g.posts.length === 0 ? "qualquer post" : `${g.posts.length} post(s)`;
+    const onde =
+      g.proximo_post && g.posts.length === 0
+        ? "na próxima publicação"
+        : g.posts.length === 0
+          ? "em qualquer post"
+          : g.posts.length === 1
+            ? "em 1 post"
+            : `em ${g.posts.length} posts`;
     const quais =
       g.palavras.length === 0 ? "qualquer comentário" : `com "${g.palavras.join('", "')}"`;
-    return `Comentário em ${onde}, ${quais}`;
+    return `Comentário ${onde}, ${quais}`;
   }
   if (g.tipo === "palavra_chave") {
     return `Mensagem ${g.modo === "exata" ? "igual a" : "com"} "${g.palavras.join('", "')}"`;

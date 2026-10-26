@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { logAcaoAdminServer } from "@/lib/audit-log.server";
 import {
+  automacaoComentarioEmBranco,
   automacaoSchema,
   gatilhoSchema,
   modeloFalaInstagram,
@@ -31,6 +32,8 @@ export interface AutomacaoItem extends AutomacaoEntrada {
   id: string;
   execucoes: number;
   ativas_agora: number;
+  // Quantas pessoas tocaram em algum botão de link (o "CTR" do ManyChat = cliques / execuções).
+  cliques: number;
   atualizado_em: string;
 }
 
@@ -49,8 +52,31 @@ function lerLinha(l: Record<string, unknown>): AutomacaoItem {
     passos,
     execucoes: Number(l.execucoes ?? 0),
     ativas_agora: 0,
+    cliques: 0,
     atualizado_em: String(l.atualizado_em),
   };
+}
+
+async function contarCliques(automacaoId?: string): Promise<Map<string, number>> {
+  let q = supabaseAdmin
+    .from("auto_execucoes")
+    .select("automacao_id")
+    .not("dados->>clicou_em", "is", null);
+  if (automacaoId) q = q.eq("automacao_id", automacaoId);
+  const { data } = await q;
+  const mapa = new Map<string, number>();
+  for (const v of (data ?? []) as { automacao_id: string }[]) {
+    mapa.set(v.automacao_id, (mapa.get(v.automacao_id) ?? 0) + 1);
+  }
+  return mapa;
+}
+
+// "Próxima publicação" vale a partir de quando foi salva: guarda o momento uma vez só.
+function marcarProximoPost(a: AutomacaoEntrada): AutomacaoEntrada {
+  if (a.gatilho.tipo !== "comentario") return a;
+  if (!a.gatilho.proximo_post) return { ...a, gatilho: { ...a.gatilho, proximo_desde: null } };
+  if (a.gatilho.proximo_desde) return a;
+  return { ...a, gatilho: { ...a.gatilho, posts: [], proximo_desde: new Date().toISOString() } };
 }
 
 export const listarAutomacoes = createServerFn({ method: "GET" })
@@ -71,10 +97,12 @@ export const listarAutomacoes = createServerFn({ method: "GET" })
     for (const v of (vivas ?? []) as { automacao_id: string }[]) {
       porAutomacao.set(v.automacao_id, (porAutomacao.get(v.automacao_id) ?? 0) + 1);
     }
+    const cliques = await contarCliques();
     return {
       automacoes: ((data ?? []) as Record<string, unknown>[]).map((l) => ({
         ...lerLinha(l),
         ativas_agora: porAutomacao.get(String(l.id)) ?? 0,
+        cliques: cliques.get(String(l.id)) ?? 0,
       })),
     };
   });
@@ -97,8 +125,12 @@ export const obterAutomacao = createServerFn({ method: "GET" })
       .eq("automacao_id", data.id)
       .order("iniciado_em", { ascending: false })
       .limit(30);
+    const cliques = await contarCliques(data.id);
     return {
-      automacao: lerLinha(linha as Record<string, unknown>),
+      automacao: {
+        ...lerLinha(linha as Record<string, unknown>),
+        cliques: cliques.get(data.id) ?? 0,
+      },
       execucoes: (execucoes ?? []) as unknown as {
         id: string;
         estado: string;
@@ -126,7 +158,7 @@ export const salvarAutomacao = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
-    const linha = { ...data.automacao, atualizado_em: new Date().toISOString() };
+    const linha = { ...marcarProximoPost(data.automacao), atualizado_em: new Date().toISOString() };
     if (data.id) {
       const { error } = await supabaseAdmin.from("auto_automacoes").update(linha).eq("id", data.id);
       if (error) throw new Error("Falha ao salvar a automação.");
@@ -177,12 +209,16 @@ export const excluirAutomacao = createServerFn({ method: "POST" })
 export const criarDoModelo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>
-    z.object({ modelo: z.enum(["fala_instagram", "fala_whatsapp"]) }).parse(input),
+    z.object({ modelo: z.enum(["comentario", "fala_instagram", "fala_whatsapp"]) }).parse(input),
   )
   .handler(async ({ context, data }) => {
     await assertAdmin(context.userId);
     const automacao =
-      data.modelo === "fala_instagram" ? modeloFalaInstagram() : modeloFalaWhatsapp();
+      data.modelo === "comentario"
+        ? automacaoComentarioEmBranco()
+        : data.modelo === "fala_instagram"
+          ? modeloFalaInstagram()
+          : modeloFalaWhatsapp();
     const { data: criada, error } = await supabaseAdmin
       .from("auto_automacoes")
       .insert(automacao)
