@@ -137,7 +137,9 @@ const TIPO_ANEXO_IG: Record<string, TipoMensagem> = {
 function mensagemInstagram(evento: Obj): EventoConversa | null {
   const remetente = str(obj(evento.sender).id);
   const destinatario = str(obj(evento.recipient).id);
-  const quando = isoDe(evento.timestamp, false);
+  // Direct real vem em milissegundos; o botão "Teste" do painel da Meta manda em segundos.
+  const ts = Number(evento.timestamp);
+  const quando = isoDe(evento.timestamp, Number.isFinite(ts) && ts < 1e12);
 
   // Botão tocado (quick reply sem texto ou postback de ice breaker).
   const postback = obj(evento.postback);
@@ -347,6 +349,11 @@ export function normalizarWebhook(payload: unknown): WebhookNormalizado {
         const c = obj(mudanca);
         if (c.field === "comments" || c.field === "live_comments") {
           const ev = comentarioInstagram(obj(c.value), contaId);
+          if (ev) eventos.push(ev);
+        }
+        // O botão "Teste" do painel manda a mensagem aqui, em changes, e não em messaging.
+        if (c.field === "messages" || c.field === "messaging_postbacks") {
+          const ev = mensagemInstagram(obj(c.value));
           if (ev) eventos.push(ev);
         }
       }

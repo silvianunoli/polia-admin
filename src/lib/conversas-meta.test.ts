@@ -177,6 +177,36 @@ describe("normalizarWebhook: Instagram", () => {
     ]);
   });
 
+  it("lê o formato do botão Teste do painel (changes + timestamp em segundos)", () => {
+    // Payload exato que a Meta mandou em 26/10/2026 pelo "Enviar para servidor v25.0".
+    const { eventos } = normalizarWebhook({
+      object: "instagram",
+      entry: [
+        {
+          id: "0",
+          time: 1793028325,
+          changes: [
+            {
+              field: "messages",
+              value: {
+                sender: { id: "12334" },
+                recipient: { id: "23245" },
+                timestamp: "1527459824",
+                message: { mid: "random_mid", text: "random_text" },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(eventos).toHaveLength(1);
+    expect(eventos[0]).toMatchObject({
+      externoId: "12334",
+      mensagem: { metaId: "random_mid", texto: "random_text", direcao: "entrada" },
+    });
+    expect(eventos[0].mensagem?.quando).toBe(new Date(1527459824 * 1000).toISOString());
+  });
+
   it("ignora mensagem apagada, sem mid e leitura", () => {
     const { eventos } = normalizarWebhook(
       base([
