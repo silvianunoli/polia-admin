@@ -9,6 +9,7 @@ import {
   UserCheck,
   KeyRound,
   MessagesSquare,
+  Workflow,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -19,6 +20,7 @@ type Item = { to: string; label: string; icone: ComponentType<{ size?: number }>
 export const CRM_ITENS: Item[] = [
   { to: "/crm", label: "Visão geral", icone: LayoutDashboard },
   { to: "/crm/conversas", label: "Conversas", icone: MessagesSquare },
+  { to: "/crm/automacoes", label: "Automações", icone: Workflow },
   { to: "/crm/contatos", label: "Contatos", icone: Users },
   { to: "/crm/negocios", label: "Negociações", icone: Handshake },
   { to: "/crm/tarefas", label: "Lembretes", icone: BellRing },
@@ -31,6 +33,7 @@ export const CRM_ITENS: Item[] = [
 export function tituloDaRota(pathname: string): string {
   if (pathname.startsWith("/crm/contatos/")) return "Contato";
   if (pathname.startsWith("/crm/conversas")) return "Conversas";
+  if (pathname.startsWith("/crm/automacoes/")) return "Automação";
   if (pathname.startsWith("/crm/campanhas/")) return "Campanha";
   return CRM_ITENS.find((i) => i.to === pathname)?.label ?? "CRM";
 }

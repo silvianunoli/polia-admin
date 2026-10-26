@@ -12,6 +12,7 @@ import {
   MessagesSquare,
 } from "lucide-react";
 import { conversasDoContato } from "@/lib/conversas.functions";
+import { Respostas } from "@/components/crm/Respostas";
 import {
   obterContato,
   excluirContato,
@@ -286,6 +287,12 @@ function PerfilContato() {
               }
             />
           </div>
+
+          {contato.campos && Object.keys(contato.campos).length > 0 && (
+            <div className="mt-4 rounded-xl bg-[var(--surface)] p-4">
+              <Respostas campos={contato.campos} />
+            </div>
+          )}
 
           {contato.observacoes && (
             <p className="mt-4 whitespace-pre-wrap rounded-xl bg-[var(--surface)] p-4 font-sans text-[14px] leading-relaxed text-[var(--ink-soft)]">

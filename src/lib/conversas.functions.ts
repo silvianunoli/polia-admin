@@ -11,6 +11,7 @@ import {
   subirMidia,
   type Envio,
 } from "@/lib/conversas-meta.server";
+import { cancelarExecucoesDaConversa } from "@/lib/automacoes.server";
 
 // Caixa de entrada do CRM (/crm/conversas). Mesmo desenho de crm.functions.ts: tabelas
 // conv_* com RLS e nenhuma policy, service role só depois do assertAdmin.
@@ -33,7 +34,14 @@ export interface ConversaItem {
   ultima_mensagem_em: string | null;
   ultima_mensagem_resumo: string | null;
   ultima_entrada_em: string | null;
-  contato: { id: string; nome: string; instagram: string | null; telefone: string | null };
+  contato: {
+    id: string;
+    nome: string;
+    instagram: string | null;
+    telefone: string | null;
+    campos: Record<string, Json>;
+    tags: string[];
+  };
 }
 
 // jsonb de conv_mensagens.dados. Tipado como JSON (e não unknown) porque a server function
@@ -55,7 +63,7 @@ export interface MensagemItem {
 }
 
 const CAMPOS_CONVERSA =
-  "id, canal, status, nao_lidas, automacao_pausada, ultima_mensagem_em, ultima_mensagem_resumo, ultima_entrada_em, contato:crm_contatos(id, nome, instagram, telefone)";
+  "id, canal, status, nao_lidas, automacao_pausada, ultima_mensagem_em, ultima_mensagem_resumo, ultima_entrada_em, contato:crm_contatos(id, nome, instagram, telefone, campos, tags)";
 
 export const statusCanais = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -152,7 +160,58 @@ export const obterConversa = createServerFn({ method: "GET" })
 
     const conversa = conversaRes.data as unknown as ConversaItem;
     const janela: Janela = calcularJanela(conversa.ultima_entrada_em);
-    return { conversa, mensagens, janela, comentario: comentarioRespondivel(mensagens) };
+    return {
+      conversa,
+      mensagens,
+      janela,
+      comentario: comentarioRespondivel(mensagens),
+      automacao: await automacaoEmCurso(data.id),
+    };
+  });
+
+export interface AutomacaoEmCurso {
+  nome: string;
+  automacao_id: string;
+  estado: string;
+  aguardando: string | null;
+  passo: number;
+  total: number;
+}
+
+// A automação que está falando com essa pessoa agora, se houver (CRM-27).
+async function automacaoEmCurso(conversaId: string): Promise<AutomacaoEmCurso | null> {
+  const { data } = await supabaseAdmin
+    .from("auto_execucoes")
+    .select("estado, aguardando, passo_idx, automacao:auto_automacoes(id, nome, passos)")
+    .eq("conversa_id", conversaId)
+    .in("estado", ["rodando", "aguardando"])
+    .maybeSingle();
+  if (!data) return null;
+  const linha = data as unknown as {
+    estado: string;
+    aguardando: string | null;
+    passo_idx: number;
+    automacao: { id: string; nome: string; passos: unknown[] } | null;
+  };
+  if (!linha.automacao) return null;
+  return {
+    nome: linha.automacao.nome,
+    automacao_id: linha.automacao.id,
+    estado: linha.estado,
+    aguardando: linha.aguardando,
+    passo: linha.passo_idx + 1,
+    total: Array.isArray(linha.automacao.passos) ? linha.automacao.passos.length : 0,
+  };
+}
+
+export const pararAutomacaoDaConversa = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    await cancelarExecucoesDaConversa(data.id);
+    await logAcaoAdminServer(context.userId, "conversa_parar_automacao", data.id);
+    return { ok: true };
   });
 
 // Sem janela de Direct aberta, a única forma de responder quem só comentou é a resposta
@@ -200,6 +259,8 @@ export const alterarConversa = createServerFn({ method: "POST" })
     if (data.automacao_pausada !== undefined) patch.automacao_pausada = data.automacao_pausada;
     const { error } = await supabaseAdmin.from("conv_conversas").update(patch).eq("id", data.id);
     if (error) throw new Error("Falha ao atualizar a conversa.");
+    // Pausar = a Sil assumiu: a automação que estava esperando a pessoa para de vez.
+    if (data.automacao_pausada) await cancelarExecucoesDaConversa(data.id);
     return { ok: true };
   });
 

@@ -12,6 +12,7 @@ import {
   CheckCircle2,
   RotateCcw,
   UserRound,
+  Workflow,
 } from "lucide-react";
 import {
   alterarConversa,
@@ -20,12 +21,15 @@ import {
   listarConversas,
   marcarConversaLida,
   obterConversa,
+  pararAutomacaoDaConversa,
   registrarNota,
   statusCanais,
+  type AutomacaoEmCurso,
   type ConversaItem,
   type MensagemItem,
 } from "@/lib/conversas.functions";
 import { listarModelos, type Modelo } from "@/lib/crm.functions";
+import { Respostas } from "@/components/crm/Respostas";
 import type { Janela } from "@/lib/conversas-meta";
 import { toastErro } from "@/lib/toast";
 import {
@@ -263,6 +267,7 @@ interface DadosConversa {
   mensagens: MensagemItem[];
   janela: Janela;
   comentario: { commentId: string; texto: string | null } | null;
+  automacao: AutomacaoEmCurso | null;
 }
 
 function PainelConversa(props: { id: string; onVoltar: () => void; onMudou: () => void }) {
@@ -327,8 +332,17 @@ function PainelConversa(props: { id: string; onVoltar: () => void; onMudou: () =
     );
   }
 
-  const { conversa, mensagens, janela, comentario } = dados;
+  const { conversa, mensagens, janela, comentario, automacao } = dados;
   const contato = conversa.contato;
+
+  async function pararAutomacao() {
+    try {
+      await pararAutomacaoDaConversa({ data: { id: props.id } });
+      await carregar();
+    } catch {
+      toastErro("Não consegui parar a automação.");
+    }
+  }
 
   return (
     <>
@@ -358,7 +372,7 @@ function PainelConversa(props: { id: string; onVoltar: () => void; onMudou: () =
               type="button"
               onClick={() => mudar({ automacao_pausada: !conversa.automacao_pausada })}
               className={`inline-flex items-center gap-1.5 ${btnOutline}`}
-              title="Quando as automações chegarem (fase 2), elas não falam com quem está pausado."
+              title="Com a automação pausada, nenhuma automação fala com essa pessoa. Use quando você assumir a conversa."
             >
               {conversa.automacao_pausada ? <PlayCircle size={14} /> : <PauseCircle size={14} />}
               {conversa.automacao_pausada ? "Retomar automação" : "Pausar automação"}
@@ -373,6 +387,36 @@ function PainelConversa(props: { id: string; onVoltar: () => void; onMudou: () =
             </button>
           </div>
         </header>
+
+        {automacao && (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-2">
+            <p className="flex items-center gap-2 font-sans text-[13px] text-[var(--ink-soft)]">
+              <Workflow size={14} className="text-[var(--muted)]" />
+              <span>
+                <Link
+                  to="/crm/automacoes/$id"
+                  params={{ id: automacao.automacao_id }}
+                  className="font-medium text-[var(--secondary-text)] no-underline hover:underline"
+                >
+                  {automacao.nome}
+                </Link>{" "}
+                · passo {automacao.passo} de {automacao.total} ·{" "}
+                {automacao.aguardando === "janela"
+                  ? "esperando a pessoa escrever no Direct"
+                  : automacao.aguardando === "resposta"
+                    ? "esperando a resposta"
+                    : "rodando"}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={pararAutomacao}
+              className="font-sans text-[12px] text-[var(--danger)] hover:underline"
+            >
+              Parar automação
+            </button>
+          </div>
+        )}
 
         <div className="min-h-0 flex-1 overflow-y-auto bg-[var(--bg)] px-4 py-4">
           <ol className="flex flex-col gap-2">
@@ -428,6 +472,19 @@ function PainelConversa(props: { id: string; onVoltar: () => void; onMudou: () =
             </div>
           )}
         </dl>
+        {contato.tags.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="Tags">
+            {contato.tags.map((t) => (
+              <li
+                key={t}
+                className="rounded-full bg-[var(--surface-pink)] px-2.5 py-1 font-sans text-[12px] text-[var(--ink-soft)]"
+              >
+                {t}
+              </li>
+            ))}
+          </ul>
+        )}
+        <Respostas campos={contato.campos} />
         <Link
           to="/crm/contatos/$id"
           params={{ id: contato.id }}
@@ -534,6 +591,10 @@ function Bolha({ m }: { m: MensagemItem }) {
   const rotulo = ROTULO_TIPO[m.tipo];
   const storyUrl = typeof m.dados.story_url === "string" ? m.dados.story_url : null;
   const link = typeof m.dados.link === "string" ? m.dados.link : null;
+  const botoes = Array.isArray(m.dados.botoes)
+    ? m.dados.botoes.filter((b): b is string => typeof b === "string")
+    : [];
+  const daAutomacao = saida && typeof m.dados.automacao_id === "string";
 
   return (
     <li className={`flex ${saida ? "justify-end" : "justify-start"}`}>
@@ -544,6 +605,12 @@ function Bolha({ m }: { m: MensagemItem }) {
             : "border border-[var(--line)] bg-white text-[var(--ink)]"
         }`}
       >
+        {daAutomacao && (
+          <p className="flex items-center gap-1 font-sans text-[11px] font-medium text-[var(--muted)]">
+            <Workflow size={11} aria-hidden />
+            Automação
+          </p>
+        )}
         {rotulo && (
           <p className="font-sans text-[11px] font-medium text-[var(--muted)]">
             {rotulo}
@@ -567,6 +634,18 @@ function Bolha({ m }: { m: MensagemItem }) {
           <p className="whitespace-pre-wrap break-words font-sans text-[14px] leading-relaxed">
             {m.texto}
           </p>
+        )}
+        {botoes.length > 0 && (
+          <ul className="flex flex-wrap gap-1.5" aria-label="Botões enviados">
+            {botoes.map((b) => (
+              <li
+                key={b}
+                className="rounded-full border border-[var(--line)] bg-white px-3 py-1 font-sans text-[12px] text-[var(--secondary-text)]"
+              >
+                {b}
+              </li>
+            ))}
+          </ul>
         )}
         {link && (
           <a

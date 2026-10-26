@@ -101,8 +101,15 @@ async function perfilInstagram(
   }
 }
 
+// Botão de resposta: no Instagram vira quick reply; no WhatsApp, botão (até 3) ou lista (até 10).
+// O `payload` volta no webhook quando a pessoa toca, e é por ele que a automação sabe qual foi.
+export interface BotaoEnvio {
+  payload: string;
+  titulo: string;
+}
+
 export type Envio =
-  | { tipo: "texto"; texto: string }
+  | { tipo: "texto"; texto: string; botoes?: BotaoEnvio[] }
   | {
       tipo: "imagem" | "video" | "audio" | "arquivo";
       url: string;
@@ -131,7 +138,18 @@ export async function enviarPeloCanal(
     }
     const message =
       envio.tipo === "texto"
-        ? { text: envio.texto }
+        ? {
+            text: envio.texto,
+            ...(envio.botoes?.length
+              ? {
+                  quick_replies: envio.botoes.slice(0, 13).map((b) => ({
+                    content_type: "text",
+                    title: b.titulo.slice(0, 20),
+                    payload: b.payload,
+                  })),
+                }
+              : {}),
+          }
         : { attachment: { type: "image", payload: { url: envio.url } } };
     const r = (await chamarGraph(`${GRAPH_IG}/me/messages`, tokenInstagram(), {
       recipient: comentarioId ? { comment_id: comentarioId } : { id: externoId },
@@ -143,7 +161,36 @@ export async function enviarPeloCanal(
 
   const { token, numeroId } = configWhatsapp();
   let corpo: Record<string, unknown>;
-  if (envio.tipo === "texto") {
+  if (envio.tipo === "texto" && envio.botoes?.length) {
+    const botoes = envio.botoes.slice(0, 10);
+    corpo = {
+      type: "interactive",
+      interactive:
+        botoes.length <= 3
+          ? {
+              type: "button",
+              body: { text: envio.texto },
+              action: {
+                buttons: botoes.map((b) => ({
+                  type: "reply",
+                  reply: { id: b.payload, title: b.titulo.slice(0, 20) },
+                })),
+              },
+            }
+          : {
+              type: "list",
+              body: { text: envio.texto },
+              action: {
+                button: "Escolher",
+                sections: [
+                  {
+                    rows: botoes.map((b) => ({ id: b.payload, title: b.titulo.slice(0, 24) })),
+                  },
+                ],
+              },
+            },
+    };
+  } else if (envio.tipo === "texto") {
     corpo = { type: "text", text: { body: envio.texto, preview_url: true } };
   } else {
     const tipo = TIPO_WA_ENVIO[envio.tipo];
@@ -161,6 +208,46 @@ export async function enviarPeloCanal(
   const id = r.messages?.[0]?.id;
   if (!id) throw new ErroMeta("A Meta não devolveu o ID da mensagem.");
   return id;
+}
+
+// Resposta pública num comentário ("Te mandei no Direct"), opcional no gatilho de comentário.
+export async function responderComentarioEmPublico(comentarioId: string, texto: string) {
+  await chamarGraph(`${GRAPH_IG}/${encodeURIComponent(comentarioId)}/replies`, tokenInstagram(), {
+    message: texto,
+  });
+}
+
+export interface PostInstagram {
+  id: string;
+  legenda: string;
+  link: string;
+  imagem: string | null;
+  quando: string;
+}
+
+// Últimos posts do @hub.polia, pro editor escolher em qual post o gatilho de comentário vale.
+export async function listarPostsInstagram(): Promise<PostInstagram[]> {
+  const r = (await chamarGraph(
+    `${GRAPH_IG}/me/media?fields=id,caption,permalink,media_type,media_url,thumbnail_url,timestamp&limit=30`,
+    tokenInstagram(),
+  )) as {
+    data?: {
+      id: string;
+      caption?: string;
+      permalink?: string;
+      media_type?: string;
+      media_url?: string;
+      thumbnail_url?: string;
+      timestamp?: string;
+    }[];
+  };
+  return (r.data ?? []).map((p) => ({
+    id: p.id,
+    legenda: (p.caption ?? "").slice(0, 140),
+    link: p.permalink ?? "",
+    imagem: p.media_type === "VIDEO" ? (p.thumbnail_url ?? null) : (p.media_url ?? null),
+    quando: p.timestamp ?? "",
+  }));
 }
 
 // ---------------------------------------------------------------- mídia
@@ -407,6 +494,23 @@ async function aplicarEvento(ev: EventoConversa): Promise<void> {
     .from("crm_contatos")
     .update({ ultimo_contato_em: agora })
     .eq("id", contato.id);
+
+  // Mensagem da pessoa pode começar ou continuar uma automação (CRM-27). Falha do motor não
+  // pode desfazer a mensagem que já ficou gravada.
+  if (m.direcao === "entrada") {
+    try {
+      const { aoReceberMensagem } = await import("@/lib/automacoes.server");
+      await aoReceberMensagem({
+        canal: ev.canal,
+        externoId: ev.externoId,
+        contatoId: contato.id,
+        conversaId: conversa.id,
+        mensagem: m,
+      });
+    } catch (e) {
+      console.error("[conversas] automação falhou", e);
+    }
+  }
 }
 
 const ORDEM_STATUS: Record<string, number> = {

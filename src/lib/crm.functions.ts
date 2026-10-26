@@ -55,6 +55,8 @@ export interface Contato {
   descadastrado_em: string | null;
   ultimo_contato_em: string | null;
   proximo_followup: string | null;
+  // Respostas guardadas pelas automações da caixa de entrada (CRM-27).
+  campos?: Record<string, string | number | boolean | null>;
   criado_em: string;
   atualizado_em: string;
 }

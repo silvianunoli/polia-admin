@@ -64,6 +64,8 @@ import { Route as LojaCuponsRouteImport } from './routes/loja/cupons'
 import { Route as PesquisasIndexRouteImport } from './routes/pesquisas.index'
 import { Route as PesquisasSlugRouteImport } from './routes/pesquisas.$slug'
 import { Route as UsuariosIdRouteImport } from './routes/usuarios.$id'
+import { Route as CrmAutomacoesIndexRouteImport } from './routes/crm/automacoes.index'
+import { Route as CrmAutomacoesIdRouteImport } from './routes/crm/automacoes.$id'
 import { Route as CrmCampanhasIndexRouteImport } from './routes/crm/campanhas.index'
 import { Route as CrmCampanhasIdRouteImport } from './routes/crm/campanhas.$id'
 import { Route as CrmContatosIndexRouteImport } from './routes/crm/contatos.index'
@@ -382,6 +384,16 @@ const UsuariosIdRoute = UsuariosIdRouteImport.update({
   path: '/usuarios/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CrmAutomacoesIndexRoute = CrmAutomacoesIndexRouteImport.update({
+  id: '/automacoes/',
+  path: '/automacoes/',
+  getParentRoute: () => CrmRoute,
+} as any)
+const CrmAutomacoesIdRoute = CrmAutomacoesIdRouteImport.update({
+  id: '/automacoes/$id',
+  path: '/automacoes/$id',
+  getParentRoute: () => CrmRoute,
+} as any)
 const CrmCampanhasIndexRoute = CrmCampanhasIndexRouteImport.update({
   id: '/campanhas/',
   path: '/campanhas/',
@@ -659,6 +671,7 @@ export interface FileRoutesByFullPath {
   '/founder/': typeof FounderIndexRoute
   '/loja/': typeof LojaIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/crm/automacoes/$id': typeof CrmAutomacoesIdRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/fabrica-social/biblioteca/$postId': typeof FabricaSocialBibliotecaPostIdRoute
@@ -693,6 +706,7 @@ export interface FileRoutesByFullPath {
   '/loja/pedidos/$id': typeof LojaPedidosIdRoute
   '/loja/produtos/$id': typeof LojaProdutosIdRoute
   '/loja/produtos/novo': typeof LojaProdutosNovoRoute
+  '/crm/automacoes/': typeof CrmAutomacoesIndexRoute
   '/crm/campanhas/': typeof CrmCampanhasIndexRoute
   '/crm/contatos/': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca/': typeof FabricaSocialBibliotecaIndexRoute
@@ -753,6 +767,7 @@ export interface FileRoutesByTo {
   '/founder': typeof FounderIndexRoute
   '/loja': typeof LojaIndexRoute
   '/pesquisas': typeof PesquisasIndexRoute
+  '/crm/automacoes/$id': typeof CrmAutomacoesIdRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/fabrica-social/biblioteca/$postId': typeof FabricaSocialBibliotecaPostIdRoute
@@ -787,6 +802,7 @@ export interface FileRoutesByTo {
   '/loja/pedidos/$id': typeof LojaPedidosIdRoute
   '/loja/produtos/$id': typeof LojaProdutosIdRoute
   '/loja/produtos/novo': typeof LojaProdutosNovoRoute
+  '/crm/automacoes': typeof CrmAutomacoesIndexRoute
   '/crm/campanhas': typeof CrmCampanhasIndexRoute
   '/crm/contatos': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca': typeof FabricaSocialBibliotecaIndexRoute
@@ -852,6 +868,7 @@ export interface FileRoutesById {
   '/founder/': typeof FounderIndexRoute
   '/loja/': typeof LojaIndexRoute
   '/pesquisas/': typeof PesquisasIndexRoute
+  '/crm/automacoes/$id': typeof CrmAutomacoesIdRoute
   '/crm/campanhas/$id': typeof CrmCampanhasIdRoute
   '/crm/contatos/$id': typeof CrmContatosIdRoute
   '/fabrica-social/biblioteca/$postId': typeof FabricaSocialBibliotecaPostIdRoute
@@ -886,6 +903,7 @@ export interface FileRoutesById {
   '/loja/pedidos/$id': typeof LojaPedidosIdRoute
   '/loja/produtos/$id': typeof LojaProdutosIdRoute
   '/loja/produtos/novo': typeof LojaProdutosNovoRoute
+  '/crm/automacoes/': typeof CrmAutomacoesIndexRoute
   '/crm/campanhas/': typeof CrmCampanhasIndexRoute
   '/crm/contatos/': typeof CrmContatosIndexRoute
   '/fabrica-social/biblioteca/': typeof FabricaSocialBibliotecaIndexRoute
@@ -952,6 +970,7 @@ export interface FileRouteTypes {
     | '/founder/'
     | '/loja/'
     | '/pesquisas/'
+    | '/crm/automacoes/$id'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
     | '/fabrica-social/biblioteca/$postId'
@@ -986,6 +1005,7 @@ export interface FileRouteTypes {
     | '/loja/pedidos/$id'
     | '/loja/produtos/$id'
     | '/loja/produtos/novo'
+    | '/crm/automacoes/'
     | '/crm/campanhas/'
     | '/crm/contatos/'
     | '/fabrica-social/biblioteca/'
@@ -1046,6 +1066,7 @@ export interface FileRouteTypes {
     | '/founder'
     | '/loja'
     | '/pesquisas'
+    | '/crm/automacoes/$id'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
     | '/fabrica-social/biblioteca/$postId'
@@ -1080,6 +1101,7 @@ export interface FileRouteTypes {
     | '/loja/pedidos/$id'
     | '/loja/produtos/$id'
     | '/loja/produtos/novo'
+    | '/crm/automacoes'
     | '/crm/campanhas'
     | '/crm/contatos'
     | '/fabrica-social/biblioteca'
@@ -1144,6 +1166,7 @@ export interface FileRouteTypes {
     | '/founder/'
     | '/loja/'
     | '/pesquisas/'
+    | '/crm/automacoes/$id'
     | '/crm/campanhas/$id'
     | '/crm/contatos/$id'
     | '/fabrica-social/biblioteca/$postId'
@@ -1178,6 +1201,7 @@ export interface FileRouteTypes {
     | '/loja/pedidos/$id'
     | '/loja/produtos/$id'
     | '/loja/produtos/novo'
+    | '/crm/automacoes/'
     | '/crm/campanhas/'
     | '/crm/contatos/'
     | '/fabrica-social/biblioteca/'
@@ -1613,6 +1637,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof UsuariosIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/crm/automacoes/': {
+      id: '/crm/automacoes/'
+      path: '/automacoes'
+      fullPath: '/crm/automacoes/'
+      preLoaderRoute: typeof CrmAutomacoesIndexRouteImport
+      parentRoute: typeof CrmRoute
+    }
+    '/crm/automacoes/$id': {
+      id: '/crm/automacoes/$id'
+      path: '/automacoes/$id'
+      fullPath: '/crm/automacoes/$id'
+      preLoaderRoute: typeof CrmAutomacoesIdRouteImport
+      parentRoute: typeof CrmRoute
+    }
     '/crm/campanhas/': {
       id: '/crm/campanhas/'
       path: '/campanhas'
@@ -1911,8 +1949,10 @@ interface CrmRouteChildren {
   CrmTarefasRoute: typeof CrmTarefasRoute
   CrmUsuariasRoute: typeof CrmUsuariasRoute
   CrmIndexRoute: typeof CrmIndexRoute
+  CrmAutomacoesIdRoute: typeof CrmAutomacoesIdRoute
   CrmCampanhasIdRoute: typeof CrmCampanhasIdRoute
   CrmContatosIdRoute: typeof CrmContatosIdRoute
+  CrmAutomacoesIndexRoute: typeof CrmAutomacoesIndexRoute
   CrmCampanhasIndexRoute: typeof CrmCampanhasIndexRoute
   CrmContatosIndexRoute: typeof CrmContatosIndexRoute
 }
@@ -1925,8 +1965,10 @@ const CrmRouteChildren: CrmRouteChildren = {
   CrmTarefasRoute: CrmTarefasRoute,
   CrmUsuariasRoute: CrmUsuariasRoute,
   CrmIndexRoute: CrmIndexRoute,
+  CrmAutomacoesIdRoute: CrmAutomacoesIdRoute,
   CrmCampanhasIdRoute: CrmCampanhasIdRoute,
   CrmContatosIdRoute: CrmContatosIdRoute,
+  CrmAutomacoesIndexRoute: CrmAutomacoesIndexRoute,
   CrmCampanhasIndexRoute: CrmCampanhasIndexRoute,
   CrmContatosIndexRoute: CrmContatosIndexRoute,
 }
