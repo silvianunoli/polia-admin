@@ -268,6 +268,87 @@ export async function enviarPeloCanal(
   return id;
 }
 
+// ---------------------------------------------------------------- tela de canais (/crm/canais)
+
+// A conta do WhatsApp da Pólia (WABA "Pólia", no portfólio dela, com o ManyChat de parceiro).
+// O número +55 11 99696-3296 mora nela. Lido no Gerenciador de Negócios em 26/10/2026.
+export const WABA_POLIA = "2091097082282481";
+
+export async function contaInstagramConectada(): Promise<{ id: string; username: string }> {
+  const r = (await chamarGraph(`${GRAPH_IG}/me?fields=user_id,username`, tokenInstagram())) as {
+    user_id?: string;
+    id?: string;
+    username?: string;
+  };
+  return { id: String(r.user_id ?? r.id ?? ""), username: r.username ?? "" };
+}
+
+function tokenWhatsapp(): string {
+  const t = process.env.WHATSAPP_ACCESS_TOKEN;
+  if (!t)
+    throw new ErroMeta("Falta o WHATSAPP_ACCESS_TOKEN no Worker (token do usuário do sistema).");
+  return t;
+}
+
+export interface NumeroWhatsapp {
+  id: string;
+  numero: string;
+  nome: string;
+  qualidade: string | null;
+  status: string | null;
+}
+
+export interface ContaWhatsapp {
+  nome: string;
+  numeros: NumeroWhatsapp[];
+  // Apps que recebem os eventos dessa conta. O ManyChat aparece aqui; o office entra ao lado.
+  apps: { id: string; nome: string }[];
+}
+
+export async function lerContaWhatsapp(wabaId: string): Promise<ContaWhatsapp> {
+  const token = tokenWhatsapp();
+  const [conta, numeros, apps] = (await Promise.all([
+    chamarGraph(`${GRAPH_FB}/${wabaId}?fields=name`, token),
+    chamarGraph(
+      `${GRAPH_FB}/${wabaId}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,status`,
+      token,
+    ),
+    chamarGraph(`${GRAPH_FB}/${wabaId}/subscribed_apps`, token),
+  ])) as [
+    { name?: string },
+    {
+      data?: {
+        id: string;
+        display_phone_number?: string;
+        verified_name?: string;
+        quality_rating?: string;
+        status?: string;
+      }[];
+    },
+    { data?: { whatsapp_business_api_data?: { id?: string; name?: string } }[] },
+  ];
+  return {
+    nome: conta.name ?? "",
+    numeros: (numeros.data ?? []).map((n) => ({
+      id: n.id,
+      numero: n.display_phone_number ?? "",
+      nome: n.verified_name ?? "",
+      qualidade: n.quality_rating ?? null,
+      status: n.status ?? null,
+    })),
+    apps: (apps.data ?? []).map((a) => ({
+      id: a.whatsapp_business_api_data?.id ?? "",
+      nome: a.whatsapp_business_api_data?.name ?? "",
+    })),
+  };
+}
+
+// Liga o app dono do token (o "Silvia Nunoli") à conta: a partir daí a Meta manda os eventos do
+// WhatsApp pro webhook do office também. Não tira nenhum outro app (o ManyChat continua).
+export async function ligarAppNaContaWhatsapp(wabaId: string): Promise<void> {
+  await chamarGraph(`${GRAPH_FB}/${wabaId}/subscribed_apps`, tokenWhatsapp(), {});
+}
+
 // "Antes de receber o link, segue o perfil": a Meta diz se a pessoa segue a conta conectada.
 // Se a Meta não responder, deixa passar (melhor mandar o link do que travar a pessoa).
 export async function seguePerfil(igsid: string): Promise<boolean> {

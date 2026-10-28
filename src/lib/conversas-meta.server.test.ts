@@ -148,3 +148,65 @@ describe("tratarWebhookMeta: evento (POST)", () => {
     expect(r.status).toBe(400);
   });
 });
+
+describe("conta do WhatsApp (tela de canais)", () => {
+  it("lê números e apps ligados, e o conectar faz POST em subscribed_apps", async () => {
+    process.env.WHATSAPP_ACCESS_TOKEN = "token-sistema";
+    const chamadasFetch: { url: string; metodo: string }[] = [];
+    const respostas: Record<string, unknown> = {
+      "?fields=name": { name: "Pólia" },
+      "/phone_numbers": {
+        data: [
+          {
+            id: "PN1",
+            display_phone_number: "+55 11 99696-3296",
+            verified_name: "Pólia",
+            quality_rating: "GREEN",
+            status: "CONNECTED",
+          },
+        ],
+      },
+      "/subscribed_apps": {
+        data: [{ whatsapp_business_api_data: { id: "MC", name: "ManyChat" } }],
+      },
+    };
+    const original = globalThis.fetch;
+    globalThis.fetch = (async (url: string, init?: RequestInit) => {
+      chamadasFetch.push({ url, metodo: init?.method ?? "GET" });
+      if (init?.method === "POST") return new Response(JSON.stringify({ success: true }));
+      const chave = Object.keys(respostas).find((k) => url.includes(k))!;
+      return new Response(JSON.stringify(respostas[chave]));
+    }) as typeof fetch;
+    try {
+      const { lerContaWhatsapp, ligarAppNaContaWhatsapp } =
+        await import("@/lib/conversas-meta.server");
+      const conta = await lerContaWhatsapp("123456");
+      expect(conta).toEqual({
+        nome: "Pólia",
+        numeros: [
+          {
+            id: "PN1",
+            numero: "+55 11 99696-3296",
+            nome: "Pólia",
+            qualidade: "GREEN",
+            status: "CONNECTED",
+          },
+        ],
+        apps: [{ id: "MC", nome: "ManyChat" }],
+      });
+      await ligarAppNaContaWhatsapp("123456");
+      expect(chamadasFetch.at(-1)).toEqual({
+        url: "https://graph.facebook.com/v23.0/123456/subscribed_apps",
+        metodo: "POST",
+      });
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it("sem token do usuário do sistema, explica o que falta", async () => {
+    delete process.env.WHATSAPP_ACCESS_TOKEN;
+    const { lerContaWhatsapp } = await import("@/lib/conversas-meta.server");
+    await expect(lerContaWhatsapp("123456")).rejects.toThrow("WHATSAPP_ACCESS_TOKEN");
+  });
+});

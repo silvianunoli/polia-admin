@@ -10,6 +10,7 @@ import {
   KeyRound,
   MessagesSquare,
   Workflow,
+  Plug,
 } from "lucide-react";
 import type { ComponentType } from "react";
 
@@ -21,6 +22,7 @@ export const CRM_ITENS: Item[] = [
   { to: "/crm", label: "Visão geral", icone: LayoutDashboard },
   { to: "/crm/conversas", label: "Conversas", icone: MessagesSquare },
   { to: "/crm/automacoes", label: "Automações", icone: Workflow },
+  { to: "/crm/canais", label: "Canais", icone: Plug },
   { to: "/crm/contatos", label: "Contatos", icone: Users },
   { to: "/crm/negocios", label: "Negociações", icone: Handshake },
   { to: "/crm/tarefas", label: "Lembretes", icone: BellRing },
