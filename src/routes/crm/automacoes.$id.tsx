@@ -359,7 +359,8 @@ function EditorAutomacao() {
                 O que acontece, em ordem
               </h2>
               <p className="font-sans text-[12px] text-[var(--muted)]">
-                Variáveis: {"{primeiro_nome}"}, {"{nome}"} e qualquer resposta guardada, como{" "}
+                Variáveis: {"{primeiro_nome}"}, {"{nome}"}, {"{instagram}"} (o @ da pessoa) e
+                qualquer resposta guardada, como{" "}
                 {"{marca_instagram}"}
               </p>
             </div>

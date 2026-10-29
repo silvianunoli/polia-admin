@@ -190,6 +190,15 @@ describe("interpolar", () => {
     );
     expect(interpolar("Oi, {primeiro_nome}.", { nome: "+5511999990000", campos: {} })).toBe("Oi.");
   });
+
+  it("{instagram} vira o @ do perfil, e some quando a pessoa não tem @", () => {
+    const contato = { nome: "Ana Paula", campos: {}, instagram: "canecasda" };
+    expect(interpolar("Oiee, {instagram}!!", contato)).toBe("Oiee, @canecasda!!");
+    expect(interpolar("Oiee, {instagram}!!", { ...contato, instagram: "@canecasda" })).toBe(
+      "Oiee, @canecasda!!",
+    );
+    expect(interpolar("Oiee, {instagram}!!", { ...contato, instagram: null })).toBe("Oiee!!");
+  });
 });
 
 describe("comentário guiado", () => {

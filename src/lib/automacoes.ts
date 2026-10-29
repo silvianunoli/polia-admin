@@ -235,10 +235,11 @@ export function proximoIndice(passos: Passo[], atual: number, irPara: string | n
 
 // ---------------------------------------------------------------- variáveis
 
-// {primeiro_nome}, {nome} e qualquer campo guardado ({marca_instagram}). Variável sem valor some.
+// {primeiro_nome}, {nome}, {instagram} (o @ do perfil) e qualquer campo guardado
+// ({marca_instagram}). Variável sem valor some.
 export function interpolar(
   texto: string,
-  contato: { nome: string; campos: Record<string, unknown> },
+  contato: { nome: string; campos: Record<string, unknown>; instagram?: string | null },
 ): string {
   const primeiro = contato.nome.replace(/^@/, "").trim().split(/\s+/)[0] ?? "";
   // Contato sem nome de verdade não vira "Oi, Contato".
@@ -248,6 +249,10 @@ export function interpolar(
       .replace(/\{(\w+)\}/g, (_, chave: string) => {
         if (chave === "primeiro_nome") return semNome ? "" : primeiro;
         if (chave === "nome") return semNome ? "" : contato.nome;
+        if (chave === "instagram") {
+          const usuario = (contato.instagram ?? "").replace(/^@/, "").trim();
+          return usuario ? `@${usuario}` : "";
+        }
         const v = contato.campos[chave];
         return typeof v === "string" || typeof v === "number" ? String(v) : "";
       })

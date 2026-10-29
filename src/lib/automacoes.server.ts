@@ -137,14 +137,29 @@ async function automacoesAtivas(canal: Canal): Promise<AutomacaoLinha[]> {
 
 async function contatoParaTexto(
   contatoId: string,
-): Promise<{ nome: string; campos: Record<string, unknown>; tags: string[] }> {
+): Promise<{
+  nome: string;
+  campos: Record<string, unknown>;
+  tags: string[];
+  instagram: string | null;
+}> {
   const { data } = await supabaseAdmin
     .from("crm_contatos")
-    .select("nome, campos, tags")
+    .select("nome, campos, tags, instagram")
     .eq("id", contatoId)
     .maybeSingle();
-  const c = (data ?? {}) as { nome?: string; campos?: Record<string, unknown>; tags?: string[] };
-  return { nome: c.nome ?? "", campos: c.campos ?? {}, tags: c.tags ?? [] };
+  const c = (data ?? {}) as {
+    nome?: string;
+    campos?: Record<string, unknown>;
+    tags?: string[];
+    instagram?: string | null;
+  };
+  return {
+    nome: c.nome ?? "",
+    campos: c.campos ?? {},
+    tags: c.tags ?? [],
+    instagram: c.instagram ?? null,
+  };
 }
 
 // ---------------------------------------------------------------- escrita
