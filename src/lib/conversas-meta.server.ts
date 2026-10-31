@@ -9,7 +9,7 @@
 //   META_WEBHOOK_VERIFY_TOKEN  texto combinado no painel da Meta ao cadastrar o webhook
 //   META_APP_SECRET            segredo do app da Meta (assina o webhook do WhatsApp)
 //   INSTAGRAM_APP_SECRET       segredo do app do Instagram (assina o webhook do Instagram)
-//   INSTAGRAM_ACCESS_TOKEN     token da conta @hub.polia (Instagram Login, vence em 60 dias)
+//   INSTAGRAM_ACCESS_TOKEN     token da conta @polialab (Instagram Login, vence em 60 dias)
 //   WHATSAPP_ACCESS_TOKEN      token permanente de system user
 //   WHATSAPP_PHONE_NUMBER_ID   ID do número (o de teste até o dia do corte)
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
@@ -392,7 +392,7 @@ export interface PostInstagram {
   quando: string;
 }
 
-// Últimos posts do @hub.polia, pro editor escolher em qual post o gatilho de comentário vale.
+// Últimos posts do @polialab, pro editor escolher em qual post o gatilho de comentário vale.
 export async function listarPostsInstagram(): Promise<PostInstagram[]> {
   const r = (await chamarGraph(
     `${GRAPH_IG}/me/media?fields=id,caption,permalink,media_type,media_url,thumbnail_url,timestamp&limit=30`,

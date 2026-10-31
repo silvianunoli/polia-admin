@@ -3,7 +3,7 @@ import { CARROSSEL_POLIA_ONE } from "./polia-one";
 
 // Semente do primeiro carrossel (/conteudo-polia). O banco guarda o que a
 // Sil editou; isto é o que nasce quando ainda não existe nada. Slide com
-// ordem repetida ou texto morto entra no feed do @hub.polia.
+// ordem repetida ou texto morto entra no feed do @polialab.
 //
 // cssBase não é testado: o Vitest devolve string vazia pra import de .css
 // com ?raw (o Vite trata CSS antes do sufixo), então aqui ele vem "" mesmo

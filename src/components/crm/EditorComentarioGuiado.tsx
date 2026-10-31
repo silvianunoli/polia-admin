@@ -151,7 +151,7 @@ export function EditorComentarioGuiado(props: {
             {erroPosts && <p className="font-sans text-[13px] text-[var(--danger)]">{erroPosts}</p>}
             {!posts && !erroPosts && (
               <p className="font-sans text-[13px] text-[var(--muted)]">
-                Lendo os posts do @hub.polia...
+                Lendo os posts do @polialab...
               </p>
             )}
             {posts && (
@@ -578,7 +578,7 @@ function Previa(props: {
             </p>
             {g.respostas_publicas[0] && (
               <p className="pl-3 text-[var(--ink-soft)]">
-                <strong>hub.polia</strong> {g.respostas_publicas[0]}
+                <strong>polialab</strong> {g.respostas_publicas[0]}
               </p>
             )}
           </div>

@@ -648,7 +648,7 @@ function EscolherPosts(props: { selecionados: string[]; onMudar: (ids: string[])
           {erro && <p className="font-sans text-[13px] text-[var(--danger)]">{erro}</p>}
           {!posts && !erro && (
             <p className="font-sans text-[13px] text-[var(--muted)]">
-              Lendo os posts do @hub.polia...
+              Lendo os posts do @polialab...
             </p>
           )}
           {posts && (
