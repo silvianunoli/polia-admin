@@ -8,6 +8,7 @@ import {
 } from "./registro";
 import { discoveryNegocio } from "./discovery-negocio";
 import { pesquisaPrecificacao } from "./pesquisa-precificacao";
+import { pesquisaGestao } from "./pesquisa-gestao";
 
 // As pesquisas são config em código. O id da pergunta é a chave em
 // pesquisa_respostas.respostas e o id da opção é o valor gravado: repetir um
@@ -17,8 +18,8 @@ const VOCABULARIO_MORTO =
   /\b[Ee]tapa|\b[Tt]rilha|\b[Jj]ornada|[Nn]o seu ritmo|[Nn]o seu tempo|[Dd]o seu jeito|[Ii]nfoproduto|\bDani\b|\bComeço\b|\bAlcance\b|\bVoo\b|\bConfere\b|\bControle\b|\bProjete\b|\b[Tt]urma\b|[Cc]arimbo|[Bb]ússola|[Tt]erritório|[Rr]aposa/;
 
 describe("registro", () => {
-  it("lista as duas pesquisas, com slugs únicos em kebab-case", () => {
-    expect(PESQUISAS).toEqual([discoveryNegocio, pesquisaPrecificacao]);
+  it("lista as três pesquisas, com slugs únicos em kebab-case", () => {
+    expect(PESQUISAS).toEqual([discoveryNegocio, pesquisaPrecificacao, pesquisaGestao]);
     const slugs = PESQUISAS.map((p) => p.slug);
     expect(new Set(slugs).size).toBe(slugs.length);
     for (const s of slugs) expect(s).toMatch(/^[a-z0-9]+(-[a-z0-9]+)*$/);

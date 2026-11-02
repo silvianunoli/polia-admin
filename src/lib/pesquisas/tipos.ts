@@ -22,7 +22,19 @@ export interface Pergunta {
   placeholder?: string; // aberta
 }
 
+/** Agradecimento de quem termina: link de cortesia por cupom de 100% no Stripe
+ * (mesmo caminho do /planos?codigo= da campanha UGC). O cupom precisa existir
+ * no Stripe antes da pesquisa ir pro ar, senão o checkout recusa o código. */
+export interface BrindePesquisa {
+  titulo: string;
+  texto: string;
+  rotulo: string;
+  plano: "premium" | "pro";
+  codigo: string;
+}
+
 export interface PesquisaConfig {
   slug: string;
   perguntas: Pergunta[];
+  brinde?: BrindePesquisa;
 }

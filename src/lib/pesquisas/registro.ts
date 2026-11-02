@@ -6,8 +6,9 @@
 import type { PesquisaConfig } from "./tipos";
 import { discoveryNegocio } from "./discovery-negocio";
 import { pesquisaPrecificacao } from "./pesquisa-precificacao";
+import { pesquisaGestao } from "./pesquisa-gestao";
 
-export const PESQUISAS: PesquisaConfig[] = [discoveryNegocio, pesquisaPrecificacao];
+export const PESQUISAS: PesquisaConfig[] = [discoveryNegocio, pesquisaPrecificacao, pesquisaGestao];
 
 export function pesquisaPorSlug(slug: string): PesquisaConfig | undefined {
   return PESQUISAS.find((p) => p.slug === slug);
