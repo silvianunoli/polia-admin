@@ -379,6 +379,17 @@ describe("comentário vira Direct (igual ao ManyChat)", () => {
     expect(ultimoTexto()).toBe(g.seguir.textoNaoSegue);
     expect(exec()).toMatchObject({ estado: "aguardando", tentativas: 1 });
 
+    // Regra da Sil (11/11/2026): quem não segue nunca recebe a isca, nem insistindo.
+    for (let i = 0; i < 4; i++) {
+      await aoReceberMensagem({
+        ...ctx("instagram"),
+        mensagem: toque(payloadBotao("seguir", "seguir"), g.seguir.botao),
+      });
+    }
+    expect(ultimoTexto()).toBe(g.seguir.textoNaoSegue);
+    expect(envios.some((e) => JSON.stringify(e).includes(g.link.texto))).toBe(false);
+    expect(exec()).toMatchObject({ estado: "aguardando", tentativas: 5 });
+
     meta.segue = true;
     await aoReceberMensagem({
       ...ctx("instagram"),
@@ -392,6 +403,7 @@ describe("comentário vira Direct (igual ao ManyChat)", () => {
     const a = automacaoComentarioEmBranco();
     const g = guiadoEmBranco();
     g.email.ativo = true;
+    g.seguir.ativo = false;
     a.passos = guiadoParaPassos(g);
     ligar(a, "a-email");
 

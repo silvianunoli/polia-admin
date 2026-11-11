@@ -374,8 +374,9 @@ export function guiadoEmBranco(): ComentarioGuiado {
       texto: "Oi. Que bom que você comentou. Toca no botão aqui embaixo que eu te mando o link.",
       botao: "Quero o link",
     },
+    // Ligado de saída: regra da Sil (11/11/2026), post de isca só entrega pra quem segue.
     seguir: {
-      ativo: false,
+      ativo: true,
       texto: "Antes de mandar o link: você já segue a Pólia? Segue e depois toca no botão.",
       botao: "Já segui",
       textoNaoSegue: "Ainda não apareceu aqui que você segue. Segue o perfil e toca de novo.",

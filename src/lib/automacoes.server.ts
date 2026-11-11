@@ -33,7 +33,6 @@ import {
 } from "@/lib/automacoes";
 
 const JANELA_RESPOSTA_PADRAO_MS = 24 * 60 * 60 * 1000;
-const MAX_TENTATIVAS_SEGUIR = 3;
 const BASE_OFFICE = "https://office.usepolia.com.br";
 
 // Link do botão passa por /api/link: conta o clique e redireciona pro endereço que está na
@@ -488,7 +487,9 @@ async function responder(ctx: Contexto, exec: ExecucaoLinha, m: MensagemRecebida
     }
   } else if (passo.tipo === "seguir") {
     const segue = await seguePerfil(ctx.externoId);
-    if (!segue && exec.tentativas < MAX_TENTATIVAS_SEGUIR) {
+    // Regra da Sil (11/11/2026): isca só sai pra quem segue. Sem limite de tentativas: cada
+    // toque em "Já segui" confere de novo, e a execução expira sozinha se a pessoa sumir.
+    if (!segue) {
       const aviso = passo.texto_nao_segue;
       const botoes = [{ payload: payloadBotao(passo.id, "seguir"), titulo: passo.botao }];
       try {
@@ -508,7 +509,7 @@ async function responder(ctx: Contexto, exec: ExecucaoLinha, m: MensagemRecebida
       await atualizarExecucao(exec.id, { tentativas: exec.tentativas + 1 });
       return;
     }
-    // Seguiu, ou já pediu 3 vezes: segue em frente sem prender a pessoa.
+    // Seguiu: libera o resto (a isca).
   }
 
   const seguinte = {
