@@ -7,6 +7,7 @@ import estrategicoHtml from "./boards/gerenciamento-estrategico.html?raw";
 import conteudoHtml from "./boards/conteudo-criacao.html?raw";
 import manualMarcaHtml from "./boards/manual-da-marca.html?raw";
 import { FERRAMENTAS_SETUP } from "./ferramentas-setup";
+import { buscarCatalogoInteiro } from "./catalogo-paginado";
 
 // O conteúdo dos dois boards só existe dentro do bundle do servidor (import
 // ?raw num arquivo consumido só por server functions, nunca por componente
@@ -40,6 +41,12 @@ function linhaCatalogoParaFrontend(row: Record<string, unknown>) {
   };
 }
 
+function lerCatalogoDoBanco() {
+  return buscarCatalogoInteiro((de, ate) =>
+    supabaseAdmin.from("office_tarefas_catalogo").select("*").order("id").range(de, ate),
+  );
+}
+
 export const buscarHtmlKanban = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
@@ -56,8 +63,7 @@ export const buscarHtmlKanban = createServerFn({ method: "GET" })
     // /api/estado do polia-office nunca existiu aqui, e location.hostname
     // dentro de um iframe srcDoc vem vazio, então nem a detecção de modo
     // "api" do board disparava).
-    const { data } = await supabaseAdmin.from("office_tarefas_catalogo").select("*");
-    const catalogo = Array.isArray(data) ? data.map(linhaCatalogoParaFrontend) : [];
+    const catalogo = (await lerCatalogoDoBanco()).map(linhaCatalogoParaFrontend);
     // Nota de tarefa é texto livre digitado em sessões passadas -- se algum dia
     // tiver a sequência "</script" dentro, isso fecharia a tag cedo demais.
     const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
@@ -74,8 +80,7 @@ export const buscarHtmlEstrategico = createServerFn({ method: "GET" })
     // rodar (ver window.__CATALOGO_SUPABASE__ em carregarCatalogoVivo() no
     // HTML). Só usado pra "marcar como concluído" e tarefas locais (LOC-*) --
     // os EPICOS/ITENS em si continuam vindo do snapshot estático do arquivo.
-    const { data } = await supabaseAdmin.from("office_tarefas_catalogo").select("*");
-    const catalogo = Array.isArray(data) ? data.map(linhaCatalogoParaFrontend) : [];
+    const catalogo = (await lerCatalogoDoBanco()).map(linhaCatalogoParaFrontend);
     const json = JSON.stringify(catalogo).replace(/<\/script/gi, "<\\/script");
     // O runbook das ferramentas mora em ferramentas-setup.ts, a mesma fonte
     // que a página /ferramentas lê -- antes eram duas cópias do mesmo texto,
