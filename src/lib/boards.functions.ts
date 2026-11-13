@@ -35,7 +35,7 @@ function linhaCatalogoParaFrontend(row: Record<string, unknown>) {
     prioridade: row.prioridade,
     nota: row.nota,
     concluidoEm: row.concluido_em,
-    // Aba do Kanban (one/conteudo/lab) e cliente do Lab, desde 12/11/2026.
+    // Aba do Kanban (one/conteudo/lab/trafego) e cliente do Lab, desde 12/11/2026.
     quadro: row.quadro ?? "one",
     cliente: row.cliente ?? null,
   };
@@ -259,7 +259,7 @@ export const renomearColunaConteudo = createServerFn({ method: "POST" })
 // iframe (ele não tem como anexar o Bearer token).
 const novaTarefaLocalInput = z.object({
   titulo: z.string().trim().min(1).max(500),
-  quadro: z.enum(["one", "conteudo", "lab"]).default("one"),
+  quadro: z.enum(["one", "conteudo", "lab", "trafego"]).default("one"),
   cliente: z.string().trim().max(100).nullable().default(null),
   area: z.string().max(100).default("produto"),
   pessoa: z.string().max(100).default("silvia"),

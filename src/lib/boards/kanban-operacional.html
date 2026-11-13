@@ -364,12 +364,13 @@ var AREAS = {
   tutoriais: "Tutoriais", seo: "SEO"
 };
 
-// Três quadros na mesma tabela (office_tarefas_catalogo.quadro). Tarefa sem
+// Quatro quadros na mesma tabela (office_tarefas_catalogo.quadro; tráfego desde 13/11/2026). Tarefa sem
 // quadro (snapshot antigo embutido) cai em "one".
 var QUADROS = [
-  { id: "one", nome: "Pólia One", desc: "O sistema: código, pagamento, apps, vendas" },
-  { id: "conteudo", nome: "Conteúdo", desc: "Redes, posts, stories, vídeos, newsletter" },
-  { id: "lab", nome: "Pólia Lab", desc: "Clientes atendidas e operação do Lab" }
+  { id: "one", nome: "Pólia One", desc: "O sistema: código, pagamento, apps, integrações" },
+  { id: "conteudo", nome: "Conteúdo", desc: "Redes, posts, stories e vídeos" },
+  { id: "lab", nome: "Pólia Lab", desc: "Clientes atendidas e operação do Lab" },
+  { id: "trafego", nome: "Tráfego e vendas", desc: "Anúncios, copy, vendas, growth e campanhas do CRM" }
 ];
 
 // Clientes do Lab (office_tarefas_catalogo.cliente). null = operação do Lab.
@@ -593,7 +594,7 @@ var estado = { quadro: lerQuadroSalvo(), cliente: "todos", pessoa: "todos", spri
 function lerQuadroSalvo() {
   try {
     var q = localStorage.getItem("polia_kanban_quadro");
-    if (q === "one" || q === "conteudo" || q === "lab") return q;
+    if (q === "one" || q === "conteudo" || q === "lab" || q === "trafego") return q;
   } catch (e) {}
   return "one";
 }
