@@ -18,13 +18,13 @@
   --line:           #E6E6E6;  /* bordas e divisórias — cinza, NÃO bege */
   --ink:            #0A0A0A;  /* texto principal — tinta quase preta, NÃO marrom */
   --ink-soft:       #2C2C2C;  /* texto secundário */
-  --muted:          #767676;  /* metadado — cinza neutro, NÃO marrom acinzentado */
+  --muted:          #6B6B6B;  /* metadado — cinza neutro (passa AA sobre --bg) */
 
   /* ── Ação e destaque ──────────────────────────────────────────────────────── */
   --secondary:      #7CCBCD;  /* turquesa — FUNDO de botão/banner */
   --secondary-light:#BFE9EB;  /* turquesa clara — fundo de destaque leve */
   --secondary-ink:  #0A0A0A;  /* texto SOBRE turquesa */
-  --secondary-text: #2C7E80;  /* turquesa escura — TEXTO de link/CTA (mantém AA) */
+  --secondary-text: #24696B;  /* turquesa escura — TEXTO de link/CTA (passa AA sobre --bg) */
   --accent:         #F3B9A9;  /* pêssego — fundo/borda/gráfico, NUNCA texto */
   --accent-ink:     #2C2C2C;  /* texto SOBRE pêssego */
   --highlight:      #FFC629;  /* amarelo — indicador pontual, UM por tela */
@@ -126,6 +126,26 @@ button { font-family:inherit; }
 .tab-ver.ativo { background:var(--ink); color:#fff; border-color:var(--ink); }
 .tab-ver .cont { color:var(--muted); font-size:11px; font-weight:700; }
 .tab-ver.ativo .cont { color:var(--line); }
+
+/* ===== quadros (Pólia One · Conteúdo · Pólia Lab) ===== */
+.quadros { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+.tab-quadro {
+  display:flex; flex-direction:column; gap:2px; min-width:180px; flex:1 1 180px; max-width:280px;
+  padding:12px 16px; border-radius:var(--radius); border:1px solid var(--line); background:#fff;
+  cursor:pointer; text-align:left; color:var(--ink); font-family:var(--font-body);
+}
+.tab-quadro:hover { background:var(--surface); }
+.tab-quadro .nome { font-family:var(--font-display); letter-spacing:-0.02em; font-weight:700; font-size:17px; }
+.tab-quadro .desc { font-size:11.5px; color:var(--muted); }
+.tab-quadro .cont { font-family:var(--font-accent); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--secondary-text); margin-top:4px; }
+.tab-quadro.ativo { background:var(--ink); border-color:var(--ink); color:#fff; }
+.tab-quadro.ativo .desc { color:var(--line); }
+.tab-quadro.ativo .cont { color:var(--secondary-light); }
+.tag-cliente {
+  font-family:var(--font-accent); font-size:9.5px; font-weight:700; text-transform:uppercase; letter-spacing:.04em;
+  padding:2px 7px; border-radius:999px; background:var(--surface-pink); color:var(--ink-soft);
+}
+@media (max-width:640px) { .tab-quadro { max-width:none; } }
 
 select, .busca {
   font-family:var(--font-body); font-size:12.5px; padding:7px 10px; border:1px solid var(--line);
@@ -254,9 +274,15 @@ select, .busca {
   </div>
 </header>
 
+<nav class="quadros" id="quadros" aria-label="Quadros"></nav>
+
 <section class="kpis" id="kpis"></section>
 
 <section class="filtros">
+  <div class="linha-filtro escondido" id="linha-cliente">
+    <span class="rot-filtro">Cliente</span>
+    <div id="tabs-cliente" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+  </div>
   <div class="linha-filtro">
     <span class="rot-filtro">Pessoa</span>
     <div id="chips-pessoa" style="display:flex;gap:8px;flex-wrap:wrap"></div>
@@ -289,6 +315,8 @@ select, .busca {
     <h3>Nova tarefa <span class="tag-local" id="tag-local-form">local, só neste navegador</span></h3>
     <div class="form-grid">
       <label class="full">Título<input type="text" id="nt-titulo" placeholder="O que precisa ser feito"></label>
+      <label>Quadro<select id="nt-quadro"></select></label>
+      <label id="nt-cliente-rot">Cliente do Lab<select id="nt-cliente"></select></label>
       <label>Área<select id="nt-area"></select></label>
       <label>Pessoa<select id="nt-pessoa"></select></label>
       <label>Sprint<select id="nt-sprint"></select></label>
@@ -330,8 +358,32 @@ var AREAS = {
   analytics: "Analytics",
   seguranca: "Segurança", pagamento: "Pagamento", email: "E-mail", produto: "Produto",
   site: "Site público", marca: "Marca", admin: "Admin", growth: "Growth",
-  infra: "Infra", android: "Android", ia: "IA", higiene: "Higiene"
+  infra: "Infra", android: "Android", ia: "IA", higiene: "Higiene",
+  vendas: "Vendas", crm: "CRM", comunidade: "Comunidade", conteudo: "Conteúdo", copy: "Copy",
+  design: "Design", founder: "Founder", funil: "Funil", lgpd: "LGPD", one: "Pólia One",
+  tutoriais: "Tutoriais", seo: "SEO"
 };
+
+// Três quadros na mesma tabela (office_tarefas_catalogo.quadro). Tarefa sem
+// quadro (snapshot antigo embutido) cai em "one".
+var QUADROS = [
+  { id: "one", nome: "Pólia One", desc: "O sistema: código, pagamento, apps, vendas" },
+  { id: "conteudo", nome: "Conteúdo", desc: "Redes, posts, stories, vídeos, newsletter" },
+  { id: "lab", nome: "Pólia Lab", desc: "Clientes atendidas e operação do Lab" }
+];
+
+// Clientes do Lab (office_tarefas_catalogo.cliente). null = operação do Lab.
+// Cliente nova entra aqui E no banco; id desconhecido aparece com o próprio id.
+var CLIENTES = {
+  "loveless": "Loveless",
+  "mundo-de-aimer": "Mundo de Aimer",
+  "polia-one": "Pólia One (consultoria)"
+};
+var SEM_CLIENTE = "_operacao";
+
+function quadroDe(t) { return t.quadro || "one"; }
+function nomeCliente(c) { return c ? (CLIENTES[c] || c) : "Operação do Lab"; }
+function pendente(t) { return t.status !== "concluido" && t.status !== "descartado"; }
 
 var STATUS_COLS = [
   { id: "backlog", rot: "Backlog", sub: "ainda não priorizado" },
@@ -535,7 +587,17 @@ var TAREFAS = [
   { id:"US-25.1.1", titulo:"Como Ana, eu quero instalar a Pólia como app Android.", area:"android", pessoa:"claudinho", sprint:null, status:"concluido", prioridade:"media", nota:"Feature Wrapper Capacitor (Épico 25: Aplicativo Android). Como Ana, eu quero instalar a Pólia como app Android. Capacitor com `server.url` apontando pro site de produção (WebView do site ao vivo, não bundle embutido); conta de desenvolvedora criada (pessoa física, sem D-U-N-S), taxa paga. `AND-01`: sem keystore de release, sem ícone/splash de marca, `versionCode` nunca incrementado, `minifyEnabled false`, assinatura com chave debug. `AND-02`: nunca testado em aparelho físico; pasta `android/` fora do git; bundle antigo com paleta v1 esperando limpeza antes de qualquer build." }
 ];
 
-var estado = { pessoa: "todos", sprint: "todas", area: "todas", prioridade: "todas", busca: "" };
+var estado = { quadro: lerQuadroSalvo(), cliente: "todos", pessoa: "todos", sprint: "todas", area: "todas", prioridade: "todas", busca: "" };
+
+// Lembra a última aba aberta neste navegador. Só conveniência: sem storage, abre em Pólia One.
+function lerQuadroSalvo() {
+  try {
+    var q = localStorage.getItem("polia_kanban_quadro");
+    if (q === "one" || q === "conteudo" || q === "lab") return q;
+  } catch (e) {}
+  return "one";
+}
+function gravarQuadro(q) { try { localStorage.setItem("polia_kanban_quadro", q); } catch (e) {} }
 
 function hojeISO() { return "2026-08-25"; }
 function dataRot(iso) {
@@ -672,13 +734,28 @@ function todasTarefas() {
   return base;
 }
 
+// Tudo o que é do quadro aberto (e, no Lab, da cliente escolhida). KPIs, chips
+// e abas contam só daqui, pra o número bater com o que aparece nas colunas.
+function todasDoQuadro() {
+  return todasTarefas().filter(function (t) {
+    if (quadroDe(t) !== estado.quadro) return false;
+    if (estado.quadro === "lab" && estado.cliente !== "todos") {
+      var c = t.cliente || SEM_CLIENTE;
+      if (c !== estado.cliente) return false;
+    }
+    return true;
+  });
+}
+
 function passaFiltro(t) {
+  if (quadroDe(t) !== estado.quadro) return false;
+  if (estado.quadro === "lab" && estado.cliente !== "todos" && (t.cliente || SEM_CLIENTE) !== estado.cliente) return false;
   if (estado.pessoa !== "todos" && t.pessoa !== estado.pessoa) return false;
   if (estado.sprint !== "todas" && t.sprint !== estado.sprint) return false;
   if (estado.area !== "todas" && t.area !== estado.area) return false;
   if (estado.prioridade !== "todas" && t.prioridade !== estado.prioridade) return false;
   if (estado.busca) {
-    var alvo = (t.id + " " + t.titulo + " " + (AREAS[t.area] || "") + " " + (t.nota || "")).toLowerCase();
+    var alvo = (t.id + " " + t.titulo + " " + (AREAS[t.area] || "") + " " + (t.cliente ? nomeCliente(t.cliente) : "") + " " + (t.nota || "")).toLowerCase();
     if (alvo.indexOf(estado.busca.toLowerCase()) === -1) return false;
   }
   return true;
@@ -692,8 +769,50 @@ function sprintAtual() {
   return null;
 }
 
-function renderKPIs() {
+function renderQuadros() {
   var todas = todasTarefas();
+  var html = QUADROS.map(function (q) {
+    var n = todas.filter(function (t) { return quadroDe(t) === q.id && pendente(t); }).length;
+    return '<button type="button" class="tab-quadro' + (estado.quadro === q.id ? ' ativo' : '') + '" data-quadro="' + q.id + '">' +
+      '<span class="nome">' + q.nome + '</span><span class="desc">' + q.desc + '</span>' +
+      '<span class="cont">' + n + ' em aberto</span></button>';
+  }).join("");
+  document.getElementById("quadros").innerHTML = html;
+}
+
+function renderTabsCliente() {
+  var linha = document.getElementById("linha-cliente");
+  if (estado.quadro !== "lab") { linha.classList.add("escondido"); return; }
+  linha.classList.remove("escondido");
+  var doLab = todasTarefas().filter(function (t) { return quadroDe(t) === "lab" && pendente(t); });
+  // Clientes conhecidas primeiro, depois qualquer outra que exista no banco, e a operação do Lab por último.
+  var ids = Object.keys(CLIENTES);
+  doLab.forEach(function (t) { if (t.cliente && ids.indexOf(t.cliente) === -1) ids.push(t.cliente); });
+  ids.push(SEM_CLIENTE);
+  var tabs = [{ id: "todos", rot: "Todas", n: doLab.length }].concat(ids.map(function (c) {
+    return {
+      id: c,
+      rot: c === SEM_CLIENTE ? "Operação do Lab" : nomeCliente(c),
+      n: doLab.filter(function (t) { return (t.cliente || SEM_CLIENTE) === c; }).length
+    };
+  }));
+  document.getElementById("tabs-cliente").innerHTML = tabs.map(function (t) {
+    return '<div class="tab-ver' + (estado.cliente === t.id ? ' ativo' : '') + '" data-cliente="' + t.id + '">' + t.rot + '<span class="cont">' + t.n + '</span></div>';
+  }).join("");
+}
+
+function preencherSelAreaDoQuadro() {
+  var usadas = {};
+  todasDoQuadro().forEach(function (t) { if (t.area) usadas[t.area] = true; });
+  var chaves = Object.keys(usadas).sort(function (a, b) { return (AREAS[a] || a).localeCompare(AREAS[b] || b, "pt-BR"); });
+  if (estado.area !== "todas" && !usadas[estado.area]) estado.area = "todas";
+  var opts = '<option value="todas">Toda área</option>';
+  chaves.forEach(function (k) { opts += '<option value="' + k + '"' + (estado.area === k ? ' selected' : '') + '>' + (AREAS[k] || k) + '</option>'; });
+  document.getElementById("sel-area").innerHTML = opts;
+}
+
+function renderKPIs() {
+  var todas = todasDoQuadro();
   var visiveis = todas.filter(passaFiltro);
   var atual = sprintAtual();
   var noSprintAtual = todas.filter(function (t) { return t.sprint === atual && t.status !== "concluido" && t.status !== "descartado"; });
@@ -725,7 +844,7 @@ function renderKPIs() {
 }
 
 function renderChipsPessoa() {
-  var todas = todasTarefas();
+  var todas = todasDoQuadro();
   var html = '<div class="chip-pessoa' + (estado.pessoa === "todos" ? ' ativo' : '') + '" data-pessoa="todos"><span class="ini" style="background:var(--line);color:var(--ink-soft)">T</span>Todos<span class="cont">' + todas.length + '</span></div>';
   Object.keys(PESSOAS).forEach(function (k) {
     var n = todas.filter(function (t) { return t.pessoa === k; }).length;
@@ -736,7 +855,7 @@ function renderChipsPessoa() {
 }
 
 function renderTabsVer() {
-  var todas = todasTarefas();
+  var todas = todasDoQuadro();
   // "descartado" (won't-do) é status terminal como "concluido", mas some do
   // quadro sem coluna própria -- sem excluir aqui, a aba conta a tarefa e o
   // quadro (que só soma as 4 colunas ativas) não bate no número.
@@ -761,6 +880,13 @@ function preencherSelects() {
 
   var selPri = document.getElementById("sel-prioridade");
   selPri.innerHTML = '<option value="todas">Toda prioridade</option><option value="alta">Alta</option><option value="media">Média</option><option value="baixa">Baixa</option>';
+
+  document.getElementById("nt-quadro").innerHTML = QUADROS.map(function (q) {
+    return '<option value="' + q.id + '">' + q.nome + '</option>';
+  }).join("");
+  var optsC = '<option value="">Operação do Lab (sem cliente)</option>';
+  Object.keys(CLIENTES).forEach(function (k) { optsC += '<option value="' + k + '">' + CLIENTES[k] + '</option>'; });
+  document.getElementById("nt-cliente").innerHTML = optsC;
 
   var ntArea = document.getElementById("nt-area");
   var optsA = "";
@@ -788,7 +914,7 @@ function renderVisaoIndividual() {
   if (estado.pessoa === "todos") { el.classList.add("escondido"); el.innerHTML = ""; return; }
   el.classList.remove("escondido");
   var p = PESSOAS[estado.pessoa];
-  var minhas = todasTarefas().filter(function (t) { return t.pessoa === estado.pessoa; });
+  var minhas = todasDoQuadro().filter(function (t) { return t.pessoa === estado.pessoa; });
   var porStatus = {};
   STATUS_COLS.forEach(function (c) { porStatus[c.id] = minhas.filter(function (t) { return t.status === c.id; }).length; });
 
@@ -827,6 +953,7 @@ function cardHTML(t) {
   return '<div class="card-t' + (t.status === "concluido" ? " concluido" : "") + (t.local ? " local" : "") + '"' +
     ' draggable="true" data-id="' + t.id + '">' +
     '<div class="linha-topo"><span class="tag-area">' + (AREAS[t.area] || t.area) + '</span>' +
+    (quadroDe(t) === "lab" && t.cliente ? '<span class="tag-cliente">' + nomeCliente(t.cliente) + '</span>' : '') +
     (t.local ? '<span class="tag-local">local</span>' : '') +
     '<span class="tag-sprint">' + sprintRot + '</span></div>' +
     '<div class="titulo">' + t.titulo + '</div>' +
@@ -847,6 +974,9 @@ function abrirDrawer(id) {
     '<span class="pri ' + t.prioridade + '">' + t.prioridade + '</span>' +
     (t.local ? '<span class="tag-local">local</span>' : '<span class="id-tag">' + t.id + '</span>') + '</div>';
   html += '<h3>' + t.titulo + '</h3>';
+  var qInfo = QUADROS.filter(function (q) { return q.id === quadroDe(t); })[0];
+  html += '<div class="campo"><div class="r">Quadro</div><div class="v">' + (qInfo ? qInfo.nome : quadroDe(t)) +
+    (quadroDe(t) === "lab" ? ' · ' + nomeCliente(t.cliente) : '') + '</div></div>';
   html += '<div class="campo"><div class="r">Pessoa</div><div class="v"><span class="mini-avatar ini ' + p.cor + '" style="display:inline-flex;vertical-align:middle;margin-right:6px">' + p.nome.charAt(0) + '</span>' + p.nome + '</div></div>';
   html += '<div class="campo"><div class="r">Coluna</div><div class="v">' + (STATUS_COLS.filter(function (c) { return c.id === t.status; })[0] || {}).rot + '</div></div>';
   if (sprintInfo) {
@@ -938,7 +1068,17 @@ async function moverTarefaLocal(id, novoStatus) {
   renderTudo();
 }
 
+function ajustarCampoCliente() {
+  var ehLab = document.getElementById("nt-quadro").value === "lab";
+  document.getElementById("nt-cliente-rot").classList.toggle("escondido", !ehLab);
+}
+
 function abrirFormNovaTarefa() {
+  // Abre já no quadro (e na cliente) que está na tela.
+  document.getElementById("nt-quadro").value = estado.quadro;
+  document.getElementById("nt-cliente").value =
+    (estado.quadro === "lab" && estado.cliente !== "todos" && estado.cliente !== SEM_CLIENTE) ? estado.cliente : "";
+  ajustarCampoCliente();
   document.getElementById("overlay-form").classList.remove("escondido");
   document.getElementById("nt-titulo").focus();
 }
@@ -952,8 +1092,11 @@ async function salvarNovaTarefa() {
   if (!titulo) { campoTitulo.style.borderColor = "var(--danger)"; return; }
   var hoje = new Date(hojeISO() + "T12:00:00");
   var dataCriacao = String(hoje.getDate()).padStart(2, "0") + "/" + String(hoje.getMonth() + 1).padStart(2, "0");
+  var quadroNovo = document.getElementById("nt-quadro").value || "one";
   var nova = {
     titulo: titulo,
+    quadro: quadroNovo,
+    cliente: quadroNovo === "lab" ? (document.getElementById("nt-cliente").value || null) : null,
     area: document.getElementById("nt-area").value,
     pessoa: document.getElementById("nt-pessoa").value,
     sprint: document.getElementById("nt-sprint").value || null,
@@ -997,6 +1140,9 @@ async function salvarNovaTarefa() {
 }
 
 function renderTudo() {
+  renderQuadros();
+  renderTabsCliente();
+  preencherSelAreaDoQuadro();
   renderKPIs();
   renderChipsPessoa();
   renderTabsVer();
@@ -1005,6 +1151,18 @@ function renderTudo() {
 }
 
 document.addEventListener("click", function (ev) {
+  var tabQuadro = ev.target.closest(".tab-quadro");
+  if (tabQuadro) {
+    estado.quadro = tabQuadro.getAttribute("data-quadro");
+    estado.cliente = "todos";
+    gravarQuadro(estado.quadro);
+    renderTudo();
+    return;
+  }
+
+  var tabCliente = ev.target.closest("[data-cliente]");
+  if (tabCliente) { estado.cliente = tabCliente.getAttribute("data-cliente"); renderTudo(); return; }
+
   var chipPessoa = ev.target.closest(".chip-pessoa");
   if (chipPessoa) { estado.pessoa = chipPessoa.getAttribute("data-pessoa"); renderTudo(); return; }
 
@@ -1064,6 +1222,7 @@ document.addEventListener("drop", function (ev) {
 
 document.getElementById("sel-area").addEventListener("change", function (e) { estado.area = e.target.value; renderTudo(); });
 document.getElementById("sel-prioridade").addEventListener("change", function (e) { estado.prioridade = e.target.value; renderTudo(); });
+document.getElementById("nt-quadro").addEventListener("change", ajustarCampoCliente);
 document.getElementById("busca").addEventListener("input", function (e) { estado.busca = e.target.value; renderBoard(); renderKPIs(); });
 
 preencherSelects();
