@@ -717,3 +717,138 @@ export async function cancelarExecucoesDaConversa(conversaId: string): Promise<v
     .eq("conversa_id", conversaId)
     .in("estado", ["rodando", "aguardando"]);
 }
+
+// ---------------------------------------------------------------- comentários anteriores
+
+// A resposta privada a um comentário só é aceita pela Meta até 7 dias depois dele.
+const PRAZO_RESPOSTA_PRIVADA_MS = 7 * 24 * 60 * 60 * 1000;
+
+export interface ResultadoAnteriores {
+  enviados: number;
+  pulados: number;
+  falhas: number;
+}
+
+interface ComentarioAnterior {
+  conversa_id: string;
+  texto: string | null;
+  criado_em: string;
+  dados: { media_id?: unknown; comment_id?: unknown };
+  conversa: {
+    canal: Canal;
+    automacao_pausada: boolean;
+    contato: { id: string; ig_id: string | null } | null;
+  } | null;
+}
+
+// Comentário que chegou antes de a automação existir não dispara nada sozinho (o motor só olha
+// a mensagem que acabou de chegar). Isto roda a automação uma vez para esses comentários, do
+// mesmo jeito que um comentário novo: resposta pública + Direct como resposta privada.
+// Caso que pediu isto: reels C09, 12 "QUERO" antes da automação (Sil, 16/11/2026).
+export async function responderComentariosAnteriores(
+  automacaoId: string,
+): Promise<ResultadoAnteriores> {
+  const automacao = await carregarAutomacao(automacaoId);
+  if (!automacao) throw new Error("Automação não encontrada.");
+  const g = automacao.gatilho;
+  if (g.tipo !== "comentario" || g.posts.length === 0) {
+    throw new Error("Só vale para automação de comentário com o post escolhido.");
+  }
+
+  const desde = new Date(Date.now() - PRAZO_RESPOSTA_PRIVADA_MS).toISOString();
+  const { data, error } = await supabaseAdmin
+    .from("conv_mensagens")
+    .select(
+      "conversa_id, texto, criado_em, dados, conversa:conv_conversas(canal, automacao_pausada, contato:crm_contatos(id, ig_id))",
+    )
+    .eq("tipo", "comentario")
+    .eq("direcao", "entrada")
+    .gte("criado_em", desde)
+    .in("dados->>media_id", g.posts)
+    .order("criado_em", { ascending: false });
+  if (error) throw new Error("Não consegui ler os comentários.");
+
+  const resultado: ResultadoAnteriores = { enviados: 0, pulados: 0, falhas: 0 };
+  const vistas = new Set<string>();
+  for (const c of (data ?? []) as unknown as ComentarioAnterior[]) {
+    // Uma vez por pessoa: vale o comentário mais recente dela que casa com o gatilho.
+    if (vistas.has(c.conversa_id)) continue;
+    const mediaId = typeof c.dados.media_id === "string" ? c.dados.media_id : null;
+    const comentarioId = typeof c.dados.comment_id === "string" ? c.dados.comment_id : null;
+    const casa = gatilhoCasa(g, {
+      canal: "instagram",
+      tipo: "comentario",
+      texto: c.texto,
+      mediaId,
+    });
+    if (!casa) continue;
+    vistas.add(c.conversa_id);
+
+    const externoId = c.conversa?.contato?.ig_id;
+    if (!comentarioId || !externoId || c.conversa?.canal !== "instagram") {
+      resultado.pulados += 1;
+      continue;
+    }
+    if (c.conversa.automacao_pausada) {
+      resultado.pulados += 1;
+      continue;
+    }
+    // Já rodou para essa pessoa, ou alguém já respondeu depois do comentário: não repete.
+    const [{ data: jaRodou }, { data: jaRespondida }] = await Promise.all([
+      supabaseAdmin
+        .from("auto_execucoes")
+        .select("id")
+        .eq("automacao_id", automacao.id)
+        .eq("conversa_id", c.conversa_id)
+        .limit(1),
+      supabaseAdmin
+        .from("conv_mensagens")
+        .select("id")
+        .eq("conversa_id", c.conversa_id)
+        .eq("direcao", "saida")
+        .gt("criado_em", c.criado_em)
+        .limit(1),
+    ]);
+    if ((jaRodou ?? []).length || (jaRespondida ?? []).length) {
+      resultado.pulados += 1;
+      continue;
+    }
+
+    const ctx: Contexto = {
+      canal: "instagram",
+      externoId,
+      contatoId: c.conversa.contato!.id,
+      conversaId: c.conversa_id,
+    };
+    const viva = await execucaoViva(ctx.conversaId);
+    if (viva?.estado === "rodando") {
+      resultado.pulados += 1;
+      continue;
+    }
+    if (g.respostas_publicas.length) {
+      const opcoes = g.respostas_publicas;
+      const resposta = opcoes[Math.floor(Math.random() * opcoes.length)];
+      await responderComentarioEmPublico(comentarioId, resposta).catch((e) =>
+        console.warn("[automacoes] resposta pública falhou", e),
+      );
+    }
+    if (viva) await atualizarExecucao(viva.id, { estado: "cancelada", aguardando: null });
+    automacao.execucoes += 1;
+    await iniciar(ctx, { ...automacao, execucoes: automacao.execucoes - 1 }, {
+      comentario_id: comentarioId,
+    });
+
+    const { data: exec } = await supabaseAdmin
+      .from("auto_execucoes")
+      .select("estado, dados")
+      .eq("automacao_id", automacao.id)
+      .eq("conversa_id", ctx.conversaId)
+      .order("iniciado_em", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const linha = exec as { estado: string; dados: ExecucaoLinha["dados"] } | null;
+    if (linha && linha.estado !== "erro" && linha.dados.comentario_usado) resultado.enviados += 1;
+    else resultado.falhas += 1;
+  }
+  return resultado;
+}

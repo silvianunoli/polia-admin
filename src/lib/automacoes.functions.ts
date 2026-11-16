@@ -206,6 +206,18 @@ export const excluirAutomacao = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// Roda a automação uma vez para quem comentou no post antes de ela existir (até 7 dias atrás).
+export const responderComentariosAnteriores = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: unknown) => z.object({ id: z.string().uuid() }).parse(input))
+  .handler(async ({ context, data }) => {
+    await assertAdmin(context.userId);
+    const { responderComentariosAnteriores: rodar } = await import("@/lib/automacoes.server");
+    const resultado = await rodar(data.id);
+    await logAcaoAdminServer(context.userId, "automacao_comentarios_anteriores", data.id);
+    return resultado;
+  });
+
 export const criarDoModelo = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) =>

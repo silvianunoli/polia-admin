@@ -18,6 +18,7 @@ import {
   excluirAutomacao,
   obterAutomacao,
   postsDoInstagram,
+  responderComentariosAnteriores,
   salvarAutomacao,
 } from "@/lib/automacoes.functions";
 import {
@@ -177,6 +178,7 @@ function EditorAutomacao() {
   const [cliques, setCliques] = useState(0);
   const [alterado, setAlterado] = useState(false);
   const [salvando, setSalvando] = useState(false);
+  const [respondendo, setRespondendo] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   async function carregar() {
@@ -265,6 +267,34 @@ function EditorAutomacao() {
       navigate({ to: "/crm/automacoes" });
     } catch {
       toastErro("Não consegui apagar.");
+    }
+  }
+
+  async function responderAnteriores() {
+    if (!a) return;
+    const ok = await confirmar({
+      titulo: "Responder quem já comentou",
+      rotuloConfirmar: "Responder agora",
+      descricao: (
+        <>
+          Quem comentou neste post nos últimos 7 dias, com a palavra do gatilho, e ainda não
+          recebeu nada, recebe agora a resposta no comentário e o Direct desta automação. Quem já
+          recebeu, ou já foi respondida por você, fica de fora.
+        </>
+      ),
+    });
+    if (!ok) return;
+    setRespondendo(true);
+    try {
+      const r = await responderComentariosAnteriores({ data: { id } });
+      toastSucesso(
+        `Enviado para ${r.enviados}. ${r.pulados} já tinham resposta${r.falhas ? `, ${r.falhas} falharam (veja nas conversas)` : ""}.`,
+      );
+      await carregar();
+    } catch (e) {
+      toastErro(e instanceof Error ? e.message : "Não consegui responder.");
+    } finally {
+      setRespondendo(false);
     }
   }
 
@@ -469,6 +499,17 @@ function EditorAutomacao() {
           <button type="button" onClick={apagar} className={btnDanger}>
             <Trash2 size={14} />
           </button>
+          {deComentario && a.gatilho.tipo === "comentario" && a.gatilho.posts.length > 0 && (
+            <button
+              type="button"
+              onClick={responderAnteriores}
+              disabled={alterado || respondendo}
+              title={alterado ? "Salve antes" : undefined}
+              className={btnOutline}
+            >
+              {respondendo ? "Respondendo..." : "Responder quem já comentou"}
+            </button>
+          )}
           <button type="button" onClick={salvar} disabled={salvando} className={btnPrimary}>
             {salvando ? "Salvando..." : "Salvar"}
           </button>
