@@ -722,11 +722,16 @@ export async function cancelarExecucoesDaConversa(conversaId: string): Promise<v
 
 // A resposta privada a um comentário só é aceita pela Meta até 7 dias depois dele.
 const PRAZO_RESPOSTA_PRIVADA_MS = 7 * 24 * 60 * 60 * 1000;
+// Cada pessoa gasta perto de 20 chamadas (banco + Instagram) e o Worker tem teto de chamadas
+// por requisição: no 1º disparo do C09 ele parou na 4ª pessoa. Por isso vai em lotes pequenos e
+// a tela chama de novo enquanto sobrar gente.
+const LOTE_ANTERIORES = 2;
 
 export interface ResultadoAnteriores {
   enviados: number;
   pulados: number;
   falhas: number;
+  restantes: number;
 }
 
 interface ComentarioAnterior {
@@ -768,56 +773,72 @@ export async function responderComentariosAnteriores(
     .order("criado_em", { ascending: false });
   if (error) throw new Error("Não consegui ler os comentários.");
 
-  const resultado: ResultadoAnteriores = { enviados: 0, pulados: 0, falhas: 0 };
+  const resultado: ResultadoAnteriores = { enviados: 0, pulados: 0, falhas: 0, restantes: 0 };
+
+  // Uma vez por pessoa: vale o comentário mais recente dela que casa com o gatilho.
+  const candidatos: ComentarioAnterior[] = [];
   const vistas = new Set<string>();
   for (const c of (data ?? []) as unknown as ComentarioAnterior[]) {
-    // Uma vez por pessoa: vale o comentário mais recente dela que casa com o gatilho.
     if (vistas.has(c.conversa_id)) continue;
     const mediaId = typeof c.dados.media_id === "string" ? c.dados.media_id : null;
-    const comentarioId = typeof c.dados.comment_id === "string" ? c.dados.comment_id : null;
-    const casa = gatilhoCasa(g, {
-      canal: "instagram",
-      tipo: "comentario",
-      texto: c.texto,
-      mediaId,
-    });
-    if (!casa) continue;
+    if (!gatilhoCasa(g, { canal: "instagram", tipo: "comentario", texto: c.texto, mediaId })) {
+      continue;
+    }
     vistas.add(c.conversa_id);
+    candidatos.push(c);
+  }
+  if (candidatos.length === 0) return resultado;
 
-    const externoId = c.conversa?.contato?.ig_id;
-    if (!comentarioId || !externoId || c.conversa?.canal !== "instagram") {
-      resultado.pulados += 1;
-      continue;
-    }
-    if (c.conversa.automacao_pausada) {
-      resultado.pulados += 1;
-      continue;
-    }
-    // Já rodou para essa pessoa, ou alguém já respondeu depois do comentário: não repete.
-    const [{ data: jaRodou }, { data: jaRespondida }] = await Promise.all([
-      supabaseAdmin
-        .from("auto_execucoes")
-        .select("id")
-        .eq("automacao_id", automacao.id)
-        .eq("conversa_id", c.conversa_id)
-        .limit(1),
-      supabaseAdmin
-        .from("conv_mensagens")
-        .select("id")
-        .eq("conversa_id", c.conversa_id)
-        .eq("direcao", "saida")
-        .gt("criado_em", c.criado_em)
-        .limit(1),
-    ]);
-    if ((jaRodou ?? []).length || (jaRespondida ?? []).length) {
-      resultado.pulados += 1;
-      continue;
-    }
+  // Já rodou para essa pessoa, ou alguém já respondeu depois do comentário: não repete.
+  // Duas leituras para todos de uma vez (cada chamada conta no teto do Worker).
+  const ids = candidatos.map((c) => c.conversa_id);
+  const [{ data: execs }, { data: saidas }] = await Promise.all([
+    supabaseAdmin
+      .from("auto_execucoes")
+      .select("conversa_id")
+      .eq("automacao_id", automacao.id)
+      .in("conversa_id", ids),
+    supabaseAdmin
+      .from("conv_mensagens")
+      .select("conversa_id, criado_em")
+      .eq("direcao", "saida")
+      .in("conversa_id", ids),
+  ]);
+  const jaRodou = new Set(((execs ?? []) as { conversa_id: string }[]).map((e) => e.conversa_id));
+  const ultimaSaida = new Map<string, string>();
+  for (const s of (saidas ?? []) as { conversa_id: string; criado_em: string }[]) {
+    const atual = ultimaSaida.get(s.conversa_id);
+    if (!atual || s.criado_em > atual) ultimaSaida.set(s.conversa_id, s.criado_em);
+  }
 
+  const pendentes: ComentarioAnterior[] = [];
+  for (const c of candidatos) {
+    const comentarioId = typeof c.dados.comment_id === "string" ? c.dados.comment_id : null;
+    const respondida =
+      ultimaSaida.has(c.conversa_id) &&
+      new Date(ultimaSaida.get(c.conversa_id)!).getTime() > new Date(c.criado_em).getTime();
+    if (
+      !comentarioId ||
+      !c.conversa?.contato?.ig_id ||
+      c.conversa.canal !== "instagram" ||
+      c.conversa.automacao_pausada ||
+      jaRodou.has(c.conversa_id) ||
+      respondida
+    ) {
+      resultado.pulados += 1;
+      continue;
+    }
+    pendentes.push(c);
+  }
+
+  const lote = pendentes.slice(0, LOTE_ANTERIORES);
+  resultado.restantes = pendentes.length - lote.length;
+  for (const c of lote) {
+    const comentarioId = c.dados.comment_id as string;
     const ctx: Contexto = {
       canal: "instagram",
-      externoId,
-      contatoId: c.conversa.contato!.id,
+      externoId: c.conversa!.contato!.ig_id!,
+      contatoId: c.conversa!.contato!.id,
       conversaId: c.conversa_id,
     };
     const viva = await execucaoViva(ctx.conversaId);
@@ -833,10 +854,8 @@ export async function responderComentariosAnteriores(
       );
     }
     if (viva) await atualizarExecucao(viva.id, { estado: "cancelada", aguardando: null });
+    await iniciar(ctx, automacao, { comentario_id: comentarioId });
     automacao.execucoes += 1;
-    await iniciar(ctx, { ...automacao, execucoes: automacao.execucoes - 1 }, {
-      comentario_id: comentarioId,
-    });
 
     const { data: exec } = await supabaseAdmin
       .from("auto_execucoes")

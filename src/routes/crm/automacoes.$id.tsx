@@ -286,9 +286,20 @@ function EditorAutomacao() {
     if (!ok) return;
     setRespondendo(true);
     try {
-      const r = await responderComentariosAnteriores({ data: { id } });
+      // O servidor manda em lotes pequenos (teto de chamadas do Worker); a tela repete até acabar.
+      let enviados = 0;
+      let falhas = 0;
+      let pulados = 0;
+      for (let rodada = 0; rodada < 30; rodada += 1) {
+        const r = await responderComentariosAnteriores({ data: { id } });
+        enviados += r.enviados;
+        falhas += r.falhas;
+        // Só a 1ª rodada conta: nas seguintes, quem acabou de receber também aparece como pulado.
+        if (rodada === 0) pulados = r.pulados;
+        if (r.restantes === 0 || r.enviados + r.falhas === 0) break;
+      }
       toastSucesso(
-        `Enviado para ${r.enviados}. ${r.pulados} já tinham resposta${r.falhas ? `, ${r.falhas} falharam (veja nas conversas)` : ""}.`,
+        `Enviado para ${enviados}. ${pulados} já tinham resposta${falhas ? `, ${falhas} falharam (veja nas conversas)` : ""}.`,
       );
       await carregar();
     } catch (e) {
